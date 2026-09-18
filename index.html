@@ -338,6 +338,19 @@
     </div>
   </div>
 
+  <!-- ============ شاشة تأكيد الدخول (كود OTP لأول مرة على الجهاز ده) ============ -->
+  <div id="viewOtp" hidden>
+    <div class="card">
+      <div class="cardTitle">تأكيد الدخول</div>
+      <div id="otpHint" style="margin-bottom:10px; color:#666; font-size:14px;">بعتنالك كود تأكيد على إيميلك</div>
+      <label>الكود اللي وصلك على الإيميل</label>
+      <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" dir="ltr" maxlength="6" placeholder="مثال: 123456">
+      <button class="primary" id="otpBtn" onclick="handleVerifyOtp()">تأكيد ودخول</button>
+      <button class="ghost" id="otpResendBtn" onclick="handleResendOtp()" style="margin-top:8px;">إعادة إرسال الكود</button>
+      <button class="ghost" onclick="handleOtpBack()" style="margin-top:8px;">رجوع لتسجيل الدخول</button>
+    </div>
+  </div>
+
   <!-- ============ شاشة رئيسية ============ -->
   <div id="viewHome" hidden>
     <div class="welcomeCard center">
@@ -623,10 +636,10 @@
   });
 
   function setView(name){
-    ['viewLogin','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
-    document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin');
+    document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
   }
 
   function goHome(){
@@ -650,6 +663,15 @@
   }
   function clearAuth(){
     try{ localStorage.removeItem(AUTH_STORAGE_KEY); }catch(e){}
+  }
+
+  // كود التأكيد (OTP) ميتطلبش غير مرة واحدة بس لكل جهاز — نفس منطق نسخة Apps Script بالظبط
+  const DEVICE_TOKEN_KEY = 'tatsh_zenouki_device';
+  function saveDeviceToken(token){
+    try{ if(token) localStorage.setItem(DEVICE_TOKEN_KEY, token); }catch(e){}
+  }
+  function loadDeviceToken(){
+    try{ return localStorage.getItem(DEVICE_TOKEN_KEY) || ''; }catch(e){ return ''; }
   }
 
   function applyLoggedInUser(user, isAdmin){
@@ -691,15 +713,61 @@
     if(!name){ showMsg('اختر اسمك الأول', 'error'); return; }
     if(!pin){ showMsg('اكتب كود الدخول', 'error'); return; }
     showLoading(true);
-    callApi('login', [name, pin])
+    callApi('login', [name, pin, loadDeviceToken()])
+      .then(function(data){
+        showLoading(false);
+        if(data.auth){
+          // الجهاز ده موثوق بالفعل لنفس المندوب — ادخله على طول من غير كود تأكيد
+          state.auth = data.auth;
+          saveAuth(data.auth);
+          applyLoggedInUser(data.user, data.isAdmin);
+          goHome();
+          return;
+        }
+        state.pendingOtpEmail = data.email;
+        document.getElementById('otpInput').value = '';
+        document.getElementById('otpHint').textContent = 'بعتنالك كود تأكيد على إيميل ' + data.name + ' المسجل — اكتبه هنا عشان تكمل الدخول';
+        setView('viewOtp');
+      })
+      .catch(onError);
+  }
+
+  function handleVerifyOtp(){
+    clearMsg();
+    const otp = document.getElementById('otpInput').value.trim();
+    if(!otp){ showMsg('اكتب الكود اللي وصلك على الإيميل', 'error'); return; }
+    if(!state.pendingOtpEmail){ showMsg('حصل خطأ، سجل الدخول تاني', 'error'); setView('viewLogin'); return; }
+    showLoading(true);
+    callApi('verifyLoginOtp', [state.pendingOtpEmail, otp])
       .then(function(data){
         state.auth = data.auth;
         saveAuth(data.auth);
+        saveDeviceToken(data.deviceToken);
         applyLoggedInUser(data.user, data.isAdmin);
+        state.pendingOtpEmail = null;
         showLoading(false);
         goHome();
       })
       .catch(onError);
+  }
+
+  function handleResendOtp(){
+    clearMsg();
+    if(!state.pendingOtpEmail){ showMsg('حصل خطأ، سجل الدخول تاني', 'error'); setView('viewLogin'); return; }
+    showLoading(true);
+    callApi('resendLoginOtp', [state.pendingOtpEmail])
+      .then(function(){
+        showLoading(false);
+        showMsg('اتبعت كود جديد على إيميلك', 'success');
+      })
+      .catch(onError);
+  }
+
+  function handleOtpBack(){
+    clearMsg();
+    state.pendingOtpEmail = null;
+    document.getElementById('loginPinInput').value = '';
+    setView('viewLogin');
   }
 
   function init(){
