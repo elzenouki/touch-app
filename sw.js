@@ -1,10 +1,10 @@
-// Service Worker بسيط لتطبيق "تاتش الزنوكي" — بيخزن شكل التطبيق (الصفحة + الأيقونات) عشان
-// يفتح بسرعة حتى من غير نت، لكن أي طلب بيانات حقيقي (بيع/جرد/توريد...الخ) بيروح للسيرفر على طول
-// من غير أي تخزين مؤقت، عشان البيانات تفضل محدّثة دايمًا.
-const CACHE_NAME = 'tatsh-zenouki-v1';
+// Service Worker بسيط لتطبيق "تاتش الزنوكي" — بيخزن الأيقونات بس عشان تفتح بسرعة حتى من غير
+// نت، لكن صفحة index.html نفسها بتيجي من النت على طول كل مرة (Network First) عشان أي تحديث
+// (زي تغيير لينك السيرفر) يوصل فورًا من غير ما نحتاج نعمل bump يدوي في اسم الكاش كل مرة.
+// ملحوظة: v2 هنا لأن v1 كانت بتخزن index.html نفسها وسبّبت مشكلة إن تحديث الكود القديم فضل
+// شغال من الكاش حتى بعد إصلاحه على GitHub — النسخة دي بتتفادى المشكلة دي تمامًا.
+const CACHE_NAME = 'tatsh-zenouki-v2';
 const APP_SHELL = [
-  './',
-  './index.html',
   './manifest.json',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -35,7 +35,25 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // شكل التطبيق نفسه (HTML/CSS/JS/أيقونات): جرّب الكاش الأول، ولو مش موجود روح للنت وخزّنه لمرة جاية
+  // صفحة الـ HTML نفسها (index.html أو المسار الرئيسي): النت أولًا دايمًا عشان أي تحديث يوصل
+  // فورًا، والكاش يستخدم بس لو مفيش نت خالص (احتياطي).
+  const isHtmlRequest = event.request.mode === 'navigate' || url.endsWith('/') || url.endsWith('index.html');
+  if (isHtmlRequest) {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // باقي ملفات الشكل (أيقونات/manifest): جرّب الكاش الأول، ولو مش موجود روح للنت وخزّنه لمرة جاية
   event.respondWith(
     caches.match(event.request).then((cached) => {
       const networkFetch = fetch(event.request)
