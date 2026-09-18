@@ -1,0 +1,1595 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>تاتش الزنوكي - نظام إدارة المبيعات</title>
+
+<!-- ============ إعدادات تطبيق الويب التقدمي (PWA) — عشان يتثبت زي أي تطبيق حقيقي ============ -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0c1730">
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<!-- آيفون: تثبيت على الشاشة الرئيسية بدون شريط عنوان المتصفح -->
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="تاتش الزنوكي">
+<!-- أندرويد -->
+<meta name="mobile-web-app-capable" content="yes">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  :root{
+    --bg:#f7f6f2; --card:#ffffff; --card2:#faf8f3; --border:#e4dfd1;
+    --text:#1c2130; --muted:#8b8676; --muted2:#736e60;
+    --navy:#0c1730; --navy2:#16234a; --navy3:#0a1226;
+    --gold:#b6862f; --gold-d:#8a6218; --gold-light:#d9ac52; --gold-bg:#faf3e1;
+    --green:#2b7a4f; --green-bg:#eaf5ee;
+    --red:#b83a3a; --red-bg:#fbecec;
+    --blue:#2c548f; --blue-bg:#eaf0fa;
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0; color:var(--text);
+    background:
+      radial-gradient(700px 340px at 88% -60px, rgba(182,134,47,.10) 0%, transparent 65%),
+      radial-gradient(600px 300px at 8% 0px, rgba(12,23,48,.05) 0%, transparent 60%),
+      var(--bg);
+    font-family:'Cairo','Tajawal', 'Segoe UI', Tahoma, Arial, sans-serif;
+    min-height:100vh; -webkit-font-smoothing:antialiased;
+    font-size:17px;
+  }
+  .header{
+    background:linear-gradient(155deg, var(--navy) 0%, var(--navy2) 55%, var(--navy3) 100%);
+    padding:26px 22px 30px; display:flex; align-items:flex-start; gap:12px;
+    justify-content:space-between;
+    position:sticky; top:0; z-index:10;
+    box-shadow:0 10px 28px rgba(6,12,28,.32);
+    border-radius:0 0 26px 26px;
+    background-image:
+      repeating-linear-gradient(135deg, rgba(255,255,255,.025) 0px, rgba(255,255,255,.025) 1px, transparent 1px, transparent 26px),
+      linear-gradient(155deg, var(--navy) 0%, var(--navy2) 55%, var(--navy3) 100%);
+  }
+  .header::after{
+    content:''; position:absolute; inset-inline:22px; bottom:9px; height:2px;
+    background:linear-gradient(90deg, transparent 0%, var(--gold-light) 15%, var(--gold) 50%, var(--gold-light) 85%, transparent 100%);
+    opacity:.85;
+  }
+  .headerLeft{display:flex; align-items:center; gap:12px;}
+  .header .kicker{
+    display:block; font-size:11px; color:var(--gold-light); font-weight:800;
+    text-transform:uppercase; letter-spacing:1.6px; margin-bottom:6px; opacity:.9;
+  }
+  .header h1{
+    margin:0; font-size:22px; font-weight:900; color:#ffffff;
+    letter-spacing:.3px;
+  }
+  .header .brandLine{
+    display:block; width:38px; height:2px; margin-top:7px;
+    background:linear-gradient(90deg, var(--gold-light), var(--gold));
+    border-radius:2px;
+  }
+  .header .sub{font-size:13px; color:#aab4d4; margin-top:9px; font-weight:500; letter-spacing:.2px;}
+  .backBtn{
+    background:rgba(255,255,255,.05); color:var(--gold-light); border:1px solid rgba(214,164,40,.55);
+    border-radius:10px; padding:9px 17px; font-size:14.5px; cursor:pointer; font-weight:700;
+    letter-spacing:.2px; flex-shrink:0;
+  }
+  .backBtn:active{background:rgba(214,164,40,.14);}
+  .wrap{max-width:640px; margin:0 auto; padding:26px 20px 44px;}
+  .card{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:20px; margin-bottom:16px;
+    box-shadow:0 3px 14px rgba(15,28,61,.055), 0 1px 2px rgba(15,28,61,.05);
+  }
+  .cardTitle{
+    font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:1px;
+    margin-bottom:14px; font-weight:800;
+    padding-bottom:10px; border-bottom:1px solid var(--border);
+  }
+  .welcomeCard{
+    position:relative; overflow:hidden;
+    border:1px solid rgba(182,134,47,.35); border-radius:22px; padding:26px 26px 24px;
+    margin-bottom:24px;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    box-shadow:0 12px 30px rgba(12,23,48,.22);
+  }
+  .welcomeCard::before{
+    content:''; position:absolute; inset:0;
+    background-image:radial-gradient(rgba(217,172,82,.16) 1.4px, transparent 1.4px);
+    background-size:18px 18px;
+    -webkit-mask-image:radial-gradient(circle at 85% 0%, black 0%, transparent 65%);
+    mask-image:radial-gradient(circle at 85% 0%, black 0%, transparent 65%);
+  }
+  .welcomeCard::after{
+    content:''; position:absolute; inset-inline-start:0; bottom:0; height:3px; width:100%;
+    background:linear-gradient(90deg, var(--gold) 0%, transparent 60%);
+  }
+  .welcomeCard .badgeIcon{
+    position:relative; width:46px; height:46px; border-radius:50%;
+    background:linear-gradient(135deg, var(--gold-light), var(--gold));
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; margin-bottom:14px;
+    box-shadow:0 4px 14px rgba(182,134,47,.35);
+  }
+  .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
+  .welcomeCard .name{font-size:26px; font-weight:900; color:#ffffff; margin-top:6px; position:relative; letter-spacing:.2px;}
+  .sectionLabel{
+    font-size:13px; color:var(--muted2); text-transform:uppercase; letter-spacing:1px;
+    margin-bottom:14px; font-weight:800;
+    display:flex; align-items:center; gap:8px;
+  }
+  .sectionLabel::before{
+    content:''; width:7px; height:7px; background:var(--gold);
+    transform:rotate(45deg); flex-shrink:0; border-radius:1px;
+  }
+  .homeGrid{display:flex; flex-direction:column; gap:13px;}
+  .homeBtn{
+    display:flex; align-items:center; gap:16px;
+    background:var(--card); border:1px solid var(--border); border-radius:18px;
+    padding:17px 20px; cursor:pointer; text-align:right; width:100%;
+    box-shadow:0 3px 12px rgba(15,28,61,.06);
+    transition:box-shadow .15s ease, transform .15s ease;
+  }
+  .homeBtn:active{background:#faf9f6; box-shadow:0 1px 4px rgba(15,28,61,.08); transform:scale(.99);}
+  .homeBtn .icon{
+    width:54px; height:54px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    box-shadow:inset 0 0 0 1px rgba(0,0,0,.03);
+  }
+  .homeBtn.sales .icon{background:linear-gradient(135deg, var(--green-bg), #d9f0e2);}
+  .homeBtn.returns .icon{background:linear-gradient(135deg, var(--red-bg), #f8d9d9);}
+  .homeBtn.tawrid .icon{background:linear-gradient(135deg, var(--blue-bg), #d9e4f5);}
+  .homeBtn.jard .icon{background:linear-gradient(135deg, var(--gold-bg), #f3e3bd);}
+  .homeBtn .title{font-size:17.5px; font-weight:800; color:var(--navy);}
+  .homeBtn .desc{font-size:13.5px; color:var(--muted); margin-top:3px;}
+  .homeBtn .chev{color:#c3bfae; font-size:19px; margin-inline-start:auto;}
+  .adminLink{
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; padding:16px; border-radius:14px; border:1px solid var(--gold);
+    background:var(--gold-bg); color:var(--gold-d); font-weight:800; font-size:15.5px;
+    cursor:pointer; margin-top:18px; letter-spacing:.2px;
+  }
+  label{display:block; font-size:14.5px; color:var(--muted2); margin-bottom:7px; font-weight:700;}
+  select, input{
+    width:100%; padding:14px 15px; border-radius:11px; border:1px solid var(--border);
+    background:var(--card2); color:var(--text); font-size:16.5px; margin-bottom:14px;
+    font-family:inherit;
+  }
+  select:focus, input:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
+  select:disabled, input:disabled{opacity:.5;}
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button{ -webkit-appearance:none; margin:0; }
+  input[type="number"]{ -moz-appearance:textfield; appearance:textfield; }
+  .ltrNum{ direction:ltr; text-align:left; }
+  .row2{display:flex; gap:10px;}
+  .row2 > div{flex:1;}
+  button.primary{
+    width:100%; padding:15px; border:none; border-radius:12px;
+    background:var(--navy); color:#ffffff; font-weight:800; font-size:16.5px; cursor:pointer;
+    border:1px solid var(--navy); letter-spacing:.2px; font-family:inherit;
+  }
+  button.primary:active{background:var(--navy2);}
+  button.primary:disabled{opacity:.4; cursor:not-allowed;}
+  button.ghost{
+    width:100%; padding:14px; border:1px solid var(--gold); border-radius:12px;
+    background:transparent; color:var(--gold-d); font-size:15.5px; cursor:pointer; margin-top:8px;
+    font-weight:700; font-family:inherit;
+  }
+  button.ghost:disabled{opacity:.4; cursor:not-allowed; color:var(--muted); border-color:var(--border);}
+  button.finalize{
+    width:100%; padding:16px; border:none; border-radius:12px;
+    background:linear-gradient(135deg, var(--green) 0%, #256b45 100%); color:#ffffff; font-weight:800; font-size:17px; cursor:pointer; margin-top:10px;
+    letter-spacing:.2px; font-family:inherit;
+    box-shadow:0 4px 12px rgba(43,122,79,.22);
+  }
+  button.finalize:disabled{opacity:.4; cursor:not-allowed; box-shadow:none;}
+  button.whatsapp{
+    width:100%; padding:14px; border:none; border-radius:12px;
+    background:#25D366; color:#ffffff; font-weight:800; font-size:15.5px; cursor:pointer; margin-top:8px;
+    font-family:inherit; letter-spacing:.2px;
+    box-shadow:0 4px 12px rgba(37,211,102,.25);
+  }
+  button.whatsapp:disabled{opacity:.4; cursor:not-allowed; box-shadow:none;}
+  .itemRow{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--card2); border:1px solid var(--border); border-radius:13px;
+    padding:14px 16px; margin-bottom:9px;
+  }
+  .itemRow .name{font-weight:800; font-size:15.5px; color:var(--navy);}
+  .itemRow .meta{font-size:13.5px; color:var(--muted); margin-top:3px;}
+  .itemRow .total{font-weight:800; color:var(--gold-d); font-size:16px;}
+  .itemRow.neg .total{color:var(--red);}
+  .delBtn{
+    background:#ffffff; border:1px solid var(--border); color:var(--red);
+    font-size:17px; cursor:pointer; padding:6px 12px; border-radius:9px; line-height:1;
+  }
+  .totalBar{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:15.5px; font-weight:800; padding:16px 6px 6px;
+    border-top:1px dashed var(--border); margin-top:8px;
+    color:var(--muted2);
+  }
+  .totalBar .val{color:var(--gold-d); font-size:22px; font-weight:900;}
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; font-size:13px; padding:6px 15px; border-radius:20px;
+    background:var(--card2); color:var(--muted2); border:1px solid var(--border); font-weight:700;
+  }
+  .badge.locked{color:var(--green); border-color:var(--green); background:var(--green-bg);}
+  .repRow{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background:var(--card2); border:1px solid var(--border); border-radius:13px;
+    padding:14px 16px; margin-bottom:9px;
+  }
+  .repRow .name{font-weight:800; font-size:15.5px; color:var(--navy);}
+  .repRow .email{font-size:13px; color:var(--muted); margin-top:3px; direction:ltr; text-align:right;}
+  .repBadge{
+    display:inline-flex; align-items:center; font-size:12.5px; padding:4px 12px; border-radius:20px;
+    background:var(--gold-bg); color:var(--gold-d); border:1px solid var(--gold); font-weight:800; margin-inline-start:8px;
+  }
+  .adminToggleBtn{
+    flex-shrink:0; padding:11px 16px; border-radius:10px; font-size:14px; font-weight:800; cursor:pointer;
+    border:1px solid var(--navy); background:transparent; color:var(--navy); white-space:nowrap;
+    font-family:inherit;
+  }
+  .adminToggleBtn.isAdminBtn{border-color:var(--red); color:var(--red);}
+  .adminToggleBtn:disabled{opacity:.4; cursor:not-allowed;}
+  .acWrap{position:relative;}
+  .acInput{background:var(--card2) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="%238b8676" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>') no-repeat left 14px center/17px 17px;
+    padding-inline-start:40px;
+  }
+  .acList{
+    position:absolute; z-index:20; top:calc(100% - 10px); inset-inline:0;
+    background:#ffffff; border:1px solid var(--border); border-radius:13px;
+    box-shadow:0 10px 26px rgba(15,28,61,.14);
+    max-height:250px; overflow-y:auto; padding:6px;
+  }
+  .acItem{
+    padding:11px 13px; border-radius:9px; cursor:pointer; font-size:15.5px; font-weight:600;
+    color:var(--text); display:flex; justify-content:space-between; align-items:center; gap:8px;
+  }
+  .acItem:active, .acItem.hover{background:var(--gold-bg); color:var(--gold-d);}
+  .acItem .acCode{font-size:12.5px; color:var(--muted); font-weight:500; direction:ltr;}
+  .acEmpty{padding:14px; text-align:center; color:var(--muted); font-size:14px;}
+  .msg{
+    padding:14px 18px; border-radius:12px; font-size:14.5px; margin-bottom:14px; font-weight:700;
+  }
+  .msg.error{background:var(--red-bg); color:#9c2f2f; border:1px solid #f0c9c9;}
+  .msg.success{background:var(--green-bg); color:#1f6b45; border:1px solid #bfe3cf;}
+  .empty{text-align:center; color:var(--muted); font-size:14.5px; padding:26px 0;}
+  .spinner{
+    width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--gold);
+    border-radius:50%; animation:spin .8s linear infinite; margin:70px auto;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .center{text-align:center;}
+  [hidden]{display:none !important;}
+  .reviewOverlay{
+    position:fixed; inset:0; background:rgba(10,15,30,.55); z-index:50;
+    display:flex; align-items:flex-end; justify-content:center;
+  }
+  .reviewModal{
+    background:#ffffff; width:100%; max-width:640px; border-radius:22px 22px 0 0;
+    max-height:88vh; display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 -10px 40px rgba(0,0,0,.28);
+  }
+  .reviewHeader{
+    padding:20px 22px 16px;
+    background:linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+    flex-shrink:0;
+  }
+  .reviewTitle{color:#ffffff; font-weight:900; font-size:17px;}
+  .reviewSub{color:#aab4d4; font-size:12.5px; margin-top:5px; font-weight:600;}
+  .reviewBody{padding:16px 22px; overflow-y:auto; flex:1;}
+  .reviewFooter{padding:16px 22px 20px; border-top:1px solid var(--border); flex-shrink:0;}
+  .reviewMetaBar{
+    display:flex; justify-content:space-between; margin-bottom:12px; font-size:13.5px;
+    color:var(--muted2); font-weight:700;
+  }
+  .reviewRow{
+    display:flex; justify-content:space-between; align-items:center;
+    padding:12px 0; border-bottom:1px dashed var(--border);
+  }
+  .reviewRow .rName{font-weight:800; font-size:15px; color:var(--navy);}
+  .reviewRow .rMeta{font-size:13px; color:var(--muted); margin-top:2px;}
+  .reviewRow .rTotal{font-weight:800; font-size:15.5px; color:var(--gold-d);}
+  .reviewRow .rTotal.neg{color:var(--red);}
+  .reviewTotal{
+    display:flex; justify-content:space-between; align-items:center;
+    padding-top:16px; margin-top:6px; font-weight:900; font-size:18px; color:var(--gold-d);
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="headerLeft">
+    <div>
+      <span class="kicker">نظام إدارة المبيعات</span>
+      <h1 id="pageTitle">تاتش الزنوكي</h1>
+      <span class="brandLine"></span>
+      <div class="sub" id="pageSub">جاري التحميل...</div>
+    </div>
+  </div>
+  <button class="backBtn" id="backBtn" hidden onclick="goHome()">⟵ الرئيسية</button>
+</div>
+
+<div class="wrap">
+
+  <div id="loading" class="spinner"></div>
+  <div id="globalMsg"></div>
+
+  <!-- ============ شاشة تسجيل الدخول (اسم + كود) ============ -->
+  <div id="viewLogin" hidden>
+    <div class="card">
+      <div class="cardTitle">تسجيل الدخول</div>
+      <label>اسمك</label>
+      <select id="loginNameSelect">
+        <option value="">اختر اسمك من القائمة...</option>
+      </select>
+      <label>كود الدخول (PIN)</label>
+      <input type="text" id="loginPinInput" class="ltrNum" inputmode="numeric" dir="ltr" maxlength="6" placeholder="مثال: 1234">
+      <button class="primary" id="loginBtn" onclick="handleLogin()">دخول</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة رئيسية ============ -->
+  <div id="viewHome" hidden>
+    <div class="welcomeCard center">
+      <div class="badgeIcon" style="margin-inline:auto;">✦</div>
+      <div class="hi">أهلاً بيك</div>
+      <div class="name" id="homeUserName"></div>
+    </div>
+    <div class="sectionLabel">الإجراءات المتاحة</div>
+    <div class="homeGrid">
+      <button class="homeBtn sales" onclick="openScreen('sales')">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2f8f5b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        </div>
+        <div>
+          <div class="title">تسجيل مبيعات</div>
+          <div class="desc">إضافة فاتورة مبيعات جديدة</div>
+        </div>
+        <div class="chev">‹</div>
+      </button>
+      <button class="homeBtn returns" onclick="openScreen('returns')">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c73e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"></path><path d="M5 10h11a4 4 0 0 1 0 8h-1"></path></svg>
+        </div>
+        <div>
+          <div class="title">تسجيل مرتجع</div>
+          <div class="desc">تسجيل أصناف مرتجعة (بالسالب)</div>
+        </div>
+        <div class="chev">‹</div>
+      </button>
+      <button class="homeBtn tawrid" onclick="openScreen('tawrid')">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2f5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"></path><rect x="3" y="8" width="18" height="12" rx="2"></rect><line x1="3" y1="13" x2="21" y2="13"></line></svg>
+        </div>
+        <div>
+          <div class="title">تسجيل توريد</div>
+          <div class="desc">تسجيل أصناف مورّدة للمخزون</div>
+        </div>
+        <div class="chev">‹</div>
+      </button>
+      <button class="homeBtn jard" onclick="openScreen('jard')">
+        <div class="icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a9781f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="13" y2="14"></line></svg>
+        </div>
+        <div>
+          <div class="title">تسجيل جرد</div>
+          <div class="desc">جرد الأصناف الموجودة معاك</div>
+        </div>
+        <div class="chev">‹</div>
+      </button>
+    </div>
+
+    <button class="adminLink" id="pricesLink" onclick="openScreen('prices')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">💰 أسعاري (تحديد وتعديل أسعار الأصناف)</button>
+    <button class="adminLink" id="adminLink" onclick="openScreen('admin')" hidden>⚙ إدارة المناديب والمشرفين</button>
+    <button class="adminLink" onclick="handleLogout()" style="border-color:var(--red); background:var(--red-bg); color:var(--red); margin-top:10px;">⎋ تسجيل خروج</button>
+  </div>
+
+  <!-- ============ شاشة فاتورة (مبيعات / مرتجع) ============ -->
+  <div id="viewInvoice" hidden>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span class="badge" id="invBadge">مندوب</span>
+        <span class="badge locked" id="lockBadge" hidden>✔ مرحّلة</span>
+      </div>
+      <label>اسم الصنف</label>
+      <div class="acWrap">
+        <input type="text" id="itemSelectInput" class="acInput" placeholder="اكتب أول حرف من اسم الصنف..." autocomplete="off">
+        <input type="hidden" id="itemSelect">
+        <div class="acList" id="itemSelectList" hidden></div>
+      </div>
+      <div class="row2">
+        <div>
+          <label>الكمية</label>
+          <input type="number" id="qtyInput" min="0.01" step="any" inputmode="decimal">
+        </div>
+        <div>
+          <label>السعر</label>
+          <input type="text" id="priceInput" class="ltrNum" inputmode="decimal" dir="ltr" placeholder="0.00">
+        </div>
+      </div>
+      <button class="primary" id="addBtn" onclick="handleAddItem()">إضافة الصنف</button>
+    </div>
+
+    <div class="card">
+      <div class="cardTitle">الأصناف</div>
+      <div id="itemsList"></div>
+      <div class="totalBar">
+        <span>الإجمالي</span>
+        <span class="val" id="grandTotal">0</span>
+      </div>
+      <button class="finalize" id="finalizeBtn" onclick="handleFinalize()">✔ موافق وترحيل</button>
+      <button class="ghost" id="downloadBtn" onclick="downloadInvoiceExcel()" disabled>⬇ تحميل Excel (متاح بعد الترحيل)</button>
+      <button class="whatsapp" id="shareBtn" onclick="shareInvoiceExcel()" disabled>📤 مشاركة عبر واتساب</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة التوريد ============ -->
+  <div id="viewTawrid" hidden>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span class="badge" id="tawridBadge">مندوب</span>
+        <span class="badge locked" id="tawridLockBadge" hidden>✔ تم الحفظ</span>
+      </div>
+      <label>اسم الصنف</label>
+      <div class="acWrap">
+        <input type="text" id="tawridItemSelectInput" class="acInput" placeholder="اكتب أول حرف من اسم الصنف..." autocomplete="off">
+        <input type="hidden" id="tawridItemSelect">
+        <div class="acList" id="tawridItemSelectList" hidden></div>
+      </div>
+      <label>الكمية</label>
+      <input type="number" id="tawridQtyInput" min="0.01" step="any" inputmode="decimal">
+      <button class="primary" id="tawridAddBtn" onclick="handleAddTawridItem()">إضافة للتوريد</button>
+    </div>
+    <div class="card">
+      <div class="cardTitle">أصناف التوريد</div>
+      <div id="tawridList"></div>
+      <button class="finalize" id="saveTawridBtn" onclick="handleSaveTawrid()">✔ تأكيد التوريد</button>
+      <button class="ghost" id="tawridDownloadBtn" onclick="downloadTawridExcel()" disabled>⬇ تحميل Excel (متاح بعد التأكيد)</button>
+      <button class="whatsapp" id="tawridShareBtn" onclick="shareTawridExcel()" disabled>📤 مشاركة عبر واتساب</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة الجرد ============ -->
+  <div id="viewJard" hidden>
+    <div class="card">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <span class="badge" id="jardBadge">مندوب</span>
+        <span class="badge locked" id="jardLockBadge" hidden>✔ تم الحفظ</span>
+      </div>
+      <div class="cardTitle">اكتب العدد الموجود عندك لكل صنف — سيب أي صنف فاضي لو مش موجود عندك خالص</div>
+      <div id="jardItemsList"></div>
+      <button class="finalize" id="saveJardBtn" onclick="handleSaveJard()">✔ حفظ الجرد</button>
+      <button class="ghost" id="jardDownloadBtn" onclick="downloadJardExcel()" disabled>⬇ تحميل Excel (متاح بعد الحفظ)</button>
+      <button class="whatsapp" id="jardShareBtn" onclick="shareJardExcel()" disabled>📤 مشاركة عبر واتساب</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة أسعاري (لكل مندوب) ============ -->
+  <div id="viewPrices" hidden>
+    <div class="card">
+      <div class="cardTitle">حدّد سعرك لكل صنف مرة واحدة، وهيتعبى تلقائي في المبيعات بعد كده (وتقدر تعدّله وقت ما تحب)</div>
+      <div id="pricesList"></div>
+      <button class="finalize" id="savePricesBtn" onclick="handleSavePrices()">✔ حفظ الأسعار</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة إدارة المشرفين والمناديب (للمشرفين فقط) ============ -->
+  <div id="viewAdmin" hidden>
+    <div class="card">
+      <div class="cardTitle">إضافة مندوب جديد</div>
+      <label>اسم المندوب</label>
+      <input type="text" id="repNameInput" placeholder="مثال: محمد أحمد">
+      <label>الإيميل (Gmail)</label>
+      <input type="email" id="repEmailInput" placeholder="example@gmail.com">
+      <label>كود الدخول (PIN) — أرقام بس، من 4 إلى 6 أرقام</label>
+      <input type="text" id="repPinInput" class="ltrNum" inputmode="numeric" dir="ltr" maxlength="6" placeholder="مثال: 1234">
+      <button class="primary" onclick="handleAddRep()">إضافة المندوب</button>
+    </div>
+    <div class="card">
+      <div class="cardTitle">كل المناديب — تفعيل / إلغاء الإشراف</div>
+      <div id="repsList"><div class="empty">جاري التحميل...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="cardTitle">إضافة صنف جديد</div>
+      <label>الكود</label>
+      <input type="text" id="asnafCodeInput" placeholder="مثال: 40550N">
+      <label>اسم الصنف</label>
+      <input type="text" id="asnafNameInput" placeholder="مثال: خلاط انسباير 600">
+      <button class="primary" onclick="handleAddAsnaf()">إضافة الصنف</button>
+    </div>
+    <div class="card">
+      <div class="cardTitle">كل الأصناف الحالية</div>
+      <div id="asnafList"><div class="empty">جاري التحميل...</div></div>
+    </div>
+  </div>
+
+  <!-- ============ مراجعة الفاتورة قبل الترحيل ============ -->
+  <div id="reviewOverlay" class="reviewOverlay" hidden>
+    <div class="reviewModal">
+      <div class="reviewHeader">
+        <div class="reviewTitle">مراجعة الفاتورة قبل الترحيل</div>
+        <div class="reviewSub">راجع الأصناف والسعر كويس — بعد التأكيد مش هتقدر تعدّل حاجة</div>
+      </div>
+      <div class="reviewBody" id="reviewBody"></div>
+      <div class="reviewFooter">
+        <button class="ghost" onclick="closeReviewModal()">✎ رجوع للتعديل</button>
+        <button class="finalize" onclick="confirmFinalizeFromReview()">✔ تأكيد الترحيل النهائي</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  let state = {
+    screen: null,          // 'sales' | 'returns' | 'jard' | 'tawrid' | 'admin'
+    auth: null,            // {email, pin} — بيتبعت مع كل طلب للسيرفر عشان يتعرف على المستخدم
+    user: null,
+    isAdmin: false,
+    asnaf: [],
+    draftItems: [],         // فاتورة: {itemName, qty, price}
+    finalized: false,
+    finalResult: null,      // نتيجة finalizeInvoice
+    jardItems: [],           // {itemName, count}
+    jardFinalized: false,
+    jardResult: null,
+    tawridItems: [],          // {itemName, qty}
+    tawridFinalized: false,
+    tawridResult: null,
+    myPrices: {},           // {itemName: price} — أسعار المندوب المحفوظة
+  };
+
+  // ============ الاتصال بالسيرفر (Google Apps Script) عبر الإنترنت — بدل google.script.run ============
+  // ده تطبيق مستقل مستضاف على GitHub Pages، فبيكلم نفس الـ Google Sheet عن طريق رابط تطبيق
+  // الويب بتاع Apps Script كـ API عادي (JSON)، بدل ما يكون Apps Script هو اللي بيعرض الصفحة.
+  // ملحوظة: لو عملت Deploy جديد (deployment جديد خالص، مش تعديل نفس القديم) هيتغيّر اللينك،
+  // وهتحتاج تحدّث القيمة دي بس.
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxXlQiALqOoIRBG1Noa6VyhBgrT5k6KVeCZpUxF2gzUUvO7ixmy4TZaiNecCVJrV3w2/exec';
+
+  function callApi(action, args){
+    return fetch(WEBAPP_URL, {
+      method: 'POST',
+      // text/plain مهم عشان المتصفح ميبعتش طلب OPTIONS (preflight) قبل الطلب الحقيقي —
+      // Apps Script مش بيعرف يرد على OPTIONS، فلو بعتنا application/json هنا هيفشل الطلب.
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: action, args: args || [] }),
+    })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(!data || data.ok !== true){
+          throw new Error((data && data.error) || 'حصل خطأ غير متوقع، حاول تاني');
+        }
+        return data.result;
+      })
+      .catch(function(err){
+        if(err instanceof TypeError){
+          // الغالب مشكلة إنترنت أو الرابط اتغيّر
+          throw new Error('تعذر الاتصال بالسيرفر — تأكد إنك متصل بالإنترنت وحاول تاني');
+        }
+        throw err;
+      });
+  }
+
+  function showLoading(v){ document.getElementById('loading').hidden = !v; }
+  function showMsg(text, type){
+    const el = document.getElementById('globalMsg');
+    el.innerHTML = '<div class="msg ' + type + '">' + escapeHtml(text) + '</div>';
+    if(type === 'success'){ setTimeout(()=>{ el.innerHTML=''; }, 2500); }
+  }
+  function clearMsg(){ document.getElementById('globalMsg').innerHTML = ''; }
+  function escapeHtml(s){
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
+      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
+    ));
+  }
+  function fmt(n){
+    n = Number(n) || 0;
+    return n.toLocaleString('ar-EG', {maximumFractionDigits:2});
+  }
+  // تحويل تاريخ dd/mm/yyyy لصيغة صالحة كاسم ملف (بدون شرطة مائلة)
+  function safeDateForFile(d){
+    return String(d || '').replace(/\//g, '-');
+  }
+
+  // ============ حقول السعر: تفرض أرقام إنجليزية حتى لو الكيبورد عربي ============
+  function normalizeDigits(str){
+    return String(str)
+      .replace(/[٠-٩]/g, d => String(d.charCodeAt(0) - 0x0660)) // أرقام عربية هندية ٠-٩
+      .replace(/[۰-۹]/g, d => String(d.charCodeAt(0) - 0x06F0)); // أرقام فارسية ۰-۹
+  }
+  document.addEventListener('input', function(e){
+    const el = e.target;
+    if(!el.classList || !el.classList.contains('ltrNum')) return;
+    const before = el.value;
+    let v = normalizeDigits(before).replace(/[^0-9.]/g, '');
+    const parts = v.split('.');
+    if(parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+    if(v !== before){
+      const pos = el.selectionStart ? el.selectionStart - (before.length - v.length) : v.length;
+      el.value = v;
+      try{ el.setSelectionRange(pos, pos); }catch(e){}
+    }
+  });
+
+  function setView(name){
+    ['viewLogin','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices'].forEach(id=>{
+      document.getElementById(id).hidden = (id !== name);
+    });
+    document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin');
+  }
+
+  function goHome(){
+    clearMsg();
+    state.screen = null;
+    document.getElementById('pageTitle').textContent = 'تاتش الزنوكي';
+    document.getElementById('pageSub').textContent = state.user ? state.user.name : '';
+    setView('viewHome');
+  }
+
+  // ============ تخزين بيانات الدخول محليًا في المتصفح عشان المندوب ميدخلش كل مرة ============
+  const AUTH_STORAGE_KEY = 'tatsh_zenouki_auth';
+  function saveAuth(auth){
+    try{ localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(auth)); }catch(e){}
+  }
+  function loadAuth(){
+    try{
+      const raw = localStorage.getItem(AUTH_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    }catch(e){ return null; }
+  }
+  function clearAuth(){
+    try{ localStorage.removeItem(AUTH_STORAGE_KEY); }catch(e){}
+  }
+
+  function applyLoggedInUser(user, isAdmin){
+    state.user = user;
+    state.isAdmin = !!isAdmin;
+    document.getElementById('homeUserName').textContent = user.name;
+    document.getElementById('adminLink').hidden = !state.isAdmin;
+  }
+
+  function handleLogout(){
+    if(!confirm('متأكد إنك عاوز تسجل خروج؟')) return;
+    clearAuth();
+    state.auth = null;
+    state.user = null;
+    state.isAdmin = false;
+    document.getElementById('loginPinInput').value = '';
+    document.getElementById('loginNameSelect').value = '';
+    loadLoginScreen();
+  }
+
+  function loadLoginScreen(){
+    clearMsg();
+    showLoading(true);
+    callApi('listRepNames', [])
+      .then(function(names){
+        const sel = document.getElementById('loginNameSelect');
+        sel.innerHTML = '<option value="">اختر اسمك من القائمة...</option>' +
+          names.map(n => '<option value="' + escapeHtml(n) + '">' + escapeHtml(n) + '</option>').join('');
+        showLoading(false);
+        setView('viewLogin');
+      })
+      .catch(onError);
+  }
+
+  function handleLogin(){
+    clearMsg();
+    const name = document.getElementById('loginNameSelect').value;
+    const pin = document.getElementById('loginPinInput').value.trim();
+    if(!name){ showMsg('اختر اسمك الأول', 'error'); return; }
+    if(!pin){ showMsg('اكتب كود الدخول', 'error'); return; }
+    showLoading(true);
+    callApi('login', [name, pin])
+      .then(function(data){
+        state.auth = data.auth;
+        saveAuth(data.auth);
+        applyLoggedInUser(data.user, data.isAdmin);
+        showLoading(false);
+        goHome();
+      })
+      .catch(onError);
+  }
+
+  function init(){
+    showLoading(true);
+    const saved = loadAuth();
+    if(!saved){
+      showLoading(false);
+      loadLoginScreen();
+      return;
+    }
+    state.auth = saved;
+    callApi('bootstrapHome', [state.auth])
+      .then(function(data){
+        applyLoggedInUser(data.user, data.isAdmin);
+        showLoading(false);
+        goHome();
+      })
+      .catch(function(){
+        // الكود اتغيّر أو الحساب اتحذف — امسح البيانات القديمة وارجعه لشاشة الدخول من غير رسالة خطأ مزعجة
+        clearAuth();
+        state.auth = null;
+        showLoading(false);
+        loadLoginScreen();
+      });
+  }
+
+  function onError(err){
+    showLoading(false);
+    showMsg(err.message || String(err), 'error');
+  }
+
+  // ============ توزيع الشاشات ============
+  function openScreen(name){
+    clearMsg();
+    state.screen = name;
+    if(name === 'jard'){ loadJard(); return; }
+    if(name === 'tawrid'){ loadTawrid(); return; }
+    if(name === 'admin'){ loadAdmin(); return; }
+    if(name === 'prices'){ loadPrices(); return; }
+    loadInvoice(name);
+  }
+
+  // ============ صفحة إدارة المشرفين والمناديب ============
+  function loadAdmin(){
+    document.getElementById('pageTitle').textContent = 'إدارة المناديب';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('repNameInput').value = '';
+    document.getElementById('repEmailInput').value = '';
+    document.getElementById('asnafCodeInput').value = '';
+    document.getElementById('asnafNameInput').value = '';
+    setView('viewAdmin');
+    refreshRepsList();
+    refreshAsnafList();
+  }
+
+  function refreshRepsList(){
+    document.getElementById('repsList').innerHTML = '<div class="empty">جاري التحميل...</div>';
+    callApi('listReps', [state.auth])
+      .then(renderRepsList)
+      .catch(onError);
+  }
+
+  function renderRepsList(reps){
+    const el = document.getElementById('repsList');
+    if(!reps || !reps.length){
+      el.innerHTML = '<div class="empty">مفيش مناديب مسجلين</div>';
+      return;
+    }
+    el.innerHTML = reps.map(function(r){
+      const btnClass = r.isAdmin ? 'adminToggleBtn isAdminBtn' : 'adminToggleBtn';
+      const btnLabel = r.isAdmin ? 'إلغاء الإشراف' : 'تفعيل كمشرف';
+      const badge = r.isAdmin ? '<span class="repBadge">مشرف</span>' : '';
+      return (
+        '<div class="repRow">' +
+          '<div>' +
+            '<div class="name">' + escapeHtml(r.name) + badge + '</div>' +
+            '<div class="email">' + escapeHtml(r.email) + '</div>' +
+          '</div>' +
+          '<div style="display:flex; flex-direction:column; gap:6px; align-items:stretch;">' +
+            '<button class="' + btnClass + '" onclick="handleToggleAdmin(\'' + r.email.replace(/'/g, "\\'") + '\', ' + (!r.isAdmin) + ')">' + btnLabel + '</button>' +
+            '<button class="adminToggleBtn" onclick="handleSetRepPin(\'' + r.email.replace(/'/g, "\\'") + '\', \'' + r.name.replace(/'/g, "\\'") + '\')">🔑 تحديد/تغيير كود الدخول</button>' +
+            '<button class="adminToggleBtn isAdminBtn" onclick="handleDeleteRep(\'' + r.email.replace(/'/g, "\\'") + '\', \'' + r.name.replace(/'/g, "\\'") + '\')">🗑 حذف المندوب</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function handleToggleAdmin(email, makeAdmin){
+    clearMsg();
+    showLoading(true);
+    callApi('setRepAdmin', [state.auth, email, makeAdmin])
+      .then(function(){
+        showLoading(false);
+        showMsg(makeAdmin ? 'تم تفعيل الإشراف ✔' : 'تم إلغاء الإشراف ✔', 'success');
+        refreshRepsList();
+      })
+      .catch(onError);
+  }
+
+  // ============ فاتورة (مبيعات/مرتجع) — كل حاجة في المتصفح لحد الترحيل ============
+  function loadInvoice(name){
+    showLoading(true);
+    state.draftItems = [];
+    state.finalized = false;
+    state.finalResult = null;
+    const type = (name === 'returns') ? 'مرتجع' : 'بيع';
+    callApi('bootstrapInvoice', [state.auth, type])
+      .then(function(data){
+        state.asnaf = data.asnaf;
+        state.myPrices = data.prices || {};
+        showLoading(false);
+        renderInvoice(name);
+      })
+      .catch(onError);
+  }
+
+  // ============ اختيار صنف بالبحث (اكتب أول حرف وهيظهرلك الأصناف المطابقة) ============
+  const AC_CONFIGS = {
+    item: { input:'itemSelectInput', hidden:'itemSelect', list:'itemSelectList', afterSelect: handleItemAcSelect },
+    tawridItem: { input:'tawridItemSelectInput', hidden:'tawridItemSelect', list:'tawridItemSelectList' },
+  };
+
+  function handleItemAcSelect(){
+    const name = document.getElementById('itemSelect').value;
+    const priceInput = document.getElementById('priceInput');
+    if(name && state.myPrices && state.myPrices[name] != null){
+      priceInput.value = state.myPrices[name];
+    }
+  }
+
+  function acQuery(q){
+    q = String(q || '').trim().toLowerCase();
+    if(!q) return state.asnaf;
+    return state.asnaf.filter(a => a.name.toLowerCase().indexOf(q) !== -1);
+  }
+
+  function acRenderList(cfg){
+    const listEl = document.getElementById(cfg.list);
+    const inputEl = document.getElementById(cfg.input);
+    const items = acQuery(inputEl.value);
+    if(!items.length){
+      listEl.innerHTML = '<div class="acEmpty">مفيش أصناف مطابقة</div>';
+    } else {
+      listEl.innerHTML = items.map(a =>
+        '<div class="acItem" data-name="' + escapeHtml(a.name) + '" data-list="' + cfg.list + '">' +
+          '<span>' + escapeHtml(a.name) + '</span>' +
+          (a.code ? '<span class="acCode">' + escapeHtml(a.code) + '</span>' : '') +
+        '</div>'
+      ).join('');
+    }
+    listEl.hidden = false;
+  }
+
+  function acSelect(cfg, name){
+    document.getElementById(cfg.hidden).value = name;
+    document.getElementById(cfg.input).value = name;
+    document.getElementById(cfg.list).hidden = true;
+    if(cfg.afterSelect) cfg.afterSelect();
+  }
+
+  function acReset(cfg){
+    document.getElementById(cfg.hidden).value = '';
+    document.getElementById(cfg.input).value = '';
+    document.getElementById(cfg.list).innerHTML = '';
+    document.getElementById(cfg.list).hidden = true;
+  }
+
+  function acSetDisabled(cfg, disabled){
+    document.getElementById(cfg.input).disabled = disabled;
+  }
+
+  Object.keys(AC_CONFIGS).forEach(function(key){
+    const cfg = AC_CONFIGS[key];
+    const inputEl = document.getElementById(cfg.input);
+    inputEl.addEventListener('input', function(){
+      const val = this.value.trim();
+      const exact = state.asnaf.find(a => a.name.toLowerCase() === val.toLowerCase());
+      document.getElementById(cfg.hidden).value = exact ? exact.name : '';
+      acRenderList(cfg);
+    });
+    inputEl.addEventListener('focus', function(){ acRenderList(cfg); });
+  });
+
+  document.addEventListener('click', function(e){
+    const acItem = e.target.closest('.acItem');
+    if(acItem){
+      const key = Object.keys(AC_CONFIGS).find(k => AC_CONFIGS[k].list === acItem.dataset.list);
+      if(key) acSelect(AC_CONFIGS[key], acItem.dataset.name);
+      return;
+    }
+    Object.keys(AC_CONFIGS).forEach(function(key){
+      const cfg = AC_CONFIGS[key];
+      const wrap = document.getElementById(cfg.input).closest('.acWrap');
+      if(wrap && !wrap.contains(e.target)){
+        document.getElementById(cfg.list).hidden = true;
+      }
+    });
+  });
+
+  function renderInvoice(name){
+    const isReturns = (name === 'returns');
+    document.getElementById('pageTitle').textContent = isReturns ? 'تسجيل مرتجع' : 'تسجيل مبيعات';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('invBadge').textContent = state.user.name;
+
+    acReset(AC_CONFIGS.item);
+
+    document.getElementById('lockBadge').hidden = !state.finalized;
+    document.getElementById('addBtn').disabled = state.finalized;
+    document.getElementById('finalizeBtn').hidden = state.finalized;
+    acSetDisabled(AC_CONFIGS.item, state.finalized);
+    document.getElementById('qtyInput').disabled = state.finalized;
+    document.getElementById('priceInput').disabled = state.finalized;
+    document.getElementById('downloadBtn').disabled = !state.finalized;
+    document.getElementById('downloadBtn').textContent = state.finalized
+      ? '⬇ تحميل Excel'
+      : '⬇ تحميل Excel (متاح بعد الترحيل)';
+    document.getElementById('shareBtn').disabled = !state.finalized;
+
+    renderItemsList();
+    setView('viewInvoice');
+  }
+
+  function renderItemsList(){
+    const list = document.getElementById('itemsList');
+    const isReturns = (state.screen === 'returns');
+    const source = state.finalized ? state.finalResult.items : state.draftItems;
+
+    if(!source.length){
+      list.innerHTML = '<div class="empty">لسه مفيش أصناف مضافة</div>';
+    } else {
+      list.innerHTML = source.map((it, idx) => {
+        const name = state.finalized ? it['اسم الصنف'] : it.itemName;
+        const qty = state.finalized ? Number(it['الكمية']) : Number(it.qty);
+        const price = state.finalized ? Number(it['السعر']) : Number(it.price);
+        const total = state.finalized ? Number(it['الاجمالي']) : (isReturns ? -qty : qty) * price;
+        const displayQty = state.finalized ? qty : (isReturns ? -qty : qty);
+        const neg = displayQty < 0;
+        return '<div class="itemRow' + (neg ? ' neg' : '') + '">' +
+          '<div>' +
+            '<div class="name">' + escapeHtml(name) + '</div>' +
+            '<div class="meta">' + fmt(displayQty) + ' × ' + fmt(price) + '</div>' +
+          '</div>' +
+          '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<div class="total">' + fmt(total) + '</div>' +
+            (state.finalized ? '' : '<button class="delBtn" onclick="handleDeleteDraftItem(' + idx + ')">✕</button>') +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    const total = state.finalized
+      ? state.finalResult.total
+      : state.draftItems.reduce((s, it) => {
+          const q = isReturns ? -Number(it.qty) : Number(it.qty);
+          return s + q * Number(it.price);
+        }, 0);
+    document.getElementById('grandTotal').textContent = fmt(total);
+  }
+
+  function handleAddItem(){
+    clearMsg();
+    const name = document.getElementById('itemSelect').value;
+    const qty = Number(document.getElementById('qtyInput').value);
+    const priceRaw = document.getElementById('priceInput').value;
+    const price = priceRaw === '' ? NaN : Number(priceRaw);
+    if(!name){ showMsg('اختر الصنف الأول', 'error'); return; }
+    if(!qty || qty <= 0){ showMsg('اكتب كمية صحيحة', 'error'); return; }
+    if(isNaN(price) || price < 0){ showMsg('اكتب سعر صحيح', 'error'); return; }
+
+    state.draftItems.push({ itemName: name, qty: qty, price: price });
+    acReset(AC_CONFIGS.item);
+    document.getElementById('qtyInput').value = '';
+    document.getElementById('priceInput').value = '';
+    renderItemsList();
+  }
+
+  function handleDeleteDraftItem(idx){
+    state.draftItems.splice(idx, 1);
+    renderItemsList();
+  }
+
+  function handleFinalize(){
+    if(!state.draftItems.length){ showMsg('ضيف صنف واحد على الأقل الأول', 'error'); return; }
+    openReviewModal();
+  }
+
+  // ============ مراجعة الفاتورة قبل الترحيل ============
+  function openReviewModal(){
+    const isReturns = (state.screen === 'returns');
+    const body = document.getElementById('reviewBody');
+    let total = 0;
+    const rowsHtml = state.draftItems.map(function(it){
+      const qty = isReturns ? -Number(it.qty) : Number(it.qty);
+      const rowTotal = qty * Number(it.price);
+      total += rowTotal;
+      return (
+        '<div class="reviewRow">' +
+          '<div>' +
+            '<div class="rName">' + escapeHtml(it.itemName) + '</div>' +
+            '<div class="rMeta">' + fmt(qty) + ' × ' + fmt(it.price) + '</div>' +
+          '</div>' +
+          '<div class="rTotal' + (rowTotal < 0 ? ' neg' : '') + '">' + fmt(rowTotal) + '</div>' +
+        '</div>'
+      );
+    }).join('');
+    body.innerHTML =
+      '<div class="reviewMetaBar">' +
+        '<span>المندوب: ' + escapeHtml(state.user.name) + '</span>' +
+        '<span>النوع: ' + (isReturns ? 'مرتجع' : 'بيع') + '</span>' +
+      '</div>' +
+      rowsHtml +
+      '<div class="reviewTotal"><span>الإجمالي</span><span>' + fmt(total) + '</span></div>';
+    document.getElementById('reviewOverlay').hidden = false;
+  }
+
+  function closeReviewModal(){
+    document.getElementById('reviewOverlay').hidden = true;
+  }
+
+  function confirmFinalizeFromReview(){
+    closeReviewModal();
+    clearMsg();
+    showLoading(true);
+    const type = (state.screen === 'returns') ? 'مرتجع' : 'بيع';
+    callApi('finalizeInvoice', [state.auth, type, state.draftItems])
+      .then(function(result){
+        state.finalized = true;
+        state.finalResult = result;
+        showLoading(false);
+        renderInvoice(state.screen);
+        showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  function invoiceExcelOpts(){
+    const isReturns = (state.screen === 'returns');
+    const label = isReturns ? 'مرتجع' : 'مبيعات';
+    const rows = state.finalResult.items.map(it => [it['اسم الصنف'], it['الكمية'], it['السعر'], it['الاجمالي']]);
+    return {
+      fileName: label + '_' + state.user.name + '_' + safeDateForFile(state.finalResult.date),
+      meta: [
+        ['اسم المندوب', state.user.name],
+        ['التاريخ', state.finalResult.date],
+        ['نوع العملية', label],
+      ],
+      headers: ['اسم الصنف', 'الكمية', 'السعر', 'الاجمالي'],
+      rows: rows,
+      totalsLabel: 'الإجمالي',
+      totalsValue: state.finalResult.total,
+    };
+  }
+
+  async function downloadInvoiceExcel(){
+    if(!state.finalized) return;
+    const { blob, fileName } = await buildExcelBlob(invoiceExcelOpts());
+    triggerBlobDownload(blob, fileName);
+  }
+
+  async function shareInvoiceExcel(){
+    if(!state.finalized) return;
+    const opts = invoiceExcelOpts();
+    const { blob, fileName } = await buildExcelBlob(opts);
+    const shared = await shareExcelFile(blob, fileName, opts.fileName);
+    if(!shared){
+      triggerBlobDownload(blob, fileName);
+      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+    }
+  }
+
+  // ============ التوريد ============
+  function loadTawrid(){
+    showLoading(true);
+    state.tawridItems = [];
+    state.tawridFinalized = false;
+    state.tawridResult = null;
+    callApi('bootstrapTawrid', [state.auth])
+      .then(function(data){
+        state.asnaf = data.asnaf;
+        showLoading(false);
+        renderTawrid();
+      })
+      .catch(onError);
+  }
+
+  function renderTawrid(){
+    document.getElementById('pageTitle').textContent = 'تسجيل توريد';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('tawridBadge').textContent = state.user.name;
+
+    acReset(AC_CONFIGS.tawridItem);
+
+    document.getElementById('tawridLockBadge').hidden = !state.tawridFinalized;
+    document.getElementById('tawridAddBtn').disabled = state.tawridFinalized;
+    document.getElementById('saveTawridBtn').hidden = state.tawridFinalized;
+    acSetDisabled(AC_CONFIGS.tawridItem, state.tawridFinalized);
+    document.getElementById('tawridQtyInput').disabled = state.tawridFinalized;
+    document.getElementById('tawridDownloadBtn').disabled = !state.tawridFinalized;
+    document.getElementById('tawridDownloadBtn').textContent = state.tawridFinalized
+      ? '⬇ تحميل Excel'
+      : '⬇ تحميل Excel (متاح بعد التأكيد)';
+    document.getElementById('tawridShareBtn').disabled = !state.tawridFinalized;
+
+    renderTawridList();
+    setView('viewTawrid');
+  }
+
+  function renderTawridList(){
+    const list = document.getElementById('tawridList');
+    if(!state.tawridItems.length){
+      list.innerHTML = '<div class="empty">لسه مفيش أصناف مضافة للتوريد</div>';
+      return;
+    }
+    list.innerHTML = state.tawridItems.map((it, idx) => (
+      '<div class="itemRow">' +
+        '<div>' +
+          '<div class="name">' + escapeHtml(it.itemName) + '</div>' +
+          '<div class="meta">الكمية: ' + fmt(it.qty) + '</div>' +
+        '</div>' +
+        (state.tawridFinalized ? '' : '<button class="delBtn" onclick="handleDeleteTawridItem(' + idx + ')">✕</button>') +
+      '</div>'
+    )).join('');
+  }
+
+  function handleAddTawridItem(){
+    clearMsg();
+    const name = document.getElementById('tawridItemSelect').value;
+    const qty = Number(document.getElementById('tawridQtyInput').value);
+    if(!name){ showMsg('اختر الصنف الأول', 'error'); return; }
+    if(!qty || qty <= 0){ showMsg('اكتب كمية صحيحة', 'error'); return; }
+    state.tawridItems.push({ itemName: name, qty: qty });
+    acReset(AC_CONFIGS.tawridItem);
+    document.getElementById('tawridQtyInput').value = '';
+    renderTawridList();
+  }
+
+  function handleDeleteTawridItem(idx){
+    state.tawridItems.splice(idx, 1);
+    renderTawridList();
+  }
+
+  function handleSaveTawrid(){
+    if(!state.tawridItems.length){ showMsg('ضيف صنف واحد على الأقل الأول', 'error'); return; }
+    if(!confirm('متأكد إنك عاوز تأكد التوريد ده؟')) return;
+    clearMsg();
+    showLoading(true);
+    callApi('saveTawrid', [state.auth, state.tawridItems])
+      .then(function(result){
+        state.tawridFinalized = true;
+        state.tawridResult = result;
+        showLoading(false);
+        renderTawrid();
+        showMsg('تم تسجيل التوريد بنجاح ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  function tawridExcelOpts(){
+    const rows = state.tawridItems.map(it => [it.itemName, it.qty]);
+    return {
+      fileName: 'توريد_' + state.user.name + '_' + safeDateForFile(state.tawridResult.date),
+      meta: [
+        ['اسم المندوب', state.user.name],
+        ['التاريخ', state.tawridResult.date],
+      ],
+      headers: ['اسم الصنف', 'الكمية'],
+      rows: rows,
+    };
+  }
+
+  async function downloadTawridExcel(){
+    if(!state.tawridFinalized) return;
+    const { blob, fileName } = await buildExcelBlob(tawridExcelOpts());
+    triggerBlobDownload(blob, fileName);
+  }
+
+  async function shareTawridExcel(){
+    if(!state.tawridFinalized) return;
+    const opts = tawridExcelOpts();
+    const { blob, fileName } = await buildExcelBlob(opts);
+    const shared = await shareExcelFile(blob, fileName, opts.fileName);
+    if(!shared){
+      triggerBlobDownload(blob, fileName);
+      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+    }
+  }
+
+  // ============ الجرد ============
+  function loadJard(){
+    showLoading(true);
+    state.jardItems = [];
+    state.jardFinalized = false;
+    state.jardResult = null;
+    callApi('bootstrapJard', [state.auth])
+      .then(function(data){
+        state.asnaf = data.asnaf;
+        showLoading(false);
+        renderJard();
+      })
+      .catch(onError);
+  }
+
+  function renderJard(){
+    document.getElementById('pageTitle').textContent = 'تسجيل جرد';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('jardBadge').textContent = state.user.name;
+
+    document.getElementById('jardLockBadge').hidden = !state.jardFinalized;
+    document.getElementById('saveJardBtn').hidden = state.jardFinalized;
+    document.getElementById('jardDownloadBtn').disabled = !state.jardFinalized;
+    document.getElementById('jardDownloadBtn').textContent = state.jardFinalized
+      ? '⬇ تحميل Excel'
+      : '⬇ تحميل Excel (متاح بعد الحفظ)';
+    document.getElementById('jardShareBtn').disabled = !state.jardFinalized;
+
+    renderJardItemsList();
+    setView('viewJard');
+  }
+
+  // بيعرض كل الأصناف مرة واحدة، وقدام كل واحد خانة يكتب فيها المندوب العدد اللي عنده —
+  // بعد الحفظ بيتحول لعرض ثابت (بدون تعديل) للأصناف اللي فعلاً اتكتب لها عدد.
+  function renderJardItemsList(){
+    const list = document.getElementById('jardItemsList');
+    if(!state.asnaf.length){
+      list.innerHTML = '<div class="empty">مفيش أصناف مسجلة حاليًا</div>';
+      return;
+    }
+    if(state.jardFinalized){
+      const savedMap = {};
+      state.jardItems.forEach(it => { savedMap[it.itemName] = it.count; });
+      const rowsHtml = state.asnaf
+        .filter(a => savedMap[a.name] != null)
+        .map(a => (
+          '<div class="itemRow">' +
+            '<div class="name">' + escapeHtml(a.name) + '</div>' +
+            '<div class="total">' + fmt(savedMap[a.name]) + '</div>' +
+          '</div>'
+        )).join('');
+      list.innerHTML = rowsHtml || '<div class="empty">لسه مفيش أصناف متسجلة في الجرد ده</div>';
+      return;
+    }
+    list.innerHTML = state.asnaf.map(function(a){
+      return (
+        '<div style="margin-bottom:14px;">' +
+          '<label>' + escapeHtml(a.name) + '</label>' +
+          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="العدد">' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function handleSaveJard(){
+    clearMsg();
+    const inputs = document.querySelectorAll('#jardItemsList .jardCountRowInput');
+    const items = [];
+    inputs.forEach(function(inp){
+      const v = inp.value;
+      if(v !== '' && !isNaN(Number(v)) && Number(v) >= 0){
+        items.push({ itemName: inp.dataset.name, count: Number(v) });
+      }
+    });
+    if(!items.length){ showMsg('اكتب عدد صنف واحد على الأقل قبل الحفظ', 'error'); return; }
+    if(!confirm('متأكد إنك عاوز تحفظ الجرد ده؟')) return;
+    showLoading(true);
+    callApi('saveJard', [state.auth, items])
+      .then(function(result){
+        state.jardItems = items;
+        state.jardFinalized = true;
+        state.jardResult = result;
+        showLoading(false);
+        renderJard();
+        showMsg('تم حفظ الجرد بنجاح ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  function jardExcelOpts(){
+    const rows = state.jardItems.map(it => [it.itemName, it.count]);
+    return {
+      fileName: 'جرد_' + state.user.name + '_' + safeDateForFile(state.jardResult.date),
+      meta: [
+        ['اسم المندوب', state.user.name],
+        ['التاريخ', state.jardResult.date],
+      ],
+      headers: ['اسم الصنف', 'الجرد'],
+      rows: rows,
+    };
+  }
+
+  async function downloadJardExcel(){
+    if(!state.jardFinalized) return;
+    const { blob, fileName } = await buildExcelBlob(jardExcelOpts());
+    triggerBlobDownload(blob, fileName);
+  }
+
+  async function shareJardExcel(){
+    if(!state.jardFinalized) return;
+    const opts = jardExcelOpts();
+    const { blob, fileName } = await buildExcelBlob(opts);
+    const shared = await shareExcelFile(blob, fileName, opts.fileName);
+    if(!shared){
+      triggerBlobDownload(blob, fileName);
+      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+    }
+  }
+
+  // ============ إضافة مندوب (مشرفين فقط) ============
+  function handleAddRep(){
+    clearMsg();
+    const name = document.getElementById('repNameInput').value.trim();
+    const email = document.getElementById('repEmailInput').value.trim();
+    const pin = document.getElementById('repPinInput').value.trim();
+    if(!name){ showMsg('اكتب اسم المندوب', 'error'); return; }
+    if(!email || email.indexOf('@') === -1){ showMsg('اكتب إيميل صحيح', 'error'); return; }
+    if(!/^\d{4,6}$/.test(pin)){ showMsg('كود الدخول لازم يكون أرقام بس من 4 إلى 6 أرقام', 'error'); return; }
+    showLoading(true);
+    callApi('addRep', [state.auth, name, email, pin])
+      .then(function(result){
+        showLoading(false);
+        document.getElementById('repNameInput').value = '';
+        document.getElementById('repEmailInput').value = '';
+        document.getElementById('repPinInput').value = '';
+        showMsg('تم إضافة المندوب بنجاح ✔ — قوله كود الدخول: ' + pin, 'success');
+        refreshRepsList();
+      })
+      .catch(onError);
+  }
+
+  function handleSetRepPin(email, name){
+    clearMsg();
+    const pin = prompt('اكتب كود دخول جديد لـ "' + name + '" (أرقام بس، من 4 إلى 6 أرقام):');
+    if(pin == null) return; // المستخدم دوس إلغاء
+    if(!/^\d{4,6}$/.test(pin.trim())){ showMsg('كود الدخول لازم يكون أرقام بس من 4 إلى 6 أرقام', 'error'); return; }
+    showLoading(true);
+    callApi('setRepPin', [state.auth, email, pin.trim()])
+      .then(function(){
+        showLoading(false);
+        showMsg('تم تحديد كود الدخول بنجاح ✔ — قوله الكود: ' + pin.trim(), 'success');
+      })
+      .catch(onError);
+  }
+
+  function handleDeleteRep(email, name){
+    clearMsg();
+    if(!confirm('متأكد إنك عاوز تحذف المندوب "' + name + '" نهائيًا؟ الخطوة دي مش هترجع.')) return;
+    showLoading(true);
+    callApi('deleteRep', [state.auth, email])
+      .then(function(){
+        showLoading(false);
+        showMsg('تم حذف المندوب ✔', 'success');
+        refreshRepsList();
+      })
+      .catch(onError);
+  }
+
+  // ============ أسعاري (كل مندوب بيحدد سعره لكل صنف مرة واحدة) ============
+  function loadPrices(){
+    document.getElementById('pageTitle').textContent = 'أسعاري';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('bootstrapPrices', [state.auth])
+      .then(function(data){
+        state.asnaf = data.asnaf;
+        state.myPrices = data.prices || {};
+        showLoading(false);
+        renderPrices();
+        setView('viewPrices');
+      })
+      .catch(onError);
+  }
+
+  function renderPrices(){
+    const list = document.getElementById('pricesList');
+    if(!state.asnaf.length){
+      list.innerHTML = '<div class="empty">مفيش أصناف مسجلة حاليًا</div>';
+      return;
+    }
+    list.innerHTML = state.asnaf.map(function(a){
+      const saved = state.myPrices[a.name];
+      const val = (saved != null) ? saved : '';
+      return (
+        '<div style="margin-bottom:14px;">' +
+          '<label>' + escapeHtml(a.name) + '</label>' +
+          '<input type="text" inputmode="decimal" dir="ltr" class="priceRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" value="' + val + '" placeholder="اكتب سعرك لهذا الصنف">' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function handleSavePrices(){
+    clearMsg();
+    const inputs = document.querySelectorAll('#pricesList .priceRowInput');
+    const items = [];
+    inputs.forEach(function(inp){
+      const v = inp.value;
+      if(v !== '' && !isNaN(Number(v)) && Number(v) >= 0){
+        items.push({ itemName: inp.dataset.name, price: Number(v) });
+      }
+    });
+    if(!items.length){ showMsg('اكتب سعر صنف واحد على الأقل قبل الحفظ', 'error'); return; }
+    showLoading(true);
+    callApi('savePrices', [state.auth, items])
+      .then(function(result){
+        showLoading(false);
+        showMsg('تم حفظ أسعارك بنجاح ✔ (' + result.count + ' صنف)', 'success');
+      })
+      .catch(onError);
+  }
+
+  // ============ إضافة صنف جديد لتاب الاصناف (مشرفين فقط) ============
+  function refreshAsnafList(){
+    document.getElementById('asnafList').innerHTML = '<div class="empty">جاري التحميل...</div>';
+    callApi('listAsnaf', [state.auth])
+      .then(renderAsnafList)
+      .catch(onError);
+  }
+
+  function renderAsnafList(items){
+    const el = document.getElementById('asnafList');
+    if(!items || !items.length){
+      el.innerHTML = '<div class="empty">مفيش أصناف مسجلة</div>';
+      return;
+    }
+    el.innerHTML = items.map(function(a){
+      return (
+        '<div class="repRow">' +
+          '<div>' +
+            '<div class="name">' + escapeHtml(a.name) + '</div>' +
+            '<div class="email">' + escapeHtml(a.code || '—') + '</div>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function handleAddAsnaf(){
+    clearMsg();
+    const code = document.getElementById('asnafCodeInput').value.trim();
+    const name = document.getElementById('asnafNameInput').value.trim();
+    if(!name){ showMsg('اكتب اسم الصنف', 'error'); return; }
+    showLoading(true);
+    callApi('addAsnaf', [state.auth, code, name])
+      .then(function(){
+        showLoading(false);
+        document.getElementById('asnafCodeInput').value = '';
+        document.getElementById('asnafNameInput').value = '';
+        showMsg('تم إضافة الصنف بنجاح ✔', 'success');
+        refreshAsnafList();
+      })
+      .catch(onError);
+  }
+
+  // ============ مشاركة/تنزيل ملف Excel ============
+  function triggerBlobDownload(blob, fileName){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName + '.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // بيفتح شاشة "مشاركة" الجهاز نفسه (Web Share API) عشان المندوب يختار واتساب منها.
+  // متاحة بس على المتصفحات اللي بتدعم مشاركة الملفات (أندرويد/آيفون الحديثة) — على أي جهاز/متصفح
+  // تاني (وأغلب متصفحات الكمبيوتر) هترجع false، وساعتها بننزّل الملف عادي بدل ما نكسر حاجة.
+  async function shareExcelFile(blob, fileName, shareText){
+    try{
+      const file = new File([blob], fileName + '.xlsx', {
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: fileName, text: shareText || '' });
+        return true;
+      }
+    }catch(e){
+      if(e && e.name === 'AbortError') return true; // المستخدم قفل شاشة المشاركة بنفسه، مش خطأ حقيقي
+    }
+    return false;
+  }
+
+  // ============ توليد ملف Excel منسّق (يُستخدم في كل الشاشات) — بيرجع Blob بس من غير تنزيل ============
+  async function buildExcelBlob(opts){
+    const headers = opts.headers;
+    const rows = opts.rows;
+    const meta = opts.meta || [];
+    const colCount = headers.length;
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('التقرير', { views: [{ rightToLeft: true }] });
+
+    // عنوان الشركة
+    ws.mergeCells(1, 1, 1, colCount);
+    const titleCell = ws.getCell(1, 1);
+    titleCell.value = 'تاتش الزنوكي للأجهزة الكهربائية';
+    titleCell.font = { bold: true, size: 14, color: { argb: 'FFD6A428' } };
+    titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(1).height = 26;
+    for(let c = 1; c <= colCount; c++){
+      ws.getCell(1, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1C3D' } };
+    }
+
+    // بيانات المندوب/التاريخ/النوع
+    let r = 2;
+    meta.forEach(function(pair){
+      ws.mergeCells(r, 1, r, colCount);
+      const cell = ws.getCell(r, 1);
+      cell.value = pair[0] + ':  ' + pair[1];
+      cell.font = { bold: true, size: 11.5, color: { argb: 'FF1A1A1A' } };
+      cell.alignment = { horizontal: 'right', vertical: 'middle' };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFBEFD2' } };
+      ws.getRow(r).height = 20;
+      r++;
+    });
+    r++; // صف فاضي
+
+    // صف العناوين
+    const headerRowIdx = r;
+    headers.forEach(function(h, i){
+      const cell = ws.getCell(headerRowIdx, i + 1);
+      cell.value = h;
+      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1C3D' } };
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+      cell.border = {
+        top: { style: 'thin', color: { argb: 'FFD6A428' } },
+        bottom: { style: 'thin', color: { argb: 'FFD6A428' } },
+      };
+    });
+    ws.getRow(headerRowIdx).height = 22;
+    r++;
+
+    // صفوف البيانات
+    const firstDataRow = r;
+    rows.forEach(function(row){
+      row.forEach(function(val, i){
+        const cell = ws.getCell(r, i + 1);
+        cell.value = val;
+        cell.alignment = { horizontal: 'center', vertical: 'middle' };
+        cell.border = { bottom: { style: 'hair', color: { argb: 'FFDDDDDD' } } };
+      });
+      r++;
+    });
+    // تلوين صفوف متبادل لسهولة القراءة
+    for(let rr = firstDataRow; rr < r; rr++){
+      if((rr - firstDataRow) % 2 === 1){
+        for(let c = 1; c <= colCount; c++){
+          ws.getCell(rr, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF6F3EA' } };
+        }
+      }
+    }
+
+    // صف الإجمالي (لو موجود)
+    if(opts.totalsLabel){
+      ws.mergeCells(r, 1, r, colCount - 1);
+      const labelCell = ws.getCell(r, 1);
+      labelCell.value = opts.totalsLabel;
+      labelCell.font = { bold: true, size: 12 };
+      labelCell.alignment = { horizontal: 'left', vertical: 'middle' };
+      const valCell = ws.getCell(r, colCount);
+      valCell.value = opts.totalsValue;
+      valCell.font = { bold: true, size: 13, color: { argb: 'FF8A6218' } };
+      valCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      ws.getRow(r).height = 22;
+      for(let c = 1; c <= colCount; c++){
+        ws.getCell(r, c).border = { top: { style: 'medium', color: { argb: 'FFD6A428' } } };
+      }
+    }
+
+    // عرض الأعمدة
+    ws.columns.forEach(function(col, i){
+      col.width = (i === 0) ? 28 : 16;
+    });
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    return { blob: blob, fileName: opts.fileName };
+  }
+
+  // تسجيل الـ Service Worker عشان التطبيق يبقى قابل للتثبيت (PWA حقيقي) ويفتح بسرعة حتى بنت ضعيف
+  if('serviceWorker' in navigator){
+    window.addEventListener('load', function(){
+      navigator.serviceWorker.register('sw.js').catch(function(e){ console.warn('SW register failed', e); });
+    });
+  }
+
+  init();
+</script>
+</body>
+</html>
