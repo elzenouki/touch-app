@@ -360,7 +360,7 @@
     </div>
     <div class="sectionLabel">الإجراءات المتاحة</div>
     <div class="homeGrid">
-      <button class="homeBtn sales" onclick="openScreen('sales')">
+      <button class="homeBtn sales" id="salesHomeBtn" onclick="openScreen('sales')">
         <div class="icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2f8f5b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
         </div>
@@ -370,7 +370,7 @@
         </div>
         <div class="chev">‹</div>
       </button>
-      <button class="homeBtn returns" onclick="openScreen('returns')">
+      <button class="homeBtn returns" id="returnsHomeBtn" onclick="openScreen('returns')">
         <div class="icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c73e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"></path><path d="M5 10h11a4 4 0 0 1 0 8h-1"></path></svg>
         </div>
@@ -380,7 +380,7 @@
         </div>
         <div class="chev">‹</div>
       </button>
-      <button class="homeBtn tawrid" onclick="openScreen('tawrid')">
+      <button class="homeBtn tawrid" id="tawridHomeBtn" onclick="openScreen('tawrid')">
         <div class="icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2f5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"></path><rect x="3" y="8" width="18" height="12" rx="2"></rect><line x1="3" y1="13" x2="21" y2="13"></line></svg>
         </div>
@@ -390,7 +390,7 @@
         </div>
         <div class="chev">‹</div>
       </button>
-      <button class="homeBtn jard" onclick="openScreen('jard')">
+      <button class="homeBtn jard" id="jardHomeBtn" onclick="openScreen('jard')">
         <div class="icon">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a9781f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="13" y2="14"></line></svg>
         </div>
@@ -536,8 +536,8 @@
       </div>
       <div class="reviewBody" id="reviewBody"></div>
       <div class="reviewFooter">
-        <button class="ghost" onclick="closeReviewModal()">✎ رجوع للتعديل</button>
-        <button class="finalize" onclick="confirmFinalizeFromReview()">✔ تأكيد الترحيل النهائي</button>
+        <button class="ghost" id="reviewBackBtn" onclick="closeReviewModal()">✎ رجوع للتعديل</button>
+        <button class="finalize" id="reviewConfirmBtn" onclick="confirmFinalizeFromReview()">✔ تأكيد الترحيل النهائي</button>
       </div>
     </div>
   </div>
@@ -554,12 +554,16 @@
     draftItems: [],         // فاتورة: {itemName, qty, price}
     finalized: false,
     finalResult: null,      // نتيجة finalizeInvoice
+    pendingFinalizeId: null, // رقم مرجعي فريد لعملية الترحيل الحالية — بيمنع تسجيل نفس الفاتورة مرتين لو حصل دبل كليك
+    finalizeInFlight: false, // true من لحظة الضغط على "تأكيد الترحيل" لحد ما يوصل الرد — بيمنع أي ضغطة تانية تتنفذ في الوقت ده
     jardItems: [],           // {itemName, count}
     jardFinalized: false,
     jardResult: null,
+    jardSaveInFlight: false,
     tawridItems: [],          // {itemName, qty}
     tawridFinalized: false,
     tawridResult: null,
+    tawridSaveInFlight: false,
     myPrices: {},           // {itemName: price} — أسعار المندوب المحفوظة
   };
 
@@ -594,6 +598,11 @@
       });
   }
 
+  // رقم مرجعي فريد (مش لازم يبقى UUID رسمي، بس محتاج يبقى مختلف كل مرة) — بيتبعت مع طلبات
+  // الترحيل عشان السيرفر يعرف يفرّق بين فاتورة جديدة وإعادة إرسال لنفس الفاتورة (دبل كليك)
+  function genRequestId_(){
+    return Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 10);
+  }
   function showLoading(v){ document.getElementById('loading').hidden = !v; }
   function showMsg(text, type){
     const el = document.getElementById('globalMsg');
@@ -608,7 +617,8 @@
   }
   function fmt(n){
     n = Number(n) || 0;
-    return n.toLocaleString('ar-EG', {maximumFractionDigits:2});
+    // en-US بدل ar-EG عشان الأرقام تفضل بالإنجليزي (0123..) مش بالهندي العربي (٠١٢٣..)
+    return n.toLocaleString('en-US', {maximumFractionDigits:2});
   }
   // تحويل تاريخ dd/mm/yyyy لصيغة صالحة كاسم ملف (بدون شرطة مائلة)
   function safeDateForFile(d){
@@ -674,11 +684,25 @@
     try{ return localStorage.getItem(DEVICE_TOKEN_KEY) || ''; }catch(e){ return ''; }
   }
 
+  // شاشة "إدارة المناديب والمشرفين" بقت مقصورة على صاحب الحساب المحمي بس، مش كل المشرفين
+  // (لازم تتطابق مع PROTECTED_OWNER_EMAIL_ في Code.gs بالظبط)
+  const OWNER_EMAIL_ = 'm.s.e.m.eyg@gmail.com';
+
   function applyLoggedInUser(user, isAdmin){
     state.user = user;
     state.isAdmin = !!isAdmin;
+    state.isOwner = !!(user && String(user.email || '').trim().toLowerCase() === OWNER_EMAIL_);
     document.getElementById('homeUserName').textContent = user.name;
-    document.getElementById('adminLink').hidden = !state.isAdmin;
+    document.getElementById('adminLink').hidden = !state.isOwner;
+
+    // المشرف مش مندوب بيسجّل مبيعات — شغله إنه يتابع ويشرف بس، فبنخفي عنه شاشات الإدخال دي
+    // (بيع/مرتجع/توريد/جرد/أسعاري). إدارة المناديب والمشرفين بقت مقصورة على صاحب الحساب
+    // (OWNER_EMAIL_) لوحده، مش كل المشرفين.
+    document.getElementById('salesHomeBtn').hidden = state.isAdmin;
+    document.getElementById('returnsHomeBtn').hidden = state.isAdmin;
+    document.getElementById('tawridHomeBtn').hidden = state.isAdmin;
+    document.getElementById('jardHomeBtn').hidden = state.isAdmin;
+    document.getElementById('pricesLink').hidden = state.isAdmin;
   }
 
   function handleLogout(){
@@ -874,6 +898,7 @@
     state.draftItems = [];
     state.finalized = false;
     state.finalResult = null;
+    state.finalizeInFlight = false; // لو حصل أي حالة غريبة سابقًا، ميفضلش القفل عالق على الفاتورة الجديدة
     const type = (name === 'returns') ? 'مرتجع' : 'بيع';
     callApi('bootstrapInvoice', [state.auth, type])
       .then(function(data){
@@ -979,6 +1004,10 @@
     document.getElementById('lockBadge').hidden = !state.finalized;
     document.getElementById('addBtn').disabled = state.finalized;
     document.getElementById('finalizeBtn').hidden = state.finalized;
+    // لازم نرجّع الزرار "شغال" هنا كل مرة الشاشة دي بترندر من الأول (فاتورة جديدة/مرتجع جديد)،
+    // عشان القفل اللي بيحصل في confirmFinalizeFromReview وقت الترحيل ميفضلش عالق على الفاتورة
+    // الجديدة اللي بعدها
+    document.getElementById('finalizeBtn').disabled = state.finalized;
     acSetDisabled(AC_CONFIGS.item, state.finalized);
     document.getElementById('qtyInput').disabled = state.finalized;
     document.getElementById('priceInput').disabled = state.finalized;
@@ -1052,12 +1081,17 @@
   }
 
   function handleFinalize(){
+    if(state.finalizeInFlight) return; // في ترحيل شغال أصلاً، متفتحش مراجعة تانية
     if(!state.draftItems.length){ showMsg('ضيف صنف واحد على الأقل الأول', 'error'); return; }
     openReviewModal();
   }
 
   // ============ مراجعة الفاتورة قبل الترحيل ============
   function openReviewModal(){
+    // رقم مرجعي جديد لكل ما شاشة المراجعة تتفتح — نفس الفاتورة (حتى لو المندوب دوس تأكيد أكتر
+    // من مرة عليها) بتفضل بنفس الرقم، فالسيرفر يقدر يمنع تكرارها
+    state.pendingFinalizeId = genRequestId_();
+    document.getElementById('reviewConfirmBtn').disabled = false;
     const isReturns = (state.screen === 'returns');
     const body = document.getElementById('reviewBody');
     let total = 0;
@@ -1090,19 +1124,39 @@
   }
 
   function confirmFinalizeFromReview(){
+    // حماية أساسية ضد الدبل كليك/الدبل تاب: أول حاجة بتتنفّذ في الدالة دي هي فحص الفلاج ده،
+    // فحتى لو الضغطتين وصلوا شبه في نفس اللحظة (زي دبل تاب على الموبايل) الضغطة التانية
+    // هتتجاهل فورًا من غير ما تبعت أي طلب تاني للسيرفر
+    if(state.finalizeInFlight) return;
+    state.finalizeInFlight = true;
+    document.getElementById('reviewConfirmBtn').disabled = true;
+    // زرار "موافق وترحيل" الأساسي في الصفحة (اللي وراء نافذة المراجعة) لازم يتقفل هو كمان فورًا،
+    // مش بس زرار التأكيد جوه النافذة — عشان لو المستخدم رجع شاف الصفحة وهي لسه مستنية رد
+    // السيرفر، ميقدرش يفتح مراجعة تانية ويحاول يرحّل نفس الفاتورة تاني قبل ما الرد يوصل
+    const mainBtn = document.getElementById('finalizeBtn');
+    if(mainBtn) mainBtn.disabled = true;
+
     closeReviewModal();
     clearMsg();
     showLoading(true);
     const type = (state.screen === 'returns') ? 'مرتجع' : 'بيع';
-    callApi('finalizeInvoice', [state.auth, type, state.draftItems])
+    const requestId = state.pendingFinalizeId;
+    callApi('finalizeInvoice', [state.auth, type, state.draftItems, requestId])
       .then(function(result){
+        state.finalizeInFlight = false;
         state.finalized = true;
         state.finalResult = result;
         showLoading(false);
-        renderInvoice(state.screen);
+        renderInvoice(state.screen); // بتخفي finalizeBtn خالص لما state.finalized=true
         showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
       })
-      .catch(onError);
+      .catch(function(err){
+        state.finalizeInFlight = false;
+        const btn = document.getElementById('reviewConfirmBtn');
+        if(btn) btn.disabled = false;
+        if(mainBtn) mainBtn.disabled = false; // الترحيل فشل فعلاً، رجّع الزرار يشتغل تاني
+        onError(err);
+      });
   }
 
   function invoiceExcelOpts(){
@@ -1111,8 +1165,10 @@
     const rows = state.finalResult.items.map(it => [it['اسم الصنف'], it['الكمية'], it['السعر'], it['الاجمالي']]);
     return {
       fileName: label + '_' + state.user.name + '_' + safeDateForFile(state.finalResult.date),
+      reportTitle: 'تقرير ' + label,
       meta: [
         ['اسم المندوب', state.user.name],
+        ['الفرع', state.user.branch || '—'],
         ['التاريخ', state.finalResult.date],
         ['نوع العملية', label],
       ],
@@ -1146,6 +1202,7 @@
     state.tawridItems = [];
     state.tawridFinalized = false;
     state.tawridResult = null;
+    state.tawridSaveInFlight = false;
     callApi('bootstrapTawrid', [state.auth])
       .then(function(data){
         state.asnaf = data.asnaf;
@@ -1165,6 +1222,7 @@
     document.getElementById('tawridLockBadge').hidden = !state.tawridFinalized;
     document.getElementById('tawridAddBtn').disabled = state.tawridFinalized;
     document.getElementById('saveTawridBtn').hidden = state.tawridFinalized;
+    document.getElementById('saveTawridBtn').disabled = state.tawridFinalized;
     acSetDisabled(AC_CONFIGS.tawridItem, state.tawridFinalized);
     document.getElementById('tawridQtyInput').disabled = state.tawridFinalized;
     document.getElementById('tawridDownloadBtn').disabled = !state.tawridFinalized;
@@ -1212,31 +1270,48 @@
   }
 
   function handleSaveTawrid(){
+    if(state.tawridSaveInFlight) return; // منع أي ضغطة تانية تنفّذ لحد ما الأولى ترجع رد
     if(!state.tawridItems.length){ showMsg('ضيف صنف واحد على الأقل الأول', 'error'); return; }
     if(!confirm('متأكد إنك عاوز تأكد التوريد ده؟')) return;
+    state.tawridSaveInFlight = true;
+    const btn = document.getElementById('saveTawridBtn');
+    if(btn) btn.disabled = true; // يتقفل فورًا لحد ما الرد يوصل، عشان مايترحلش مرتين
+    const requestId = genRequestId_();
     clearMsg();
     showLoading(true);
-    callApi('saveTawrid', [state.auth, state.tawridItems])
+    callApi('saveTawrid', [state.auth, state.tawridItems, requestId])
       .then(function(result){
+        state.tawridSaveInFlight = false;
         state.tawridFinalized = true;
         state.tawridResult = result;
         showLoading(false);
-        renderTawrid();
+        renderTawrid(); // بتخفي الزرار خالص لما tawridFinalized=true
         showMsg('تم تسجيل التوريد بنجاح ✔', 'success');
       })
-      .catch(onError);
+      .catch(function(err){
+        state.tawridSaveInFlight = false;
+        if(btn) btn.disabled = false;
+        onError(err);
+      });
   }
 
   function tawridExcelOpts(){
     const rows = state.tawridItems.map(it => [it.itemName, it.qty]);
+    const totalQty = state.tawridItems.reduce((s, it) => s + (Number(it.qty) || 0), 0);
     return {
       fileName: 'توريد_' + state.user.name + '_' + safeDateForFile(state.tawridResult.date),
+      reportTitle: 'تقرير توريد',
       meta: [
         ['اسم المندوب', state.user.name],
+        ['الفرع', state.user.branch || '—'],
         ['التاريخ', state.tawridResult.date],
+        ['عدد الأصناف', state.tawridItems.length],
       ],
       headers: ['اسم الصنف', 'الكمية'],
       rows: rows,
+      totalsLabel: 'إجمالي الكمية',
+      totalsValue: totalQty,
+      totalsIsCurrency: false,
     };
   }
 
@@ -1263,6 +1338,7 @@
     state.jardItems = [];
     state.jardFinalized = false;
     state.jardResult = null;
+    state.jardSaveInFlight = false;
     callApi('bootstrapJard', [state.auth])
       .then(function(data){
         state.asnaf = data.asnaf;
@@ -1279,6 +1355,7 @@
 
     document.getElementById('jardLockBadge').hidden = !state.jardFinalized;
     document.getElementById('saveJardBtn').hidden = state.jardFinalized;
+    document.getElementById('saveJardBtn').disabled = state.jardFinalized;
     document.getElementById('jardDownloadBtn').disabled = !state.jardFinalized;
     document.getElementById('jardDownloadBtn').textContent = state.jardFinalized
       ? '⬇ تحميل Excel'
@@ -1322,6 +1399,7 @@
   }
 
   function handleSaveJard(){
+    if(state.jardSaveInFlight) return; // منع أي ضغطة تانية تنفّذ لحد ما الأولى ترجع رد
     clearMsg();
     const inputs = document.querySelectorAll('#jardItemsList .jardCountRowInput');
     const items = [];
@@ -1333,29 +1411,45 @@
     });
     if(!items.length){ showMsg('اكتب عدد صنف واحد على الأقل قبل الحفظ', 'error'); return; }
     if(!confirm('متأكد إنك عاوز تحفظ الجرد ده؟')) return;
+    state.jardSaveInFlight = true;
+    const btn = document.getElementById('saveJardBtn');
+    if(btn) btn.disabled = true; // يتقفل فورًا لحد ما الرد يوصل، عشان مايتحفظش مرتين
+    const requestId = genRequestId_();
     showLoading(true);
-    callApi('saveJard', [state.auth, items])
+    callApi('saveJard', [state.auth, items, requestId])
       .then(function(result){
+        state.jardSaveInFlight = false;
         state.jardItems = items;
         state.jardFinalized = true;
         state.jardResult = result;
         showLoading(false);
-        renderJard();
+        renderJard(); // بتخفي الزرار خالص لما jardFinalized=true
         showMsg('تم حفظ الجرد بنجاح ✔', 'success');
       })
-      .catch(onError);
+      .catch(function(err){
+        state.jardSaveInFlight = false;
+        if(btn) btn.disabled = false;
+        onError(err);
+      });
   }
 
   function jardExcelOpts(){
     const rows = state.jardItems.map(it => [it.itemName, it.count]);
+    const totalCount = state.jardItems.reduce((s, it) => s + (Number(it.count) || 0), 0);
     return {
       fileName: 'جرد_' + state.user.name + '_' + safeDateForFile(state.jardResult.date),
+      reportTitle: 'تقرير جرد',
       meta: [
         ['اسم المندوب', state.user.name],
+        ['الفرع', state.user.branch || '—'],
         ['التاريخ', state.jardResult.date],
+        ['عدد الأصناف', state.jardItems.length],
       ],
       headers: ['اسم الصنف', 'الجرد'],
       rows: rows,
+      totalsLabel: 'إجمالي الجرد',
+      totalsValue: totalCount,
+      totalsIsCurrency: false,
     };
   }
 
@@ -1552,75 +1646,211 @@
     return false;
   }
 
+  // بيحسب عرض عمود مناسب من طول أطول قيمة فيه (بالحروف)، مع حد أدنى وأقصى معقولين حتى ما
+  // يبقاش العمود ضيق يقص الكلام أو واسع أوي من غير داعي.
+  function autoColWidth_(header, colValues){
+    let maxLen = String(header || '').length;
+    colValues.forEach(function(v){
+      const len = String(v === null || v === undefined ? '' : v).length;
+      if(len > maxLen) maxLen = len;
+    });
+    return Math.max(14, Math.min(42, maxLen + 8));
+  }
+
+  // بيتأكد إن كل قيم العمود ده أرقام (يستخدم عشان نحدد التنسيق ومحاذاة العمود صح)
+  function isNumericCol_(colValues){
+    return colValues.length > 0 && colValues.every(function(v){ return typeof v === 'number' && !isNaN(v); });
+  }
+
+  // كل القيم في العمود أعداد صحيحة (من غير كسور) — يحدد هل التنسيق يعرض فاصلة عشرية ولا لأ
+  function isIntegerCol_(colValues){
+    return colValues.every(function(v){ return Number.isInteger(v); });
+  }
+
+  // الأعمدة اللي فيها مبالغ مالية (زي السعر/الإجمالي) بيتكتب جنبها "ج.م" في التنسيق
+  function isCurrencyHeader_(h){
+    return /سعر|اجمالي|إجمالي|قيمة/.test(h || '');
+  }
+
+  // ألوان تصميم "الأزرق الكوربوريتي" — الشكل اللي تم اختياره لملفات الإكسل الخارجة من التطبيق
+  const BRAND_ACCENT = 'FF9DC3E6';
+  const BRAND_BANNER = 'FF1F4E79';
+  const BRAND_SUBTITLE_BG = 'FF2E6DA4';
+  const BRAND_META_BG = 'FFEAF2FA';
+  const BRAND_META_BORDER = 'FFCFE2F3';
+  const BRAND_GRID = 'FFDCE6F1';
+  const BRAND_ZEBRA = 'FFEAF2FA';
+  const BRAND_FRAME = 'FF1F4E79';
+
   // ============ توليد ملف Excel منسّق (يُستخدم في كل الشاشات) — بيرجع Blob بس من غير تنزيل ============
   async function buildExcelBlob(opts){
     const headers = opts.headers;
     const rows = opts.rows;
     const meta = opts.meta || [];
     const colCount = headers.length;
+    const numFont = 'Calibri';
 
     const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet('التقرير', { views: [{ rightToLeft: true }] });
+    wb.creator = 'الزنوكي لصناعة الأجهزة الكهربائية';
+    wb.created = new Date();
 
-    // عنوان الشركة
+    const ws = wb.addWorksheet('التقرير', {
+      views: [{ rightToLeft: true, showGridLines: false }],
+      properties: { tabColor: { argb: BRAND_ACCENT } },
+      pageSetup: {
+        orientation: colCount > 4 ? 'landscape' : 'portrait',
+        fitToPage: true,
+        fitToWidth: 1,
+        fitToHeight: 0,
+        margins: { left: 0.4, right: 0.4, top: 0.5, bottom: 0.5, header: 0.2, footer: 0.2 },
+      },
+    });
+
+    // اسم الشركة (عنوان رئيسي)
     ws.mergeCells(1, 1, 1, colCount);
     const titleCell = ws.getCell(1, 1);
-    titleCell.value = 'تاتش الزنوكي للأجهزة الكهربائية';
-    titleCell.font = { bold: true, size: 14, color: { argb: 'FFD6A428' } };
+    titleCell.value = 'الزنوكي لصناعة الأجهزة الكهربائية';
+    titleCell.font = { name: numFont, bold: true, size: 20, color: { argb: 'FFFFFFFF' } };
     titleCell.alignment = { horizontal: 'center', vertical: 'middle' };
-    ws.getRow(1).height = 26;
+    ws.getRow(1).height = 38;
     for(let c = 1; c <= colCount; c++){
-      ws.getCell(1, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1C3D' } };
+      ws.getCell(1, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_BANNER } };
     }
 
-    // بيانات المندوب/التاريخ/النوع
-    let r = 2;
+    // عنوان فرعي: اسم التقرير (لو متبعت، وإلا بناخده من أول سطر meta)
+    ws.mergeCells(2, 1, 2, colCount);
+    const subtitleCell = ws.getCell(2, 1);
+    subtitleCell.value = opts.reportTitle || 'تقرير';
+    subtitleCell.font = { name: numFont, bold: true, size: 14.5, color: { argb: 'FFFFFFFF' } };
+    subtitleCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(2).height = 25;
+    for(let c = 1; c <= colCount; c++){
+      ws.getCell(2, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_SUBTITLE_BG } };
+    }
+
+    // بيانات المندوب/الفرع/التاريخ/النوع — في شكل "كارت" بإطار كامل حواليه، كل زوج (تسمية/قيمة)
+    // في عمودين متجاورين بدل سطر مدمج كامل عشان تبقى منظّمة زي جدول بيانات مصغّر
+    let r = 3;
+    const metaFirstRow = r;
     meta.forEach(function(pair){
-      ws.mergeCells(r, 1, r, colCount);
-      const cell = ws.getCell(r, 1);
-      cell.value = pair[0] + ':  ' + pair[1];
-      cell.font = { bold: true, size: 11.5, color: { argb: 'FF1A1A1A' } };
-      cell.alignment = { horizontal: 'right', vertical: 'middle' };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFBEFD2' } };
-      ws.getRow(r).height = 20;
+      const half = Math.max(1, Math.floor(colCount / 2));
+      ws.mergeCells(r, 1, r, half);
+      const labelCell = ws.getCell(r, 1);
+      labelCell.value = pair[0] + ':';
+      labelCell.font = { name: numFont, bold: true, size: 13, color: { argb: BRAND_BANNER } };
+      labelCell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
+
+      ws.mergeCells(r, half + 1, r, colCount);
+      const valueCell = ws.getCell(r, half + 1);
+      valueCell.value = pair[1];
+      valueCell.font = { name: numFont, bold: true, size: 13, color: { argb: 'FF1A1A1A' } };
+      valueCell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
+
+      for(let c = 1; c <= colCount; c++){
+        ws.getCell(r, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_META_BG } };
+        ws.getCell(r, c).border = {
+          top: { style: 'hair', color: { argb: BRAND_META_BORDER } },
+          bottom: { style: 'hair', color: { argb: BRAND_META_BORDER } },
+          left: { style: 'hair', color: { argb: BRAND_META_BORDER } },
+          right: { style: 'hair', color: { argb: BRAND_META_BORDER } },
+        };
+      }
+      ws.getRow(r).height = 23;
       r++;
     });
-    r++; // صف فاضي
+    // إطار خارجي غامق حوالين صندوق البيانات كله عشان يبان كارت متكامل
+    const metaLastRow = r - 1;
+    if(metaLastRow >= metaFirstRow){
+      for(let c = 1; c <= colCount; c++){
+        const topCell = ws.getCell(metaFirstRow, c);
+        topCell.border = Object.assign({}, topCell.border, { top: { style: 'medium', color: { argb: BRAND_ACCENT } } });
+        const botCell = ws.getCell(metaLastRow, c);
+        botCell.border = Object.assign({}, botCell.border, { bottom: { style: 'medium', color: { argb: BRAND_ACCENT } } });
+      }
+      for(let rr = metaFirstRow; rr <= metaLastRow; rr++){
+        const leftCell = ws.getCell(rr, 1);
+        leftCell.border = Object.assign({}, leftCell.border, { left: { style: 'medium', color: { argb: BRAND_ACCENT } } });
+        const rightCell = ws.getCell(rr, colCount);
+        rightCell.border = Object.assign({}, rightCell.border, { right: { style: 'medium', color: { argb: BRAND_ACCENT } } });
+      }
+    }
+    r++; // صف فاضي يفصل بين بيانات الميتا والجدول
 
     // صف العناوين
     const headerRowIdx = r;
     headers.forEach(function(h, i){
       const cell = ws.getCell(headerRowIdx, i + 1);
       cell.value = h;
-      cell.font = { bold: true, size: 12, color: { argb: 'FFFFFFFF' } };
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F1C3D' } };
+      cell.font = { name: numFont, bold: true, size: 15, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_BANNER } };
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
       cell.border = {
-        top: { style: 'thin', color: { argb: 'FFD6A428' } },
-        bottom: { style: 'thin', color: { argb: 'FFD6A428' } },
+        top: { style: 'medium', color: { argb: BRAND_ACCENT } },
+        bottom: { style: 'medium', color: { argb: BRAND_ACCENT } },
+        left: { style: 'thin', color: { argb: BRAND_ACCENT } },
+        right: { style: 'thin', color: { argb: BRAND_ACCENT } },
       };
     });
-    ws.getRow(headerRowIdx).height = 22;
+    ws.getRow(headerRowIdx).height = 30;
     r++;
 
-    // صفوف البيانات
+    // تحديد الأعمدة الرقمية/المالية عشان نظبط التنسيق والمحاذاة بتاعتهم
+    const colIsNumeric = [];
+    const colIsInteger = [];
+    const colIsCurrency = [];
+    for(let i = 0; i < colCount; i++){
+      const colValues = rows.map(function(row){ return row[i]; });
+      colIsNumeric[i] = isNumericCol_(colValues);
+      colIsInteger[i] = colIsNumeric[i] && isIntegerCol_(colValues);
+      colIsCurrency[i] = colIsNumeric[i] && isCurrencyHeader_(headers[i]);
+    }
+
+    // صفوف البيانات — النصوص (زي اسم الصنف) تتحاذى يمين، والأرقام تتوسّط، زي الجداول الاحترافية
     const firstDataRow = r;
     rows.forEach(function(row){
       row.forEach(function(val, i){
         const cell = ws.getCell(r, i + 1);
         cell.value = val;
-        cell.alignment = { horizontal: 'center', vertical: 'middle' };
-        cell.border = { bottom: { style: 'hair', color: { argb: 'FFDDDDDD' } } };
+        cell.font = { name: numFont, bold: true, size: 13, color: { argb: 'FF1A1A1A' } };
+        const isTextCol = !colIsNumeric[i];
+        cell.alignment = { horizontal: isTextCol ? 'right' : 'center', vertical: 'middle', indent: isTextCol ? 1 : 0 };
+        cell.border = {
+          bottom: { style: 'hair', color: { argb: BRAND_GRID } },
+          left: { style: 'hair', color: { argb: BRAND_GRID } },
+          right: { style: 'hair', color: { argb: BRAND_GRID } },
+        };
+        if(colIsCurrency[i]){
+          cell.numFmt = '#,##0.00 "ج.م"';
+        } else if(colIsNumeric[i]){
+          cell.numFmt = colIsInteger[i] ? '#,##0' : '#,##0.00';
+        }
       });
+      ws.getRow(r).height = 22;
       r++;
     });
+    const lastDataRow = r - 1;
     // تلوين صفوف متبادل لسهولة القراءة
-    for(let rr = firstDataRow; rr < r; rr++){
+    for(let rr = firstDataRow; rr <= lastDataRow; rr++){
       if((rr - firstDataRow) % 2 === 1){
         for(let c = 1; c <= colCount; c++){
-          ws.getCell(rr, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF6F3EA' } };
+          ws.getCell(rr, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_ZEBRA } };
         }
       }
+    }
+    // إطار خارجي حوالين الجدول كله (من صف العناوين لحد آخر صف بيانات)
+    for(let c = 1; c <= colCount; c++){
+      const topBorderCell = ws.getCell(headerRowIdx, c);
+      topBorderCell.border = Object.assign({}, topBorderCell.border, { top: { style: 'medium', color: { argb: BRAND_FRAME } } });
+      if(lastDataRow >= firstDataRow){
+        const bottomCell = ws.getCell(lastDataRow, c);
+        bottomCell.border = Object.assign({}, bottomCell.border, { bottom: { style: 'medium', color: { argb: BRAND_FRAME } } });
+      }
+    }
+    for(let rr = headerRowIdx; rr <= Math.max(lastDataRow, headerRowIdx); rr++){
+      const leftCell = ws.getCell(rr, 1);
+      leftCell.border = Object.assign({}, leftCell.border, { left: { style: 'medium', color: { argb: BRAND_FRAME } } });
+      const rightCell = ws.getCell(rr, colCount);
+      rightCell.border = Object.assign({}, rightCell.border, { right: { style: 'medium', color: { argb: BRAND_FRAME } } });
     }
 
     // صف الإجمالي (لو موجود)
@@ -1628,22 +1858,54 @@
       ws.mergeCells(r, 1, r, colCount - 1);
       const labelCell = ws.getCell(r, 1);
       labelCell.value = opts.totalsLabel;
-      labelCell.font = { bold: true, size: 12 };
-      labelCell.alignment = { horizontal: 'left', vertical: 'middle' };
+      labelCell.font = { name: numFont, bold: true, size: 15, color: { argb: 'FFFFFFFF' } };
+      labelCell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
+      labelCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_BANNER } };
       const valCell = ws.getCell(r, colCount);
       valCell.value = opts.totalsValue;
-      valCell.font = { bold: true, size: 13, color: { argb: 'FF8A6218' } };
-      valCell.alignment = { horizontal: 'center', vertical: 'middle' };
-      ws.getRow(r).height = 22;
-      for(let c = 1; c <= colCount; c++){
-        ws.getCell(r, c).border = { top: { style: 'medium', color: { argb: 'FFD6A428' } } };
+      if(typeof opts.totalsValue === 'number'){
+        valCell.numFmt = (opts.totalsIsCurrency === false) ? '#,##0' : '#,##0.00 "ج.م"';
       }
+      valCell.font = { name: numFont, bold: true, size: 16, color: { argb: 'FFFFFFFF' } };
+      valCell.alignment = { horizontal: 'center', vertical: 'middle' };
+      valCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_BANNER } };
+      ws.getRow(r).height = 30;
+      for(let c = 1; c <= colCount; c++){
+        ws.getCell(r, c).border = {
+          top: { style: 'medium', color: { argb: BRAND_ACCENT } },
+          bottom: { style: 'medium', color: { argb: BRAND_FRAME } },
+          left: { style: 'medium', color: { argb: BRAND_FRAME } },
+          right: { style: 'medium', color: { argb: BRAND_FRAME } },
+        };
+      }
+      r++;
     }
 
-    // عرض الأعمدة
-    ws.columns.forEach(function(col, i){
-      col.width = (i === 0) ? 28 : 16;
+    // سطر تذييل: تاريخ ووقت إنشاء الملف (مفيد لتتبع أي نسخة هي الأحدث)
+    r++;
+    ws.mergeCells(r, 1, r, colCount);
+    const footerCell = ws.getCell(r, 1);
+    const now = new Date();
+    const pad2 = function(n){ return String(n).padStart(2, '0'); };
+    const stamp = pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear() +
+      ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+    footerCell.value = 'تم إنشاء الملف تلقائيًا بتاريخ ' + stamp;
+    footerCell.font = { name: numFont, italic: true, size: 10, color: { argb: 'FF9A9A9A' } };
+    footerCell.alignment = { horizontal: 'center', vertical: 'middle' };
+    ws.getRow(r).height = 16;
+
+    // عرض الأعمدة حسب أطول محتوى فعلي في كل عمود (مش عرض ثابت)
+    headers.forEach(function(h, i){
+      const colValues = rows.map(function(row){ return row[i]; });
+      ws.getColumn(i + 1).width = autoColWidth_(h, colValues);
     });
+
+    // تثبيت صف العناوين + فلترة تلقائية عشان يبقى سهل يتصفّح ويترتّب في إكسل
+    ws.views = [{ rightToLeft: true, showGridLines: false, state: 'frozen', ySplit: headerRowIdx, activeCell: 'A1' }];
+    ws.autoFilter = {
+      from: { row: headerRowIdx, column: 1 },
+      to: { row: headerRowIdx, column: colCount },
+    };
 
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
