@@ -369,7 +369,7 @@
         </div>
         <div>
           <div class="title">تسجيل مبيعات</div>
-          <div class="desc">إضافة فاتورة مبيعات جديدة</div>
+          <div class="desc">إضافة أصناف لفاتورة مبيعات اليوم</div>
         </div>
         <div class="chev">‹</div>
       </button>
@@ -646,11 +646,12 @@
     user: null,
     isAdmin: false,
     asnaf: [],
-    draftItems: [],         // فاتورة: {itemName, qty, price}
+    draftItems: [],         // فاتورة المرتجع بس (بيع بقى فوري، مفيش دفعة/ترحيل): {itemName, qty, price, returnKind?}
     finalized: false,
-    finalResult: null,      // نتيجة finalizeInvoice
+    finalResult: null,      // نتيجة finalizeInvoice (مرتجع بس)
     pendingFinalizeId: null, // رقم مرجعي فريد لعملية الترحيل الحالية — بيمنع تسجيل نفس الفاتورة مرتين لو حصل دبل كليك
     finalizeInFlight: false, // true من لحظة الضغط على "تأكيد الترحيل" لحد ما يوصل الرد — بيمنع أي ضغطة تانية تتنفذ في الوقت ده
+    todaySaleInvoice: { sessionId: null, date: '', items: [], total: 0 }, // فاتورة بيع اليوم التراكمية — بتتحدّث فورًا مع كل إضافة/تعديل/مسح
     jardItems: [],           // {itemName, count}
     jardFinalized: false,
     jardResult: null,
@@ -1232,8 +1233,17 @@
       .then(function(data){
         state.asnaf = data.asnaf;
         state.myPrices = data.prices || {};
-        showLoading(false);
-        renderInvoice(name);
+        if(name === 'returns'){
+          showLoading(false);
+          renderInvoice(name);
+          return;
+        }
+        // مبيعات: مفيش ترحيل خالص، فنجيب فاتورة النهاردة التراكمية (لو موجودة) عشان نعرضها
+        return callApi('getMySaleInvoiceToday', [state.auth]).then(function(saleData){
+          state.todaySaleInvoice = saleData;
+          showLoading(false);
+          renderInvoice(name);
+        });
       })
       .catch(onError);
   }
@@ -1323,7 +1333,7 @@
 
   function renderInvoice(name){
     const isReturns = (name === 'returns');
-    document.getElementById('pageTitle').textContent = isReturns ? 'تسجيل مرتجع' : 'تسجيل مبيعات';
+    document.getElementById('pageTitle').textContent = isReturns ? 'تسجيل مرتجع' : 'مبيعاتي اليوم';
     document.getElementById('pageSub').textContent = state.user.name;
     document.getElementById('invBadge').textContent = state.user.name;
 
@@ -1332,25 +1342,113 @@
     document.getElementById('returnKindWrap').hidden = !isReturns;
     document.getElementById('returnKindInput').value = '';
 
-    document.getElementById('lockBadge').hidden = !state.finalized;
-    document.getElementById('addBtn').disabled = state.finalized;
-    document.getElementById('finalizeBtn').hidden = state.finalized;
-    // لازم نرجّع الزرار "شغال" هنا كل مرة الشاشة دي بترندر من الأول (فاتورة جديدة/مرتجع جديد)،
-    // عشان القفل اللي بيحصل في confirmFinalizeFromReview وقت الترحيل ميفضلش عالق على الفاتورة
-    // الجديدة اللي بعدها
-    document.getElementById('finalizeBtn').disabled = state.finalized;
-    acSetDisabled(AC_CONFIGS.item, state.finalized);
-    document.getElementById('qtyInput').disabled = state.finalized;
-    document.getElementById('priceInput').disabled = state.finalized;
-    document.getElementById('returnKindInput').disabled = state.finalized;
-    document.getElementById('downloadBtn').disabled = !state.finalized;
-    document.getElementById('downloadBtn').textContent = state.finalized
-      ? '⬇ تحميل Excel'
-      : '⬇ تحميل Excel (متاح بعد الترحيل)';
-    document.getElementById('shareBtn').disabled = !state.finalized;
+    if(isReturns){
+      document.getElementById('lockBadge').hidden = !state.finalized;
+      document.getElementById('addBtn').disabled = state.finalized;
+      document.getElementById('finalizeBtn').hidden = state.finalized;
+      // لازم نرجّع الزرار "شغال" هنا كل مرة الشاشة دي بترندر من الأول (فاتورة جديدة/مرتجع جديد)،
+      // عشان القفل اللي بيحصل في confirmFinalizeFromReview وقت الترحيل ميفضلش عالق على الفاتورة
+      // الجديدة اللي بعدها
+      document.getElementById('finalizeBtn').disabled = state.finalized;
+      acSetDisabled(AC_CONFIGS.item, state.finalized);
+      document.getElementById('qtyInput').disabled = state.finalized;
+      document.getElementById('priceInput').disabled = state.finalized;
+      document.getElementById('returnKindInput').disabled = state.finalized;
+      document.getElementById('downloadBtn').disabled = !state.finalized;
+      document.getElementById('downloadBtn').textContent = state.finalized
+        ? '⬇ تحميل Excel'
+        : '⬇ تحميل Excel (متاح بعد الترحيل)';
+      document.getElementById('shareBtn').disabled = !state.finalized;
+      renderItemsList();
+    } else {
+      // مبيعات: مفيش ترحيل خالص — كل صنف بيتسجل فورًا على السيرفر في فاتورة اليوم التراكمية،
+      // وتقدر تعدّل/تمسح أي صنف منها في نفس اليوم (لغاية آخره تبدأ فاتورة يوم جديد تلقائي)
+      document.getElementById('lockBadge').hidden = true;
+      document.getElementById('addBtn').disabled = false;
+      document.getElementById('finalizeBtn').hidden = true;
+      acSetDisabled(AC_CONFIGS.item, false);
+      document.getElementById('qtyInput').disabled = false;
+      document.getElementById('priceInput').disabled = false;
+      const hasItems = !!(state.todaySaleInvoice.items && state.todaySaleInvoice.items.length);
+      document.getElementById('downloadBtn').disabled = !hasItems;
+      document.getElementById('downloadBtn').textContent = '⬇ تحميل Excel';
+      document.getElementById('shareBtn').disabled = !hasItems;
+      renderTodaySaleItemsList();
+    }
 
-    renderItemsList();
     setView('viewInvoice');
+  }
+
+  // ============ فاتورة مبيعات اليوم التراكمية (فورية على السيرفر، قابلة للتعديل/الحذف) ============
+  function renderTodaySaleItemsList(){
+    const list = document.getElementById('itemsList');
+    const items = (state.todaySaleInvoice && state.todaySaleInvoice.items) || [];
+
+    if(!items.length){
+      list.innerHTML = '<div class="empty">لسه مفيش أصناف مضافة النهاردة</div>';
+    } else {
+      list.innerHTML = items.map(function(it){
+        const name = it['اسم الصنف'];
+        const qty = Number(it['الكمية']);
+        const price = Number(it['السعر']);
+        const total = Number(it['الاجمالي']);
+        const rid = String(it.rowId).replace(/'/g, "\\'");
+        return '<div class="itemRow">' +
+          '<div>' +
+            '<div class="name">' + escapeHtml(name) + '</div>' +
+            '<div class="meta">' + fmt(qty) + ' × ' + fmt(price) + '</div>' +
+          '</div>' +
+          '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<div class="total">' + fmt(total) + '</div>' +
+            '<button class="delBtn" style="background:none;" onclick="handleEditSaleItem(\'' + rid + '\')">✎</button>' +
+            '<button class="delBtn" onclick="handleDeleteSaleItem(\'' + rid + '\')">✕</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    document.getElementById('grandTotal').textContent = fmt((state.todaySaleInvoice && state.todaySaleInvoice.total) || 0);
+  }
+
+  function handleEditSaleItem(rowId){
+    clearMsg();
+    const items = (state.todaySaleInvoice && state.todaySaleInvoice.items) || [];
+    const item = items.find(it => String(it.rowId) === String(rowId));
+    if(!item) return;
+
+    const qtyStr = window.prompt('الكمية الجديدة لـ "' + item['اسم الصنف'] + '"', String(item['الكمية']));
+    if(qtyStr === null) return;
+    const qty = Number(normalizeDigits(qtyStr));
+    if(!qty || qty <= 0){ showMsg('اكتب كمية صحيحة', 'error'); return; }
+
+    const priceStr = window.prompt('السعر الجديد لـ "' + item['اسم الصنف'] + '"', String(item['السعر']));
+    if(priceStr === null) return;
+    const price = Number(normalizeDigits(priceStr));
+    if(isNaN(price) || price < 0){ showMsg('اكتب سعر صحيح', 'error'); return; }
+
+    showLoading(true);
+    callApi('updateSaleItem', [state.auth, rowId, qty, price])
+      .then(function(data){
+        showLoading(false);
+        state.todaySaleInvoice = data;
+        renderInvoice(state.screen);
+        showMsg('اتعدّل الصنف ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  function handleDeleteSaleItem(rowId){
+    clearMsg();
+    if(!window.confirm('متأكد إنك عايز تمسح الصنف ده من فاتورة النهاردة؟')) return;
+    showLoading(true);
+    callApi('deleteSaleItem', [state.auth, rowId])
+      .then(function(data){
+        showLoading(false);
+        state.todaySaleInvoice = data;
+        renderInvoice(state.screen);
+        showMsg('اتمسح الصنف ✔', 'success');
+      })
+      .catch(onError);
   }
 
   function renderItemsList(){
@@ -1403,21 +1501,39 @@
     if(!qty || qty <= 0){ showMsg('اكتب كمية صحيحة', 'error'); return; }
     if(isNaN(price) || price < 0){ showMsg('اكتب سعر صحيح', 'error'); return; }
 
-    const item = { itemName: name, qty: qty, price: price };
     if(isReturns){
       const kindSel = document.getElementById('returnKindInput').value;
       if(kindSel !== 'سليم' && kindSel !== 'تالف'){
         showMsg('من فضلك حدد نوع المرتجع (سليم أو تالف) قبل الإضافة', 'error');
         return;
       }
-      item.returnKind = kindSel;
+      state.draftItems.push({ itemName: name, qty: qty, price: price, returnKind: kindSel });
+      acReset(AC_CONFIGS.item);
+      document.getElementById('qtyInput').value = '';
+      document.getElementById('priceInput').value = '';
+      document.getElementById('returnKindInput').value = '';
+      renderItemsList();
+      return;
     }
-    state.draftItems.push(item);
-    acReset(AC_CONFIGS.item);
-    document.getElementById('qtyInput').value = '';
-    document.getElementById('priceInput').value = '';
-    if(isReturns){ document.getElementById('returnKindInput').value = ''; }
-    renderItemsList();
+
+    // مبيعات: إضافة فورية على السيرفر — مفيش تجميع محلي ولا زرار ترحيل، كل صنف بيتسجل لحظيًا
+    showLoading(true);
+    document.getElementById('addBtn').disabled = true;
+    callApi('addSaleItem', [state.auth, { itemName: name, qty: qty, price: price }])
+      .then(function(data){
+        showLoading(false);
+        document.getElementById('addBtn').disabled = false;
+        state.todaySaleInvoice = data;
+        acReset(AC_CONFIGS.item);
+        document.getElementById('qtyInput').value = '';
+        document.getElementById('priceInput').value = '';
+        renderInvoice(state.screen);
+        showMsg('اتضاف الصنف لفاتورة النهاردة ✔', 'success');
+      })
+      .catch(function(err){
+        document.getElementById('addBtn').disabled = false;
+        onError(err);
+      });
   }
 
   function handleDeleteDraftItem(idx){
@@ -1531,17 +1647,26 @@
   }
 
   function invoiceExcelOpts(){
-    return buildInvoiceExcelOpts(state.finalResult, state.screen === 'returns');
+    const isReturns = (state.screen === 'returns');
+    // مرتجع: بيرجع بس بعد الترحيل (finalResult) — مبيعات: مفيش ترحيل، فبيرجع فاتورة اليوم التراكمية
+    const result = isReturns ? state.finalResult : state.todaySaleInvoice;
+    return buildInvoiceExcelOpts(result, isReturns);
+  }
+
+  function invoiceHasContent_(){
+    return (state.screen === 'returns')
+      ? state.finalized
+      : !!(state.todaySaleInvoice.items && state.todaySaleInvoice.items.length);
   }
 
   async function downloadInvoiceExcel(){
-    if(!state.finalized) return;
+    if(!invoiceHasContent_()) return;
     const { blob, fileName } = await buildExcelBlob(invoiceExcelOpts());
     triggerBlobDownload(blob, fileName);
   }
 
   async function shareInvoiceExcel(){
-    if(!state.finalized) return;
+    if(!invoiceHasContent_()) return;
     const opts = invoiceExcelOpts();
     const { blob, fileName } = await buildInvoicePdfBlob(opts);
     const shared = await sharePdfFile(blob, fileName, opts.fileName);
