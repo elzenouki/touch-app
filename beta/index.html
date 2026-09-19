@@ -437,6 +437,7 @@
       <div id="returnKindWrap" hidden>
         <label>حالة الصنف المرتجع</label>
         <select id="returnKindInput">
+          <option value="" disabled selected>اختر نوع المرتجع</option>
           <option value="سليم">سليم (قابل للبيع تاني)</option>
           <option value="تالف">تالف (مرتجع للشركة)</option>
         </select>
@@ -1326,7 +1327,7 @@
     acReset(AC_CONFIGS.item);
 
     document.getElementById('returnKindWrap').hidden = !isReturns;
-    document.getElementById('returnKindInput').value = 'سليم';
+    document.getElementById('returnKindInput').value = '';
 
     document.getElementById('lockBadge').hidden = !state.finalized;
     document.getElementById('addBtn').disabled = state.finalized;
@@ -1402,13 +1403,17 @@
     const item = { itemName: name, qty: qty, price: price };
     if(isReturns){
       const kindSel = document.getElementById('returnKindInput').value;
-      item.returnKind = (kindSel === 'تالف') ? 'تالف' : 'سليم';
+      if(kindSel !== 'سليم' && kindSel !== 'تالف'){
+        showMsg('من فضلك حدد نوع المرتجع (سليم أو تالف) قبل الإضافة', 'error');
+        return;
+      }
+      item.returnKind = kindSel;
     }
     state.draftItems.push(item);
     acReset(AC_CONFIGS.item);
     document.getElementById('qtyInput').value = '';
     document.getElementById('priceInput').value = '';
-    document.getElementById('returnKindInput').value = 'سليم';
+    if(isReturns){ document.getElementById('returnKindInput').value = ''; }
     renderItemsList();
   }
 
