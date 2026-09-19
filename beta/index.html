@@ -1741,10 +1741,15 @@
       return;
     }
     list.innerHTML = state.asnaf.map(function(a){
+      // لو عندنا رصيد متوقع محسوب (من آخر جرد + توريد − صافي مبيعات)، بنعرضه كـ"تلميح" في
+      // الـ placeholder بس — مش كـ value — عشان الجرد يفضل تحقق فعلي: المندوب لازم يكتب
+      // العدد الحقيقي اللي قدامه بنفسه، إحنا بس بنوفر عليه دور البحث عن الرقم المتوقع.
+      const hasExpected = typeof a.expectedBalance === 'number' && !isNaN(a.expectedBalance);
+      const placeholder = hasExpected ? ('متوقع: ' + fmt(a.expectedBalance)) : 'العدد';
       return (
         '<div style="margin-bottom:14px;">' +
           '<label>' + escapeHtml(a.name) + '</label>' +
-          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="العدد">' +
+          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="' + escapeHtml(placeholder) + '">' +
         '</div>'
       );
     }).join('');
