@@ -434,6 +434,13 @@
           <input type="text" id="priceInput" class="ltrNum" inputmode="decimal" dir="ltr" placeholder="0.00">
         </div>
       </div>
+      <div id="returnKindWrap" hidden>
+        <label>حالة الصنف المرتجع</label>
+        <select id="returnKindInput">
+          <option value="سليم">سليم (قابل للبيع تاني)</option>
+          <option value="تالف">تالف (مرتجع للشركة)</option>
+        </select>
+      </div>
       <button class="primary" id="addBtn" onclick="handleAddItem()">إضافة الصنف</button>
     </div>
 
@@ -1318,6 +1325,9 @@
 
     acReset(AC_CONFIGS.item);
 
+    document.getElementById('returnKindWrap').hidden = !isReturns;
+    document.getElementById('returnKindInput').value = 'سليم';
+
     document.getElementById('lockBadge').hidden = !state.finalized;
     document.getElementById('addBtn').disabled = state.finalized;
     document.getElementById('finalizeBtn').hidden = state.finalized;
@@ -1328,6 +1338,7 @@
     acSetDisabled(AC_CONFIGS.item, state.finalized);
     document.getElementById('qtyInput').disabled = state.finalized;
     document.getElementById('priceInput').disabled = state.finalized;
+    document.getElementById('returnKindInput').disabled = state.finalized;
     document.getElementById('downloadBtn').disabled = !state.finalized;
     document.getElementById('downloadBtn').textContent = state.finalized
       ? '⬇ تحميل Excel'
@@ -1353,9 +1364,11 @@
         const total = state.finalized ? Number(it['الاجمالي']) : (isReturns ? -qty : qty) * price;
         const displayQty = state.finalized ? qty : (isReturns ? -qty : qty);
         const neg = displayQty < 0;
+        const returnKind = state.finalized ? it['نوع المرتجع'] : it.returnKind;
+        const kindSuffix = (isReturns && returnKind === 'تالف') ? ' (تالف)' : '';
         return '<div class="itemRow' + (neg ? ' neg' : '') + '">' +
           '<div>' +
-            '<div class="name">' + escapeHtml(name) + '</div>' +
+            '<div class="name">' + escapeHtml(name) + escapeHtml(kindSuffix) + '</div>' +
             '<div class="meta">' + fmt(displayQty) + ' × ' + fmt(price) + '</div>' +
           '</div>' +
           '<div style="display:flex; align-items:center; gap:8px;">' +
@@ -1377,6 +1390,7 @@
 
   function handleAddItem(){
     clearMsg();
+    const isReturns = (state.screen === 'returns');
     const name = document.getElementById('itemSelect').value;
     const qty = Number(document.getElementById('qtyInput').value);
     const priceRaw = document.getElementById('priceInput').value;
@@ -1385,10 +1399,16 @@
     if(!qty || qty <= 0){ showMsg('اكتب كمية صحيحة', 'error'); return; }
     if(isNaN(price) || price < 0){ showMsg('اكتب سعر صحيح', 'error'); return; }
 
-    state.draftItems.push({ itemName: name, qty: qty, price: price });
+    const item = { itemName: name, qty: qty, price: price };
+    if(isReturns){
+      const kindSel = document.getElementById('returnKindInput').value;
+      item.returnKind = (kindSel === 'تالف') ? 'تالف' : 'سليم';
+    }
+    state.draftItems.push(item);
     acReset(AC_CONFIGS.item);
     document.getElementById('qtyInput').value = '';
     document.getElementById('priceInput').value = '';
+    document.getElementById('returnKindInput').value = 'سليم';
     renderItemsList();
   }
 
@@ -1416,10 +1436,11 @@
       const qty = isReturns ? -Number(it.qty) : Number(it.qty);
       const rowTotal = qty * Number(it.price);
       total += rowTotal;
+      const kindSuffix = (isReturns && it.returnKind === 'تالف') ? ' (تالف)' : '';
       return (
         '<div class="reviewRow">' +
           '<div>' +
-            '<div class="rName">' + escapeHtml(it.itemName) + '</div>' +
+            '<div class="rName">' + escapeHtml(it.itemName) + escapeHtml(kindSuffix) + '</div>' +
             '<div class="rMeta">' + fmt(qty) + ' × ' + fmt(it.price) + '</div>' +
           '</div>' +
           '<div class="rTotal' + (rowTotal < 0 ? ' neg' : '') + '">' + fmt(rowTotal) + '</div>' +
@@ -1481,7 +1502,10 @@
   // "سجل فواتيري" لإعادة بناء نفس الملف من غير ما نكرر منطق البناء في مكانين
   function buildInvoiceExcelOpts(result, isReturns){
     const label = isReturns ? 'مرتجع' : 'مبيعات';
-    const rows = result.items.map(it => [it['اسم الصنف'], it['الكمية'], it['السعر'], it['الاجمالي']]);
+    const rows = result.items.map(it => {
+      const kindSuffix = (isReturns && it['نوع المرتجع'] === 'تالف') ? ' (تالف)' : '';
+      return [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
+    });
     return {
       fileName: label + '_' + state.user.name + '_' + safeDateForFile(result.date),
       reportTitle: 'تقرير ' + label,
