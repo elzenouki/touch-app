@@ -22,6 +22,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<!-- محتاجينهم عشان مشاركة الفاتورة تطلع PDF (بدل Excel) — التنزيل نفسه فاضل Excel زي ما هو -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --bg:#f7f6f2; --card:#ffffff; --card2:#faf8f3; --border:#e4dfd1;
@@ -1148,11 +1151,11 @@
     callApi('getInvoiceDetails', [state.auth, sessionId])
       .then(async function(result){
         const opts = buildInvoiceExcelOpts(result, result.type === 'مرتجع');
-        const { blob, fileName } = await buildExcelBlob(opts);
+        const { blob, fileName } = await buildInvoicePdfBlob(opts);
         showLoading(false);
-        const shared = await shareExcelFile(blob, fileName, opts.fileName);
+        const shared = await sharePdfFile(blob, fileName, opts.fileName);
         if(!shared){
-          triggerBlobDownload(blob, fileName);
+          triggerPdfDownload(blob, fileName);
           showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
         }
       })
@@ -1540,10 +1543,10 @@
   async function shareInvoiceExcel(){
     if(!state.finalized) return;
     const opts = invoiceExcelOpts();
-    const { blob, fileName } = await buildExcelBlob(opts);
-    const shared = await shareExcelFile(blob, fileName, opts.fileName);
+    const { blob, fileName } = await buildInvoicePdfBlob(opts);
+    const shared = await sharePdfFile(blob, fileName, opts.fileName);
     if(!shared){
-      triggerBlobDownload(blob, fileName);
+      triggerPdfDownload(blob, fileName);
       showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
     }
   }
@@ -1676,10 +1679,10 @@
   async function shareTawridExcel(){
     if(!state.tawridFinalized) return;
     const opts = tawridExcelOpts();
-    const { blob, fileName } = await buildExcelBlob(opts);
-    const shared = await shareExcelFile(blob, fileName, opts.fileName);
+    const { blob, fileName } = await buildInvoicePdfBlob(opts);
+    const shared = await sharePdfFile(blob, fileName, opts.fileName);
     if(!shared){
-      triggerBlobDownload(blob, fileName);
+      triggerPdfDownload(blob, fileName);
       showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
     }
   }
@@ -1822,10 +1825,10 @@
   async function shareJardExcel(){
     if(!state.jardFinalized) return;
     const opts = jardExcelOpts();
-    const { blob, fileName } = await buildExcelBlob(opts);
-    const shared = await shareExcelFile(blob, fileName, opts.fileName);
+    const { blob, fileName } = await buildInvoicePdfBlob(opts);
+    const shared = await sharePdfFile(blob, fileName, opts.fileName);
     if(!shared){
-      triggerBlobDownload(blob, fileName);
+      triggerPdfDownload(blob, fileName);
       showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
     }
   }
@@ -2265,6 +2268,145 @@
     const buffer = await wb.xlsx.writeBuffer();
     const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     return { blob: blob, fileName: opts.fileName };
+  }
+
+  // ============ توليد نفس التقرير كملف PDF (يُستخدم في "مشاركة" فقط — التنزيل فاضل Excel) ============
+  // بنبني نفس بيانات التقرير كصفحة HTML عادية بخط عربي واضح وألوان هويّة الشركة، وبعدين بنصوّرها
+  // (html2canvas) ونحطها جوه ملف PDF (jsPDF). الطريقة دي بتضمن إن العربي يتكتب صح 100% (زي ما
+  // المتصفح نفسه بيعرضه) من غير مشاكل الخطوط المعروفة مع مكتبات PDF اللي بتكتب نص عربي مباشرة.
+  async function buildInvoicePdfBlob(opts){
+    const headers = opts.headers;
+    const rows = opts.rows;
+    const meta = opts.meta || [];
+    const PDF_NAVY = '#0c1730';
+    const PDF_GOLD = '#b6862f';
+    const PDF_GOLD_BG = '#faf3e1';
+    const PDF_BORDER = '#e4dfd1';
+    const PDF_ZEBRA = '#f7f6f2';
+
+    const isNumericCol = headers.map(function(_, i){ return isNumericCol_(rows.map(function(r){ return r[i]; })); });
+    const isCurrencyCol = headers.map(function(h, i){ return isNumericCol[i] && isCurrencyHeader_(h); });
+
+    const metaHtml = meta.map(function(pair){
+      return '<div style="padding:9px 14px; border-bottom:1px solid ' + PDF_BORDER + '; font-size:15px; font-weight:700; color:#1a1a1a;">' +
+        '<span style="color:' + PDF_NAVY + ';">' + escapeHtml_(pair[0]) + ':</span>&nbsp;&nbsp;' + escapeHtml_(String(pair[1])) +
+        '</div>';
+    }).join('');
+
+    const headHtml = headers.map(function(h){
+      return '<th style="padding:10px 8px; font-size:14.5px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + ';">' + escapeHtml_(h) + '</th>';
+    }).join('');
+
+    const rowsHtml = rows.map(function(row, ri){
+      const bg = (ri % 2 === 1) ? PDF_ZEBRA : '#ffffff';
+      const cells = row.map(function(val, i){
+        const align = isNumericCol[i] ? 'center' : 'right';
+        let display = val === null || val === undefined ? '' : val;
+        if(typeof display === 'number'){
+          display = isCurrencyCol[i] ? (display.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م') : display.toLocaleString('en-US');
+        }
+        return '<td style="padding:8px; font-size:14px; font-weight:700; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + PDF_BORDER + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
+      }).join('');
+      return '<tr>' + cells + '</tr>';
+    }).join('');
+
+    const totalsHtml = opts.totalsLabel ? (
+      '<tr>' +
+        '<td colspan="' + (headers.length - 1) + '" style="padding:10px 8px; font-size:15px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
+        '<td style="padding:10px 8px; font-size:16px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + '; text-align:center;">' +
+          (typeof opts.totalsValue === 'number'
+            ? (opts.totalsIsCurrency === false ? opts.totalsValue.toLocaleString('en-US') : opts.totalsValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م')
+            : escapeHtml_(String(opts.totalsValue))) +
+        '</td>' +
+      '</tr>'
+    ) : '';
+
+    const now = new Date();
+    const pad2 = function(n){ return String(n).padStart(2, '0'); };
+    const stamp = pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear() + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed; top:0; left:-99999px; width:794px; background:#ffffff; direction:rtl; font-family:"Cairo","Tajawal",Arial,sans-serif;';
+    container.innerHTML =
+      '<div style="padding:24px;">' +
+        '<div style="background:' + PDF_NAVY + '; color:#fff; text-align:center; font-size:22px; font-weight:900; padding:16px; border-radius:10px 10px 0 0;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
+        '<div style="background:' + PDF_GOLD + '; color:#fff; text-align:center; font-size:15px; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + '</div>' +
+        '<div style="background:' + PDF_GOLD_BG + '; border:1px solid ' + PDF_BORDER + '; border-top:none;">' + metaHtml + '</div>' +
+        '<table style="width:100%; border-collapse:collapse; margin-top:14px;"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
+        '<div style="text-align:center; font-size:11px; color:#9a9a9a; font-style:italic; margin-top:14px;">تم إنشاء الملف تلقائيًا بتاريخ ' + stamp + '</div>' +
+      '</div>';
+    document.body.appendChild(container);
+
+    let blob;
+    try{
+      const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pageWidthMm = 210, pageHeightMm = 297, marginMm = 8;
+      const usableWidthMm = pageWidthMm - marginMm * 2;
+      const imgHeightMm = (canvas.height * usableWidthMm) / canvas.width;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const usableHeightMm = pageHeightMm - marginMm * 2;
+
+      if(imgHeightMm <= usableHeightMm){
+        doc.addImage(imgData, 'PNG', marginMm, marginMm, usableWidthMm, imgHeightMm);
+      } else {
+        // التقرير أطول من صفحة A4 واحدة — نقسّم الصورة على شرائح ونحط كل شريحة في صفحة
+        const pxPerMm = canvas.width / usableWidthMm;
+        const pageHeightPx = usableHeightMm * pxPerMm;
+        let renderedPx = 0;
+        let pageIdx = 0;
+        while(renderedPx < canvas.height){
+          const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceHeightPx;
+          const ctx = sliceCanvas.getContext('2d');
+          ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+          const sliceData = sliceCanvas.toDataURL('image/png');
+          const sliceHeightMm = (sliceHeightPx * usableWidthMm) / canvas.width;
+          if(pageIdx > 0) doc.addPage();
+          doc.addImage(sliceData, 'PNG', marginMm, marginMm, usableWidthMm, sliceHeightMm);
+          renderedPx += sliceHeightPx;
+          pageIdx++;
+        }
+      }
+      blob = doc.output('blob');
+    } finally {
+      document.body.removeChild(container);
+    }
+    return { blob: blob, fileName: opts.fileName };
+  }
+
+  function escapeHtml_(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+    });
+  }
+
+  function triggerPdfDownload(blob, fileName){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName + '.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // زي shareExcelFile بالظبط بس لملف PDF بدل Excel — بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
+  async function sharePdfFile(blob, fileName, shareText){
+    try{
+      const file = new File([blob], fileName + '.pdf', { type: 'application/pdf' });
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: fileName, text: shareText || '' });
+        return true;
+      }
+    }catch(e){
+      if(e && e.name === 'AbortError') return true;
+    }
+    return false;
   }
 
   // تسجيل الـ Service Worker عشان التطبيق يبقى قابل للتثبيت (PWA حقيقي) ويفتح بسرعة حتى بنت ضعيف
