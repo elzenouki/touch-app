@@ -1741,15 +1741,18 @@
       return;
     }
     list.innerHTML = state.asnaf.map(function(a){
-      // لو عندنا رصيد متوقع محسوب (من آخر جرد + توريد − صافي مبيعات)، بنعرضه كـ"تلميح" في
-      // الـ placeholder بس — مش كـ value — عشان الجرد يفضل تحقق فعلي: المندوب لازم يكتب
-      // العدد الحقيقي اللي قدامه بنفسه، إحنا بس بنوفر عليه دور البحث عن الرقم المتوقع.
+      // لو عندنا رصيد متوقع محسوب (من آخر جرد + توريد − صافي مبيعات)، بنعرضه كسطر صغير
+      // منفصل تحت اسم الصنف (مش جوه الـ input) عشان مايتلخبطش بقيمة متسجلة فعلًا.
+      // المندوب لازم يكتب العدد الحقيقي اللي قدامه بنفسه في الخانة الفاضية دايمًا.
       const hasExpected = typeof a.expectedBalance === 'number' && !isNaN(a.expectedBalance);
-      const placeholder = hasExpected ? ('متوقع: ' + fmt(a.expectedBalance)) : 'العدد';
+      const expectedHtml = hasExpected
+        ? '<div class="meta">الرصيد المتوقع: ' + fmt(a.expectedBalance) + '</div>'
+        : '';
       return (
         '<div style="margin-bottom:14px;">' +
           '<label>' + escapeHtml(a.name) + '</label>' +
-          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="' + escapeHtml(placeholder) + '">' +
+          expectedHtml +
+          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="العدد">' +
         '</div>'
       );
     }).join('');
