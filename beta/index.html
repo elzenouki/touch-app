@@ -2014,7 +2014,7 @@
       const len = String(v === null || v === undefined ? '' : v).length;
       if(len > maxLen) maxLen = len;
     });
-    return Math.max(14, Math.min(42, maxLen + 8));
+    return Math.max(16, Math.min(46, maxLen + 8));
   }
 
   // بيتأكد إن كل قيم العمود ده أرقام (يستخدم عشان نحدد التنسيق ومحاذاة العمود صح)
@@ -2089,22 +2089,17 @@
     }
 
     // بيانات المندوب/الفرع/التاريخ/النوع — في شكل "كارت" بإطار كامل حواليه، كل زوج (تسمية/قيمة)
-    // في عمودين متجاورين بدل سطر مدمج كامل عشان تبقى منظّمة زي جدول بيانات مصغّر
+    // في خلية واحدة مدمجة بعرض الجدول كله (بدل عمودين جنب بعض) عشان ما يحصلش تداخل في القيم
+    // الطويلة (زي اسم الفرع) لما يكون عدد أعمدة الجدول قليل — وده كمان أنضف وأوضح في القراءة
+    // من اليمين للشمال (RTL) واللي احنا بنشتغل بيه، مع wrapText عشان أي نص طويل يلف بدل ما يتقطع
     let r = 3;
     const metaFirstRow = r;
     meta.forEach(function(pair){
-      const half = Math.max(1, Math.floor(colCount / 2));
-      ws.mergeCells(r, 1, r, half);
-      const labelCell = ws.getCell(r, 1);
-      labelCell.value = pair[0] + ':';
-      labelCell.font = { name: numFont, bold: true, size: 13, color: { argb: BRAND_BANNER } };
-      labelCell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
-
-      ws.mergeCells(r, half + 1, r, colCount);
-      const valueCell = ws.getCell(r, half + 1);
-      valueCell.value = pair[1];
-      valueCell.font = { name: numFont, bold: true, size: 13, color: { argb: 'FF1A1A1A' } };
-      valueCell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
+      ws.mergeCells(r, 1, r, colCount);
+      const cell = ws.getCell(r, 1);
+      cell.value = pair[0] + ':   ' + pair[1];
+      cell.font = { name: numFont, bold: true, size: 14, color: { argb: 'FF1A1A1A' } };
+      cell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1, wrapText: true };
 
       for(let c = 1; c <= colCount; c++){
         ws.getCell(r, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_META_BG } };
@@ -2115,7 +2110,7 @@
           right: { style: 'hair', color: { argb: BRAND_META_BORDER } },
         };
       }
-      ws.getRow(r).height = 23;
+      // من غير ارتفاع صف ثابت (customHeight) عشان اكسل يعمل auto-fit للنص لو لف على أكتر من سطر
       r++;
     });
     // إطار خارجي غامق حوالين صندوق البيانات كله عشان يبان كارت متكامل
@@ -2171,7 +2166,7 @@
       row.forEach(function(val, i){
         const cell = ws.getCell(r, i + 1);
         cell.value = val;
-        cell.font = { name: numFont, bold: true, size: 13, color: { argb: 'FF1A1A1A' } };
+        cell.font = { name: numFont, bold: true, size: 14, color: { argb: 'FF1A1A1A' } };
         const isTextCol = !colIsNumeric[i];
         cell.alignment = { horizontal: isTextCol ? 'right' : 'center', vertical: 'middle', indent: isTextCol ? 1 : 0 };
         cell.border = {
@@ -2185,7 +2180,7 @@
           cell.numFmt = colIsInteger[i] ? '#,##0' : '#,##0.00';
         }
       });
-      ws.getRow(r).height = 22;
+      ws.getRow(r).height = 24;
       r++;
     });
     const lastDataRow = r - 1;
