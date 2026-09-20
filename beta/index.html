@@ -406,6 +406,7 @@
     </div>
 
     <button class="adminLink" id="myStatsLink" onclick="openScreen('mystats')" style="border-color:var(--green); background:var(--green-bg); color:var(--green);">📊 مبيعاتي (النهاردة ومن أول الشهر)</button>
+    <button class="adminLink" id="itemSalesLink" onclick="openScreen('itemsales')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">📈 مبيعات الأصناف الشهرية</button>
     <button class="adminLink" id="balancesLink" onclick="openScreen('balances')" style="border-color:var(--gold); background:var(--gold-bg); color:var(--gold-d);">📦 أرصدتي</button>
     <button class="adminLink" id="staleLink" onclick="openScreen('stale')" style="border-color:var(--red); background:var(--red-bg); color:var(--red);">📦 الرواكد</button>
     <button class="adminLink" id="invoiceHistoryLink" onclick="openScreen('history')" style="border-color:var(--navy); background:#eef1f7; color:var(--navy);">📋 سجل فواتيري</button>
@@ -547,6 +548,33 @@
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">الأرقام دي صافي بعد خصم أي مرتجعات — شاشة مشاهدة فقط، مفيش أي تعديل من هنا</div>
   </div>
 
+  <!-- ============ شاشة مبيعات الأصناف الشهرية (تجميع لكل صنف بفلتر شهر) ============ -->
+  <div id="viewItemSales" hidden>
+    <div class="card" id="itemSalesRepPickerCard" hidden>
+      <div class="cardTitle">اختار المندوب</div>
+      <select id="itemSalesRepSelect" onchange="loadItemSalesReport(this.value, document.getElementById('itemSalesMonthSelect').value)"></select>
+    </div>
+    <div class="card">
+      <div class="cardTitle">اختار الشهر</div>
+      <select id="itemSalesMonthSelect" onchange="loadItemSalesReport(currentItemSalesRep_(), this.value)"></select>
+    </div>
+    <div class="card">
+      <div class="cardTitle">إجمالي الشهر</div>
+      <div class="totalBar">
+        <span>صافي الكمية المباعة</span>
+        <span class="val" id="itemSalesTotalQty">0</span>
+      </div>
+      <div class="totalBar" style="margin-top:6px;">
+        <span>إجمالي القيمة</span>
+        <span class="val" id="itemSalesTotalValue">0</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">مبيعات الأصناف (الأكتر مبيعًا فوق)</div>
+      <div id="itemSalesList"></div>
+    </div>
+  </div>
+
   <!-- ============ شاشة الرواكد (مستقلة) ============ -->
   <div id="viewStale" hidden>
     <div class="card" id="staleBranchPickerCard" hidden>
@@ -583,11 +611,11 @@
   <!-- ============ شاشة سجل فواتيري (مشاهدة + إعادة تنزيل/مشاركة) ============ -->
   <div id="viewInvoiceHistory" hidden>
     <div class="card">
-      <div class="cardTitle">فواتيرك السابقة (بيع ومرتجع)</div>
+      <div class="cardTitle">سجلك السابق (مبيعات، مرتجع، جرد، وتوريد)</div>
       <div id="invoiceHistoryList"></div>
     </div>
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
-      لو فقدت ملف إكسل فاتورة سبق ورحّلتها، تقدر تعيد تنزيلها أو مشاركتها من هنا من غير ما تسجّلها تاني
+      لو فقدت ملف إكسل فاتورة/جرد/توريد سبق سجّلته، تقدر تعيد تنزيله أو مشاركته من هنا من غير ما تسجّله تاني
     </div>
   </div>
 
@@ -932,6 +960,7 @@
     if(name === 'admin'){ loadAdmin(); return; }
     if(name === 'prices'){ loadPrices(); return; }
     if(name === 'mystats'){ loadMyStats(); return; }
+    if(name === 'itemsales'){ loadItemSalesReport(); return; }
     if(name === 'stale'){ loadStale(''); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
@@ -984,6 +1013,73 @@
         setView('viewMyStats');
       })
       .catch(onError);
+  }
+
+  // ============ مبيعات الأصناف الشهرية (تجميع لكل صنف بفلتر شهر) ============
+  // نفس منطق "مبيعاتي": للمندوب العادي بتوري مبيعاته هو بس، وللمشرف بتوري قايمة اختيار مندوب
+  // فوق (المناديب اللي هو مشرف عليهم فقط). فوقها فلتر شهر (افتراضيًا الشهر الحالي).
+  let state_itemSalesRepName_ = ''; // آخر مندوب متعروض حاليًا في الشاشة دي — يستخدم لما يتغيّر الشهر بس
+  function currentItemSalesRep_(){ return state_itemSalesRepName_; }
+
+  function loadItemSalesReport(repName, monthKey){
+    document.getElementById('pageTitle').textContent = state.isAdmin ? 'مبيعات الأصناف الشهرية للمناديب' : 'مبيعات الأصناف الشهرية';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('bootstrapItemSalesReport', [state.auth, repName || '', monthKey || ''])
+      .then(function(data){
+        showLoading(false);
+        state_itemSalesRepName_ = data.repName;
+        document.getElementById('pageSub').textContent = data.repName || state.user.name;
+
+        var pickerCard = document.getElementById('itemSalesRepPickerCard');
+        if(data.reps && data.reps.length){
+          pickerCard.hidden = false;
+          var sel = document.getElementById('itemSalesRepSelect');
+          sel.innerHTML = data.reps.map(function(r){
+            var sel2 = (r === data.repName) ? ' selected' : '';
+            return '<option value="' + escapeHtml(r) + '"' + sel2 + '>' + escapeHtml(r) + '</option>';
+          }).join('');
+        } else {
+          pickerCard.hidden = true;
+        }
+
+        var monthSel = document.getElementById('itemSalesMonthSelect');
+        monthSel.innerHTML = data.months.map(function(mk){
+          var parts = mk.split('-');
+          var label = parts[1] + '/' + parts[0];
+          var sel2 = (mk === data.monthKey) ? ' selected' : '';
+          return '<option value="' + mk + '"' + sel2 + '>' + label + '</option>';
+        }).join('');
+
+        document.getElementById('itemSalesTotalQty').textContent = fmt(data.totals.netQty);
+        document.getElementById('itemSalesTotalValue').textContent = fmt(data.totals.value);
+
+        renderItemSalesList(data.items);
+        setView('viewItemSales');
+      })
+      .catch(onError);
+  }
+
+  function renderItemSalesList(items){
+    const list = document.getElementById('itemSalesList');
+    if(!items.length){
+      list.innerHTML = '<div class="empty">مفيش مبيعات متسجلة في الشهر ده</div>';
+      return;
+    }
+    list.innerHTML = items.map(function(it){
+      const returnedNote = it.returnedQty > 0 ? (' <span style="color:var(--red);">(مرتجع ' + fmt(it.returnedQty) + ')</span>') : '';
+      const lastSaleNote = it.lastSaleDate ? (' · آخر بيع ' + escapeHtml(it.lastSaleDate)) : '';
+      return '<div class="itemRow">' +
+        '<div>' +
+          '<div class="name">' + escapeHtml(it.name) + '</div>' +
+          '<div class="meta">' + it.salesCount + ' عملية بيع' + lastSaleNote + '</div>' +
+        '</div>' +
+        '<div style="text-align:left;">' +
+          '<div class="total">' + fmt(it.netQty) + ' قطعة</div>' +
+          '<div class="meta">' + fmt(it.value) + returnedNote + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
   }
 
   // ============ صفحة الرواكد (مستقلة) ============
@@ -1108,20 +1204,31 @@
       .catch(onError);
   }
 
+  // تسمية وشكل كل نوع في سجل فواتيري — نفس الأربع تابات اللي المندوب بيسجّل فيها
+  const HISTORY_TYPE_META = {
+    'بيع': { label: 'مبيعات', neg: false },
+    'مرتجع': { label: 'مرتجع', neg: true },
+    'جرد': { label: 'جرد', neg: false },
+    'توريد': { label: 'توريد', neg: false },
+  };
+
   function renderInvoiceHistory(invoices){
     const list = document.getElementById('invoiceHistoryList');
     if(!invoices.length){
-      list.innerHTML = '<div class="empty">لسه مفيش فواتير متسجلة</div>';
+      list.innerHTML = '<div class="empty">لسه مفيش حاجة متسجلة</div>';
       return;
     }
     list.innerHTML = invoices.map(function(inv){
-      const isReturns = inv.type === 'مرتجع';
+      const meta = HISTORY_TYPE_META[inv.type] || { label: inv.type, neg: false };
       const sidAttr = escapeHtml(inv.sessionId).replace(/'/g, "\\'");
+      // بيع/مرتجع بيعرضوا إجمالي مبلغ، جرد/توريد بيعرضوا إجمالي كمية — حسب النوع
+      const isMoneyType = (inv.type === 'بيع' || inv.type === 'مرتجع');
+      const valueLabel = isMoneyType ? fmt(inv.total) : (fmt(inv.totalQty) + ' قطعة');
       return (
-        '<div class="itemRow' + (isReturns ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:8px;">' +
+        '<div class="itemRow' + (meta.neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:8px;">' +
           '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-            '<div class="name">' + (isReturns ? 'مرتجع' : 'مبيعات') + ' · ' + escapeHtml(inv.date) + '</div>' +
-            '<div class="total">' + fmt(inv.total) + '</div>' +
+            '<div class="name">' + escapeHtml(meta.label) + ' · ' + escapeHtml(inv.date) + '</div>' +
+            '<div class="total">' + valueLabel + '</div>' +
           '</div>' +
           '<div class="meta">' + inv.itemCount + ' صنف/بند</div>' +
           '<div style="display:flex; gap:8px;">' +
@@ -1133,12 +1240,40 @@
     }).join('');
   }
 
+  // بيبني نفس شكل "opts" اللي buildExcelBlob/buildInvoicePdfBlob محتاجينه، لكن لنتيجة يوم
+  // جرد/توريد (result.qtyLabel = 'العدد' أو 'الكمية'، مفيش سعر/إجمالي مالي هنا خالص)
+  function buildJardTawridExcelOptsFromResult_(result){
+    const label = result.qtyLabel || 'الكمية';
+    const rows = result.items.map(it => [it['اسم الصنف'], it[label]]);
+    return {
+      fileName: result.type + '_' + state.user.name + '_' + safeDateForFile(result.date),
+      reportTitle: 'تقرير ' + result.type,
+      meta: [
+        ['اسم المندوب', result.repName || state.user.name],
+        ['الفرع', state.user.branch || '—'],
+        ['التاريخ', result.date],
+        ['عدد الأصناف', result.items.length],
+      ],
+      headers: ['اسم الصنف', label],
+      rows: rows,
+      totalsLabel: 'إجمالي ' + label,
+      totalsValue: result.total,
+      totalsIsCurrency: false,
+    };
+  }
+
+  function historyExcelOptsFromResult_(result){
+    return (result.type === 'جرد' || result.type === 'توريد')
+      ? buildJardTawridExcelOptsFromResult_(result)
+      : buildInvoiceExcelOpts(result, result.type === 'مرتجع');
+  }
+
   function downloadHistoryInvoiceExcel(sessionId){
     clearMsg();
     showLoading(true);
     callApi('getInvoiceDetails', [state.auth, sessionId])
       .then(async function(result){
-        const opts = buildInvoiceExcelOpts(result, result.type === 'مرتجع');
+        const opts = historyExcelOptsFromResult_(result);
         const { blob, fileName } = await buildExcelBlob(opts);
         showLoading(false);
         triggerBlobDownload(blob, fileName);
@@ -1151,7 +1286,7 @@
     showLoading(true);
     callApi('getInvoiceDetails', [state.auth, sessionId])
       .then(async function(result){
-        const opts = buildInvoiceExcelOpts(result, result.type === 'مرتجع');
+        const opts = historyExcelOptsFromResult_(result);
         const { blob, fileName } = await buildInvoicePdfBlob(opts);
         showLoading(false);
         const shared = await sharePdfFile(blob, fileName, opts.fileName);
