@@ -172,6 +172,18 @@
   .ltrNum{ direction:ltr; text-align:left; }
   .row2{display:flex; gap:10px;}
   .row2 > div{flex:1;}
+  /* إحساس بالضغط على أي زرار في التطبيق — من غير كده الزرار مكنش بيدي أي رد فعل بصري لحظة
+     الضغط عليه، فالمستخدم مكنش حاسس إنه دوس فعلاً (خصوصًا مع تأخير طبيعي في رد السيرفر) وكان
+     بيدوس تاني، أو يفتكر إن التطبيق واقف. */
+  button, .homeBtn, .adminLink, .delBtn, .adminToggleBtn, .backBtn{
+    transition: transform .08s ease, opacity .08s ease, background-color .12s ease, box-shadow .12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:not(:disabled):active, .homeBtn:active, .adminLink:active,
+  .delBtn:active, .adminToggleBtn:not(:disabled):active, .backBtn:active{
+    transform: scale(.96);
+    opacity: .85;
+  }
   button.primary{
     width:100%; padding:15px; border:none; border-radius:12px;
     background:var(--navy); color:#ffffff; font-weight:800; font-size:16.5px; cursor:pointer;
@@ -770,7 +782,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory','viewItemSales'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -1170,13 +1182,17 @@
           list.innerHTML = '<div class="empty">مفيش أصناف مسجلة حاليًا</div>';
         } else {
           list.innerHTML = items.map(function(it){
-            var known = it.balance != null;
-            var neg = known && Number(it.balance) < 0;
-            var label = known ? fmt(it.balance) : 'غير محدد';
+            var neg = Number(it.balance) < 0;
+            // لو مفيش جرد رسمي متسجل لهذا الصنف لسه، الرقم ده معتمد بس على توريد/مبيعات
+            // التطبيق (مش مؤكد بجرد فعلي) — بنوضح كده تحته من غير ما نخفيه كـ"غير محدد"
+            var note = !it.hasBaseline ? '<div class="meta">من غير جرد رسمي (اعتمادًا على التوريد/المبيعات)</div>' : '';
             return (
-              '<div class="itemRow' + (neg ? ' neg' : '') + '">' +
-                '<div class="name">' + escapeHtml(it.name) + '</div>' +
-                '<div class="total">' + label + '</div>' +
+              '<div class="itemRow' + (neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:2px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                  '<div class="name">' + escapeHtml(it.name) + '</div>' +
+                  '<div class="total">' + fmt(it.balance) + '</div>' +
+                '</div>' +
+                note +
               '</div>'
             );
           }).join('');
@@ -1565,7 +1581,15 @@
     callApi('updateSaleItem', [state.auth, rowId, qty, price])
       .then(function(data){
         showLoading(false);
-        state.todaySaleInvoice = data;
+        // السيرفر بيرجع بس الصنف اللي اتعدّل (مش الفاتورة كاملة) — أسرع بكتير، فبنحدّث نفس
+        // الصنف ده محليًا في القايمة اللي عندنا بدل ما نطلب كل حاجة تاني
+        const it = items.find(x => String(x.rowId) === String(data.rowId));
+        if(it){
+          it['الكمية'] = data.qty;
+          it['السعر'] = data.price;
+          it['الاجمالي'] = data.total;
+          recomputeTodaySaleTotal_();
+        }
         renderInvoice(state.screen);
         showMsg('اتعدّل الصنف ✔', 'success');
       })
@@ -1579,11 +1603,22 @@
     callApi('deleteSaleItem', [state.auth, rowId])
       .then(function(data){
         showLoading(false);
-        state.todaySaleInvoice = data;
+        // السيرفر بيرجع بس تأكيد نجاح المسح — بنشيل الصنف محليًا من القايمة اللي عندنا
+        const items2 = (state.todaySaleInvoice && state.todaySaleInvoice.items) || [];
+        state.todaySaleInvoice.items = items2.filter(x => String(x.rowId) !== String(data.rowId));
+        recomputeTodaySaleTotal_();
         renderInvoice(state.screen);
         showMsg('اتمسح الصنف ✔', 'success');
       })
       .catch(onError);
+  }
+
+  // بيعيد حساب إجمالي فاتورة اليوم من نفس الأصناف الموجودة محليًا — مستخدمة بعد أي تعديل/مسح/
+  // إضافة صنف عشان منحتاجش نطلب الفاتورة كاملة من السيرفر تاني في كل مرة (أسرع بكتير خصوصًا
+  // كل ما تاب المبيعات يكبر).
+  function recomputeTodaySaleTotal_(){
+    const items = (state.todaySaleInvoice && state.todaySaleInvoice.items) || [];
+    state.todaySaleInvoice.total = items.reduce((s, it) => s + (Number(it['الاجمالي']) || 0), 0);
   }
 
   function renderItemsList(){
@@ -1651,14 +1686,28 @@
       return;
     }
 
-    // مبيعات: إضافة فورية على السيرفر — مفيش تجميع محلي ولا زرار ترحيل، كل صنف بيتسجل لحظيًا
+    // مبيعات: إضافة فورية على السيرفر — مفيش تجميع محلي ولا زرار ترحيل، كل صنف بيتسجل لحظيًا.
+    // بنغيّر نص الزرار نفسه لحد ما الرد يوصل عشان يبقى واضح إن الضغطة اتسجلت وإن فيه حاجة
+    // شغالة فعلاً (مش بس تعطيل الزرار من غير أي رد فعل ظاهر).
     showLoading(true);
-    document.getElementById('addBtn').disabled = true;
+    const addBtnEl = document.getElementById('addBtn');
+    addBtnEl.disabled = true;
+    const addBtnOldText = addBtnEl.textContent;
+    addBtnEl.textContent = 'جارِ الإضافة...';
     callApi('addSaleItem', [state.auth, { itemName: name, qty: qty, price: price }])
       .then(function(data){
         showLoading(false);
-        document.getElementById('addBtn').disabled = false;
-        state.todaySaleInvoice = data;
+        addBtnEl.disabled = false;
+        addBtnEl.textContent = addBtnOldText;
+        // السيرفر بيرجع بس الصنف الجديد (مش الفاتورة كاملة) — أسرع بكتير، فبنضيفه محليًا لنفس
+        // القايمة اللي عندنا بدل ما نطلب الفاتورة من الأول تاني في كل مرة
+        if(!state.todaySaleInvoice.sessionId){
+          state.todaySaleInvoice.sessionId = data.sessionId;
+          state.todaySaleInvoice.date = data.date;
+          state.todaySaleInvoice.repName = data.repName;
+        }
+        state.todaySaleInvoice.items.push(data.item);
+        recomputeTodaySaleTotal_();
         acReset(AC_CONFIGS.item);
         document.getElementById('qtyInput').value = '';
         document.getElementById('priceInput').value = '';
@@ -1666,7 +1715,8 @@
         showMsg('اتضاف الصنف لفاتورة النهاردة ✔', 'success');
       })
       .catch(function(err){
-        document.getElementById('addBtn').disabled = false;
+        addBtnEl.disabled = false;
+        addBtnEl.textContent = addBtnOldText;
         onError(err);
       });
   }
