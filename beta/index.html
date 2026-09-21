@@ -113,18 +113,19 @@
     content:''; position:absolute; inset-inline-start:0; bottom:0; height:3px; width:100%;
     background:linear-gradient(90deg, var(--gold) 0%, transparent 60%);
   }
+  .welcomeRow{display:flex; flex-direction:row-reverse; align-items:center; gap:16px; position:relative;}
   .welcomeCard .badgeIcon{
-    position:relative; width:46px; height:46px; border-radius:50%;
+    position:relative; width:78px; height:78px; border-radius:18px; flex-shrink:0;
     background:linear-gradient(135deg, var(--gold-light), var(--gold));
     display:flex; align-items:center; justify-content:center;
-    font-size:20px; margin-bottom:14px;
-    box-shadow:0 4px 14px rgba(182,134,47,.35);
+    font-size:30px; box-shadow:0 4px 14px rgba(182,134,47,.35);
     overflow:hidden;
   }
   .welcomeCard .badgeIcon.hasPhoto{ background:#fff; padding:0; }
-  .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:50%; }
+  .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:18px; }
+  .welcomeCard .wText{text-align:right;}
   .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
-  .welcomeCard .name{font-size:26px; font-weight:900; color:#ffffff; margin-top:6px; position:relative; letter-spacing:.2px;}
+  .welcomeCard .name{font-size:24px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;}
   .sectionLabel{
     font-size:13px; color:var(--muted2); text-transform:uppercase; letter-spacing:1px;
     margin-bottom:14px; font-weight:800;
@@ -134,17 +135,17 @@
     content:''; width:7px; height:7px; background:var(--gold);
     transform:rotate(45deg); flex-shrink:0; border-radius:1px;
   }
-  .homeGrid{display:flex; flex-direction:column; gap:13px;}
+  .homeGrid{display:grid; grid-template-columns:1fr 1fr; gap:13px;}
   .homeBtn{
-    display:flex; align-items:center; gap:16px;
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:0;
     background:var(--card); border:1px solid var(--border); border-radius:18px;
-    padding:17px 20px; cursor:pointer; text-align:right; width:100%;
+    padding:20px 12px; cursor:pointer; width:100%;
     box-shadow:0 3px 12px rgba(15,28,61,.06);
     transition:box-shadow .15s ease, transform .15s ease;
   }
   .homeBtn:active{background:#faf9f6; box-shadow:0 1px 4px rgba(15,28,61,.08); transform:scale(.99);}
   .homeBtn .icon{
-    width:54px; height:54px; border-radius:50%;
+    width:56px; height:56px; border-radius:16px; margin-bottom:12px;
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
     box-shadow:inset 0 0 0 1px rgba(0,0,0,.03);
   }
@@ -152,9 +153,9 @@
   .homeBtn.returns .icon{background:linear-gradient(135deg, var(--red-bg), #f8d9d9);}
   .homeBtn.tawrid .icon{background:linear-gradient(135deg, var(--blue-bg), #d9e4f5);}
   .homeBtn.jard .icon{background:linear-gradient(135deg, var(--gold-bg), #f3e3bd);}
-  .homeBtn .title{font-size:17.5px; font-weight:800; color:var(--navy);}
-  .homeBtn .desc{font-size:13.5px; color:var(--muted); margin-top:3px;}
-  .homeBtn .chev{color:#c3bfae; font-size:19px; margin-inline-start:auto;}
+  .homeBtn .title{font-size:15.5px; font-weight:800; color:var(--navy);}
+  .homeBtn .desc{font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.4;}
+  .homeBtn .chev{display:none;}
   .adminLink{
     display:flex; align-items:center; justify-content:center; gap:8px;
     width:100%; padding:16px; border-radius:14px; border:1px solid var(--gold);
@@ -425,10 +426,14 @@
 
   <!-- ============ شاشة رئيسية ============ -->
   <div id="viewHome" hidden>
-    <div class="welcomeCard center">
-      <div class="badgeIcon" id="homeBadgeIcon" style="margin-inline:auto;">✦</div>
-      <div class="hi">أهلاً بيك</div>
-      <div class="name" id="homeUserName"></div>
+    <div class="welcomeCard">
+      <div class="welcomeRow">
+        <div class="badgeIcon" id="homeBadgeIcon">✦</div>
+        <div class="wText">
+          <div class="hi">أهلاً بيك</div>
+          <div class="name" id="homeUserName"></div>
+        </div>
+      </div>
     </div>
     <div class="sectionLabel">الإجراءات المتاحة</div>
     <div class="homeGrid">
