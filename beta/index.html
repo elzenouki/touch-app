@@ -134,17 +134,23 @@
     content:''; width:7px; height:7px; background:var(--gold);
     transform:rotate(45deg); flex-shrink:0; border-radius:1px;
   }
-  .homeGrid{display:grid; grid-template-columns:1fr 1fr; gap:13px;}
+  .homeGrid{display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-bottom:26px;}
   .homeBtn{
+    position:relative; overflow:hidden;
     display:flex; flex-direction:column; align-items:center; text-align:center; gap:0;
     background:var(--card); border:1px solid var(--border); border-radius:18px;
-    padding:20px 12px; cursor:pointer; width:100%;
-    box-shadow:0 3px 12px rgba(15,28,61,.06);
+    padding:20px 12px 18px; cursor:pointer; width:100%;
+    box-shadow:0 6px 18px rgba(15,28,61,.09);
     transition:box-shadow .15s ease, transform .15s ease;
   }
+  .homeBtn::before{content:''; position:absolute; inset-inline:0; top:0; height:3.5px;}
+  .homeBtn.sales::before{background:linear-gradient(90deg,#2f8f5b,#59c98a);}
+  .homeBtn.returns::before{background:linear-gradient(90deg,#c73e3e,#e07a7a);}
+  .homeBtn.tawrid::before{background:linear-gradient(90deg,#2f5fa8,#6f9bd8);}
+  .homeBtn.jard::before{background:linear-gradient(90deg,#a9781f,#d9ac52);}
   .homeBtn:active{background:#faf9f6; box-shadow:0 1px 4px rgba(15,28,61,.08); transform:scale(.99);}
   .homeBtn .icon{
-    width:56px; height:56px; border-radius:16px; margin-bottom:12px;
+    width:52px; height:52px; border-radius:15px; margin-bottom:11px;
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
     box-shadow:inset 0 0 0 1px rgba(0,0,0,.03);
   }
@@ -152,15 +158,47 @@
   .homeBtn.returns .icon{background:linear-gradient(135deg, var(--red-bg), #f8d9d9);}
   .homeBtn.tawrid .icon{background:linear-gradient(135deg, var(--blue-bg), #d9e4f5);}
   .homeBtn.jard .icon{background:linear-gradient(135deg, var(--gold-bg), #f3e3bd);}
-  .homeBtn .title{font-size:15.5px; font-weight:800; color:var(--navy);}
-  .homeBtn .desc{font-size:12.5px; color:var(--muted); margin-top:4px; line-height:1.4;}
+  .homeBtn .title{font-size:15px; font-weight:800; color:var(--navy);}
+  .homeBtn .desc{font-size:11.5px; color:var(--muted); margin-top:4px; line-height:1.4;}
   .homeBtn .chev{display:none;}
-  .adminLink{
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    width:100%; padding:16px; border-radius:14px; border:1px solid var(--gold);
-    background:var(--gold-bg); color:var(--gold-d); font-weight:800; font-size:15.5px;
-    cursor:pointer; margin-top:18px; letter-spacing:.2px;
+
+  /* ============ لوحة "خدمات إضافية" — تجميع باقي الأزرار في شبكة مربعة مصغّرة ============ */
+  .subHeader{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
+  .subHeader .line{flex:1; height:1px; background:var(--border);}
+  .subHeader .lbl{font-size:12px; font-weight:800; color:var(--muted2); white-space:nowrap; text-transform:uppercase; letter-spacing:.5px;}
+  .subPanel{
+    background:linear-gradient(180deg, #fdfcf9, #f6f4ee);
+    border:1px solid var(--border); border-radius:20px; padding:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 3px 10px rgba(15,28,61,.04);
   }
+  .gridSub{display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px;}
+  .adminLink{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:12px 6px 10px; text-align:center; cursor:pointer;
+    box-shadow:0 2px 7px rgba(15,28,61,.05);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
+  }
+  .adminLink .icon{
+    width:38px; height:38px; border-radius:50%; margin-bottom:8px;
+    display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+  }
+  .adminLink .title{font-size:11.5px; font-weight:700; color:var(--navy); line-height:1.3; min-height:28px; display:flex; align-items:center; justify-content:center;}
+  .adminLink.ic-settings .icon{background:#eef1f7; color:var(--navy);}
+  .adminLink.ic-products .icon{background:var(--blue-bg); color:var(--blue);}
+  .adminLink.ic-suggest .icon{background:var(--gold-bg); color:var(--gold-d);}
+  .adminLink.ic-mystats .icon{background:var(--green-bg); color:#2f8f5b;}
+  .adminLink.ic-itemsales .icon{background:var(--blue-bg); color:var(--blue);}
+  .adminLink.ic-balances .icon{background:var(--gold-bg); color:var(--gold-d);}
+  .adminLink.ic-stale .icon{background:var(--red-bg); color:#c73e3e;}
+  .adminLink.ic-history .icon{background:#eef1f7; color:var(--navy);}
+  .adminLink.ic-prices .icon{background:var(--blue-bg); color:var(--blue);}
+  .adminLink.ic-admin .icon{background:var(--gold-bg); color:var(--gold-d);}
+  .adminLink.ic-logout .icon{background:var(--red-bg); color:#c73e3e;}
+  .adminLink.wide{
+    grid-column:1 / -1; flex-direction:row; padding:11px; gap:8px;
+  }
+  .adminLink.wide .icon{margin-bottom:0; width:30px; height:30px;}
+  .adminLink.wide .title{min-height:0;}
   label{display:block; font-size:14.5px; color:var(--muted2); margin-bottom:7px; font-weight:700;}
   select, input{
     width:100%; padding:14px 15px; border-radius:11px; border:1px solid var(--border);
@@ -478,17 +516,22 @@
       </button>
     </div>
 
-    <button class="adminLink" id="profileLink" onclick="openScreen('profile')" style="border-color:var(--navy); background:#eef1f7; color:var(--navy);">⚙ إعداداتي</button>
-    <button class="adminLink" id="productsLink" onclick="openScreen('products')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">📄 وصف المنتجات</button>
-    <button class="adminLink" id="suggestionLink" onclick="openScreen('suggestion')" style="border-color:var(--gold); background:var(--gold-bg); color:var(--gold-d);">💡 ابعت اقتراح</button>
-    <button class="adminLink" id="myStatsLink" onclick="openScreen('mystats')" style="border-color:var(--green); background:var(--green-bg); color:var(--green);">📊 مبيعاتي (النهاردة ومن أول الشهر)</button>
-    <button class="adminLink" id="itemSalesLink" onclick="openScreen('itemsales')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">📈 مبيعات الأصناف الشهرية</button>
-    <button class="adminLink" id="balancesLink" onclick="openScreen('balances')" style="border-color:var(--gold); background:var(--gold-bg); color:var(--gold-d);">📦 أرصدتي</button>
-    <button class="adminLink" id="staleLink" onclick="openScreen('stale')" style="border-color:var(--red); background:var(--red-bg); color:var(--red);">📦 الرواكد</button>
-    <button class="adminLink" id="invoiceHistoryLink" onclick="openScreen('history')" style="border-color:var(--navy); background:#eef1f7; color:var(--navy);">📋 سجل فواتيري</button>
-    <button class="adminLink" id="pricesLink" onclick="openScreen('prices')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">💰 أسعاري (تحديد وتعديل أسعار الأصناف)</button>
-    <button class="adminLink" id="adminLink" onclick="openScreen('admin')" hidden>⚙ إدارة المناديب والمشرفين</button>
-    <button class="adminLink" onclick="handleLogout()" style="border-color:var(--red); background:var(--red-bg); color:var(--red); margin-top:10px;">⎋ تسجيل خروج</button>
+    <div class="subHeader"><span class="lbl">خدمات إضافية</span><span class="line"></span></div>
+    <div class="subPanel">
+      <div class="gridSub">
+        <button class="adminLink ic-settings" id="profileLink" onclick="openScreen('profile')"><div class="icon">⚙</div><div class="title">إعداداتي</div></button>
+        <button class="adminLink ic-products" id="productsLink" onclick="openScreen('products')"><div class="icon">📄</div><div class="title">وصف المنتجات</div></button>
+        <button class="adminLink ic-suggest" id="suggestionLink" onclick="openScreen('suggestion')"><div class="icon">💡</div><div class="title">ابعت اقتراح</div></button>
+        <button class="adminLink ic-mystats" id="myStatsLink" onclick="openScreen('mystats')"><div class="icon">📊</div><div class="title">مبيعاتي</div></button>
+        <button class="adminLink ic-itemsales" id="itemSalesLink" onclick="openScreen('itemsales')"><div class="icon">📈</div><div class="title">مبيعات الأصناف</div></button>
+        <button class="adminLink ic-balances" id="balancesLink" onclick="openScreen('balances')"><div class="icon">📦</div><div class="title">أرصدتي</div></button>
+        <button class="adminLink ic-stale" id="staleLink" onclick="openScreen('stale')"><div class="icon">📦</div><div class="title">الرواكد</div></button>
+        <button class="adminLink ic-history" id="invoiceHistoryLink" onclick="openScreen('history')"><div class="icon">📋</div><div class="title">سجل فواتيري</div></button>
+        <button class="adminLink ic-prices" id="pricesLink" onclick="openScreen('prices')"><div class="icon">💰</div><div class="title">أسعاري</div></button>
+        <button class="adminLink wide ic-admin" id="adminLink" onclick="openScreen('admin')" hidden><div class="icon">⚙</div><div class="title">إدارة المناديب والمشرفين</div></button>
+        <button class="adminLink wide ic-logout" onclick="handleLogout()"><div class="icon">⎋</div><div class="title">تسجيل خروج</div></button>
+      </div>
+    </div>
   </div>
 
   <!-- ============ شاشة فاتورة (مبيعات / مرتجع) ============ -->
@@ -533,9 +576,9 @@
         <span class="val" id="grandTotal">0</span>
       </div>
       <button class="finalize" id="finalizeBtn" onclick="handleFinalize()">✔ موافق وترحيل</button>
-      <div id="invoiceDownloadRow" hidden style="display:flex; gap:8px; margin-top:10px;">
-        <button class="ghost" style="margin-top:0; flex:1;" onclick="downloadInvoiceExcel()">⬇ تحميل Excel</button>
-        <button class="whatsapp" style="margin-top:0; flex:1;" onclick="shareInvoiceExcel()">📤 مشاركة عبر واتساب</button>
+      <div id="invoiceDownloadRow" hidden style="margin-top:10px;">
+        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareInvoiceExcel()">📤 مشاركة صورة الفاتورة</button>
+        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
       </div>
     </div>
   </div>
@@ -561,9 +604,9 @@
       <div class="cardTitle">أصناف التوريد</div>
       <div id="tawridList"></div>
       <button class="finalize" id="saveTawridBtn" onclick="handleSaveTawrid()">✔ تأكيد التوريد</button>
-      <div id="tawridDownloadRow" hidden style="display:flex; gap:8px; margin-top:10px;">
-        <button class="ghost" style="margin-top:0; flex:1;" onclick="downloadTawridExcel()">⬇ تحميل Excel</button>
-        <button class="whatsapp" style="margin-top:0; flex:1;" onclick="shareTawridExcel()">📤 مشاركة عبر واتساب</button>
+      <div id="tawridDownloadRow" hidden style="margin-top:10px;">
+        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareTawridExcel()">📤 مشاركة صورة التوريد</button>
+        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
       </div>
     </div>
   </div>
@@ -578,9 +621,9 @@
       <div class="cardTitle">اكتب العدد الموجود عندك لكل صنف — سيب أي صنف فاضي لو مش موجود عندك خالص</div>
       <div id="jardItemsList"></div>
       <button class="finalize" id="saveJardBtn" onclick="handleSaveJard()">✔ حفظ الجرد</button>
-      <div id="jardDownloadRow" hidden style="display:flex; gap:8px; margin-top:10px;">
-        <button class="ghost" style="margin-top:0; flex:1;" onclick="downloadJardExcel()">⬇ تحميل Excel</button>
-        <button class="whatsapp" style="margin-top:0; flex:1;" onclick="shareJardExcel()">📤 مشاركة عبر واتساب</button>
+      <div id="jardDownloadRow" hidden style="margin-top:10px;">
+        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareJardExcel()">📤 مشاركة صورة الجرد</button>
+        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
       </div>
     </div>
   </div>
@@ -1863,17 +1906,6 @@
     return buildInvoiceExcelOpts(state.finalResult, isReturns);
   }
 
-  function downloadInvoiceExcel(){
-    clearMsg();
-    showLoading(true);
-    buildExcelBlob(currentInvoiceExcelOpts_())
-      .then(function(r){
-        showLoading(false);
-        triggerBlobDownload(r.blob, r.fileName);
-      })
-      .catch(onError);
-  }
-
   function shareInvoiceExcel(){
     clearMsg();
     showLoading(true);
@@ -2007,17 +2039,6 @@
       totalsValue: total,
       totalsIsCurrency: false,
     };
-  }
-
-  function downloadTawridExcel(){
-    clearMsg();
-    showLoading(true);
-    buildExcelBlob(tawridExcelOptsFromState_())
-      .then(function(r){
-        showLoading(false);
-        triggerBlobDownload(r.blob, r.fileName);
-      })
-      .catch(onError);
   }
 
   function shareTawridExcel(){
@@ -2163,17 +2184,6 @@
       totalsValue: total,
       totalsIsCurrency: false,
     };
-  }
-
-  function downloadJardExcel(){
-    clearMsg();
-    showLoading(true);
-    buildExcelBlob(jardExcelOptsFromState_())
-      .then(function(r){
-        showLoading(false);
-        triggerBlobDownload(r.blob, r.fileName);
-      })
-      .catch(onError);
   }
 
   function shareJardExcel(){
