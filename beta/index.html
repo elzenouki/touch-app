@@ -533,8 +533,9 @@
         <span class="val" id="grandTotal">0</span>
       </div>
       <button class="finalize" id="finalizeBtn" onclick="handleFinalize()">✔ موافق وترحيل</button>
-      <div id="invoiceHistoryHint" hidden style="color:var(--muted); font-size:12.5px; text-align:center; padding:10px 4px 2px;">
-        📋 تقدر تنزّل الملف أو تشاركه بعد كده من شاشة "سجل فواتيري"
+      <div id="invoiceDownloadRow" hidden style="display:flex; gap:8px; margin-top:10px;">
+        <button class="ghost" style="margin-top:0; flex:1;" onclick="downloadInvoiceExcel()">⬇ تحميل Excel</button>
+        <button class="whatsapp" style="margin-top:0; flex:1;" onclick="shareInvoiceExcel()">📤 مشاركة عبر واتساب</button>
       </div>
     </div>
   </div>
@@ -560,8 +561,9 @@
       <div class="cardTitle">أصناف التوريد</div>
       <div id="tawridList"></div>
       <button class="finalize" id="saveTawridBtn" onclick="handleSaveTawrid()">✔ تأكيد التوريد</button>
-      <div id="tawridHistoryHint" hidden style="color:var(--muted); font-size:12.5px; text-align:center; padding:10px 4px 2px;">
-        📋 تقدر تنزّل الملف أو تشاركه بعد كده من شاشة "سجل فواتيري"
+      <div id="tawridDownloadRow" hidden style="display:flex; gap:8px; margin-top:10px;">
+        <button class="ghost" style="margin-top:0; flex:1;" onclick="downloadTawridExcel()">⬇ تحميل Excel</button>
+        <button class="whatsapp" style="margin-top:0; flex:1;" onclick="shareTawridExcel()">📤 مشاركة عبر واتساب</button>
       </div>
     </div>
   </div>
@@ -576,8 +578,9 @@
       <div class="cardTitle">اكتب العدد الموجود عندك لكل صنف — سيب أي صنف فاضي لو مش موجود عندك خالص</div>
       <div id="jardItemsList"></div>
       <button class="finalize" id="saveJardBtn" onclick="handleSaveJard()">✔ حفظ الجرد</button>
-      <div id="jardHistoryHint" hidden style="color:var(--muted); font-size:12.5px; text-align:center; padding:10px 4px 2px;">
-        📋 تقدر تنزّل الملف أو تشاركه بعد كده من شاشة "سجل فواتيري"
+      <div id="jardDownloadRow" hidden style="display:flex; gap:8px; margin-top:10px;">
+        <button class="ghost" style="margin-top:0; flex:1;" onclick="downloadJardExcel()">⬇ تحميل Excel</button>
+        <button class="whatsapp" style="margin-top:0; flex:1;" onclick="shareJardExcel()">📤 مشاركة عبر واتساب</button>
       </div>
     </div>
   </div>
@@ -1671,7 +1674,7 @@
     document.getElementById('qtyInput').disabled = state.finalized;
     document.getElementById('priceInput').disabled = state.finalized;
     document.getElementById('returnKindInput').disabled = state.finalized;
-    document.getElementById('invoiceHistoryHint').hidden = !state.finalized;
+    document.getElementById('invoiceDownloadRow').hidden = !state.finalized;
     renderItemsList();
 
     setView('viewInvoice');
@@ -1831,8 +1834,8 @@
   }
 
   // دالة مشتركة لبناء خيارات ملف إكسل فاتورة (بيع/مرتجع) من أي نتيجة بنفس شكل نتيجة
-  // finalizeInvoice — بتُستخدم من شاشة "سجل فواتيري" بس (التنزيل والمشاركة بقوا مقصورين
-  // عليها) عشان منكررش منطق البناء في مكانين
+  // finalizeInvoice — بتُستخدم فور الترحيل في نفس الشاشة، وكمان من شاشة "سجل فواتيري"
+  // (كنسخة احتياطية تانية) عشان منكررش منطق البناء في مكانين
   function buildInvoiceExcelOpts(result, isReturns){
     const label = isReturns ? 'مرتجع' : 'مبيعات';
     const rows = result.items.map(it => {
@@ -1853,6 +1856,38 @@
       totalsLabel: 'الإجمالي',
       totalsValue: result.total,
     };
+  }
+
+  function currentInvoiceExcelOpts_(){
+    const isReturns = (state.screen === 'returns');
+    return buildInvoiceExcelOpts(state.finalResult, isReturns);
+  }
+
+  function downloadInvoiceExcel(){
+    clearMsg();
+    showLoading(true);
+    buildExcelBlob(currentInvoiceExcelOpts_())
+      .then(function(r){
+        showLoading(false);
+        triggerBlobDownload(r.blob, r.fileName);
+      })
+      .catch(onError);
+  }
+
+  function shareInvoiceExcel(){
+    clearMsg();
+    showLoading(true);
+    const opts = currentInvoiceExcelOpts_();
+    buildInvoiceImageBlob(opts)
+      .then(async function(r){
+        showLoading(false);
+        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
+        if(!shared){
+          triggerImageDownload(r.blob, r.fileName);
+          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+        }
+      })
+      .catch(onError);
   }
 
   // ============ التوريد ============
@@ -1884,7 +1919,7 @@
     document.getElementById('saveTawridBtn').disabled = state.tawridFinalized;
     acSetDisabled(AC_CONFIGS.tawridItem, state.tawridFinalized);
     document.getElementById('tawridQtyInput').disabled = state.tawridFinalized;
-    document.getElementById('tawridHistoryHint').hidden = !state.tawridFinalized;
+    document.getElementById('tawridDownloadRow').hidden = !state.tawridFinalized;
 
     renderTawridList();
     setView('viewTawrid');
@@ -1950,6 +1985,57 @@
       });
   }
 
+  // بيبني خيارات ملف إكسل التوريد من أصناف الشاشة نفسها (لسه في الذاكرة عند العميل) — بنستخدمها
+  // بدل نتيجة saveTawrid لأنها مش راجعة فيها تفاصيل الأصناف، بس تأكيد الحفظ
+  function tawridExcelOptsFromState_(){
+    const rows = state.tawridItems.map(it => [it.itemName, it.qty]);
+    const total = state.tawridItems.reduce((s, it) => s + Number(it.qty), 0);
+    const date = (state.tawridResult && state.tawridResult.date) || '';
+    const repName = (state.tawridResult && state.tawridResult.repName) || state.user.name;
+    return {
+      fileName: 'توريد_' + state.user.name + '_' + safeDateForFile(date),
+      reportTitle: 'تقرير توريد',
+      meta: [
+        ['اسم المندوب', repName],
+        ['الفرع', state.user.branch || '—'],
+        ['التاريخ', date],
+        ['عدد الأصناف', state.tawridItems.length],
+      ],
+      headers: ['اسم الصنف', 'الكمية'],
+      rows: rows,
+      totalsLabel: 'إجمالي الكمية',
+      totalsValue: total,
+      totalsIsCurrency: false,
+    };
+  }
+
+  function downloadTawridExcel(){
+    clearMsg();
+    showLoading(true);
+    buildExcelBlob(tawridExcelOptsFromState_())
+      .then(function(r){
+        showLoading(false);
+        triggerBlobDownload(r.blob, r.fileName);
+      })
+      .catch(onError);
+  }
+
+  function shareTawridExcel(){
+    clearMsg();
+    showLoading(true);
+    const opts = tawridExcelOptsFromState_();
+    buildInvoiceImageBlob(opts)
+      .then(async function(r){
+        showLoading(false);
+        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
+        if(!shared){
+          triggerImageDownload(r.blob, r.fileName);
+          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+        }
+      })
+      .catch(onError);
+  }
+
   // ============ الجرد ============
   function loadJard(){
     showLoading(true);
@@ -1974,7 +2060,7 @@
     document.getElementById('jardLockBadge').hidden = !state.jardFinalized;
     document.getElementById('saveJardBtn').hidden = state.jardFinalized;
     document.getElementById('saveJardBtn').disabled = state.jardFinalized;
-    document.getElementById('jardHistoryHint').hidden = !state.jardFinalized;
+    document.getElementById('jardDownloadRow').hidden = !state.jardFinalized;
 
     renderJardItemsList();
     setView('viewJard');
@@ -2054,6 +2140,56 @@
         if(btn) btn.disabled = false;
         onError(err);
       });
+  }
+
+  // بيبني خيارات ملف إكسل الجرد من أصناف الشاشة نفسها (اللي اتحفظت فعلاً في state.jardItems)
+  function jardExcelOptsFromState_(){
+    const rows = state.jardItems.map(it => [it.itemName, it.count]);
+    const total = state.jardItems.reduce((s, it) => s + Number(it.count), 0);
+    const date = (state.jardResult && state.jardResult.date) || '';
+    const repName = (state.jardResult && state.jardResult.repName) || state.user.name;
+    return {
+      fileName: 'جرد_' + state.user.name + '_' + safeDateForFile(date),
+      reportTitle: 'تقرير جرد',
+      meta: [
+        ['اسم المندوب', repName],
+        ['الفرع', state.user.branch || '—'],
+        ['التاريخ', date],
+        ['عدد الأصناف', state.jardItems.length],
+      ],
+      headers: ['اسم الصنف', 'العدد'],
+      rows: rows,
+      totalsLabel: 'إجمالي العدد',
+      totalsValue: total,
+      totalsIsCurrency: false,
+    };
+  }
+
+  function downloadJardExcel(){
+    clearMsg();
+    showLoading(true);
+    buildExcelBlob(jardExcelOptsFromState_())
+      .then(function(r){
+        showLoading(false);
+        triggerBlobDownload(r.blob, r.fileName);
+      })
+      .catch(onError);
+  }
+
+  function shareJardExcel(){
+    clearMsg();
+    showLoading(true);
+    const opts = jardExcelOptsFromState_();
+    buildInvoiceImageBlob(opts)
+      .then(async function(r){
+        showLoading(false);
+        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
+        if(!shared){
+          triggerImageDownload(r.blob, r.fileName);
+          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+        }
+      })
+      .catch(onError);
   }
 
   // ============ إضافة مندوب (مشرفين فقط) ============
