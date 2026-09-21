@@ -21,10 +21,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
-<!-- محتاجينهم عشان مشاركة الفاتورة تطلع PDF (بدل Excel) — التنزيل نفسه فاضل Excel زي ما هو -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- ExcelJS و html2canvas اتشالوا من هنا عشان يتحمّلوا بس وقت الحاجة الفعلية ليهم (تحميل/مشاركة
+     من شاشة "سجل فواتيري")، مش مع كل فتح للتطبيق — ده بيسرّع فتح التطبيق بشكل ملحوظ، خصوصًا على
+     نت ضعيف. شوف loadScriptOnce_ تحت. -->
 <style>
   :root{
     --bg:#f7f6f2; --card:#ffffff; --card2:#faf8f3; --border:#e4dfd1;
@@ -534,8 +533,9 @@
         <span class="val" id="grandTotal">0</span>
       </div>
       <button class="finalize" id="finalizeBtn" onclick="handleFinalize()">✔ موافق وترحيل</button>
-      <button class="ghost" id="downloadBtn" onclick="downloadInvoiceExcel()" disabled>⬇ تحميل Excel (متاح بعد الترحيل)</button>
-      <button class="whatsapp" id="shareBtn" onclick="shareInvoiceExcel()" disabled>📤 مشاركة عبر واتساب</button>
+      <div id="invoiceHistoryHint" hidden style="color:var(--muted); font-size:12.5px; text-align:center; padding:10px 4px 2px;">
+        📋 تقدر تنزّل الملف أو تشاركه بعد كده من شاشة "سجل فواتيري"
+      </div>
     </div>
   </div>
 
@@ -560,8 +560,9 @@
       <div class="cardTitle">أصناف التوريد</div>
       <div id="tawridList"></div>
       <button class="finalize" id="saveTawridBtn" onclick="handleSaveTawrid()">✔ تأكيد التوريد</button>
-      <button class="ghost" id="tawridDownloadBtn" onclick="downloadTawridExcel()" disabled>⬇ تحميل Excel (متاح بعد التأكيد)</button>
-      <button class="whatsapp" id="tawridShareBtn" onclick="shareTawridExcel()" disabled>📤 مشاركة عبر واتساب</button>
+      <div id="tawridHistoryHint" hidden style="color:var(--muted); font-size:12.5px; text-align:center; padding:10px 4px 2px;">
+        📋 تقدر تنزّل الملف أو تشاركه بعد كده من شاشة "سجل فواتيري"
+      </div>
     </div>
   </div>
 
@@ -575,8 +576,9 @@
       <div class="cardTitle">اكتب العدد الموجود عندك لكل صنف — سيب أي صنف فاضي لو مش موجود عندك خالص</div>
       <div id="jardItemsList"></div>
       <button class="finalize" id="saveJardBtn" onclick="handleSaveJard()">✔ حفظ الجرد</button>
-      <button class="ghost" id="jardDownloadBtn" onclick="downloadJardExcel()" disabled>⬇ تحميل Excel (متاح بعد الحفظ)</button>
-      <button class="whatsapp" id="jardShareBtn" onclick="shareJardExcel()" disabled>📤 مشاركة عبر واتساب</button>
+      <div id="jardHistoryHint" hidden style="color:var(--muted); font-size:12.5px; text-align:center; padding:10px 4px 2px;">
+        📋 تقدر تنزّل الملف أو تشاركه بعد كده من شاشة "سجل فواتيري"
+      </div>
     </div>
   </div>
 
@@ -857,6 +859,29 @@
         }
         throw err;
       });
+  }
+
+  // ============ تحميل مكتبات خارجية (ExcelJS / html2canvas) عند الحاجة الفعلية بس ============
+  // بدل ما نحملهم مع كل فتح للتطبيق (كانوا بيتحملوا في <head> قبل كده)، بنحملهم أول مرة يحتاجهم
+  // فيها المستخدم فعلاً — تنزيل أو مشاركة ملف من شاشة "سجل فواتيري" — وبعدين بيفضلوا محفوظين في
+  // المتصفح (Promise واحد لكل رابط) فمش بيتحمّلوا تاني في نفس الجلسة.
+  const _loadedScripts_ = {};
+  function loadScriptOnce_(src){
+    if(_loadedScripts_[src]) return _loadedScripts_[src];
+    _loadedScripts_[src] = new Promise(function(resolve, reject){
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = function(){ resolve(); };
+      s.onerror = function(){ delete _loadedScripts_[src]; reject(new Error('تعذر تحميل مكتبة مطلوبة — تأكد إنك متصل بالإنترنت وحاول تاني')); };
+      document.head.appendChild(s);
+    });
+    return _loadedScripts_[src];
+  }
+  function ensureExcelJsLoaded_(){
+    return loadScriptOnce_('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
+  }
+  function ensureHtml2CanvasLoaded_(){
+    return loadScriptOnce_('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
   }
 
   // رقم مرجعي فريد (مش لازم يبقى UUID رسمي، بس محتاج يبقى مختلف كل مرة) — بيتبعت مع طلبات
@@ -1399,7 +1424,7 @@
     }).join('');
   }
 
-  // بيبني نفس شكل "opts" اللي buildExcelBlob/buildInvoicePdfBlob محتاجينه، لكن لنتيجة يوم
+  // بيبني نفس شكل "opts" اللي buildExcelBlob/buildInvoiceImageBlob محتاجينه، لكن لنتيجة يوم
   // جرد/توريد (result.qtyLabel = 'العدد' أو 'الكمية'، مفيش سعر/إجمالي مالي هنا خالص)
   function buildJardTawridExcelOptsFromResult_(result){
     const label = result.qtyLabel || 'الكمية';
@@ -1446,11 +1471,11 @@
     callApi('getInvoiceDetails', [state.auth, sessionId])
       .then(async function(result){
         const opts = historyExcelOptsFromResult_(result);
-        const { blob, fileName } = await buildInvoicePdfBlob(opts);
+        const { blob, fileName } = await buildInvoiceImageBlob(opts);
         showLoading(false);
-        const shared = await sharePdfFile(blob, fileName, opts.fileName);
+        const shared = await shareImageFile(blob, fileName, opts.fileName);
         if(!shared){
-          triggerPdfDownload(blob, fileName);
+          triggerImageDownload(blob, fileName);
           showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
         }
       })
@@ -1646,11 +1671,7 @@
     document.getElementById('qtyInput').disabled = state.finalized;
     document.getElementById('priceInput').disabled = state.finalized;
     document.getElementById('returnKindInput').disabled = state.finalized;
-    document.getElementById('downloadBtn').disabled = !state.finalized;
-    document.getElementById('downloadBtn').textContent = state.finalized
-      ? '⬇ تحميل Excel'
-      : '⬇ تحميل Excel (متاح بعد الترحيل)';
-    document.getElementById('shareBtn').disabled = !state.finalized;
+    document.getElementById('invoiceHistoryHint').hidden = !state.finalized;
     renderItemsList();
 
     setView('viewInvoice');
@@ -1810,8 +1831,8 @@
   }
 
   // دالة مشتركة لبناء خيارات ملف إكسل فاتورة (بيع/مرتجع) من أي نتيجة بنفس شكل نتيجة
-  // finalizeInvoice — بتُستخدم فورًا بعد الترحيل (invoiceExcelOpts تحت) وكمان من شاشة
-  // "سجل فواتيري" لإعادة بناء نفس الملف من غير ما نكرر منطق البناء في مكانين
+  // finalizeInvoice — بتُستخدم من شاشة "سجل فواتيري" بس (التنزيل والمشاركة بقوا مقصورين
+  // عليها) عشان منكررش منطق البناء في مكانين
   function buildInvoiceExcelOpts(result, isReturns){
     const label = isReturns ? 'مرتجع' : 'مبيعات';
     const rows = result.items.map(it => {
@@ -1832,32 +1853,6 @@
       totalsLabel: 'الإجمالي',
       totalsValue: result.total,
     };
-  }
-
-  function invoiceExcelOpts(){
-    const isReturns = (state.screen === 'returns');
-    return buildInvoiceExcelOpts(state.finalResult, isReturns);
-  }
-
-  function invoiceHasContent_(){
-    return state.finalized;
-  }
-
-  async function downloadInvoiceExcel(){
-    if(!invoiceHasContent_()) return;
-    const { blob, fileName } = await buildExcelBlob(invoiceExcelOpts());
-    triggerBlobDownload(blob, fileName);
-  }
-
-  async function shareInvoiceExcel(){
-    if(!invoiceHasContent_()) return;
-    const opts = invoiceExcelOpts();
-    const { blob, fileName } = await buildInvoicePdfBlob(opts);
-    const shared = await sharePdfFile(blob, fileName, opts.fileName);
-    if(!shared){
-      triggerPdfDownload(blob, fileName);
-      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-    }
   }
 
   // ============ التوريد ============
@@ -1889,11 +1884,7 @@
     document.getElementById('saveTawridBtn').disabled = state.tawridFinalized;
     acSetDisabled(AC_CONFIGS.tawridItem, state.tawridFinalized);
     document.getElementById('tawridQtyInput').disabled = state.tawridFinalized;
-    document.getElementById('tawridDownloadBtn').disabled = !state.tawridFinalized;
-    document.getElementById('tawridDownloadBtn').textContent = state.tawridFinalized
-      ? '⬇ تحميل Excel'
-      : '⬇ تحميل Excel (متاح بعد التأكيد)';
-    document.getElementById('tawridShareBtn').disabled = !state.tawridFinalized;
+    document.getElementById('tawridHistoryHint').hidden = !state.tawridFinalized;
 
     renderTawridList();
     setView('viewTawrid');
@@ -1959,43 +1950,6 @@
       });
   }
 
-  function tawridExcelOpts(){
-    const rows = state.tawridItems.map(it => [it.itemName, it.qty]);
-    const totalQty = state.tawridItems.reduce((s, it) => s + (Number(it.qty) || 0), 0);
-    return {
-      fileName: 'توريد_' + state.user.name + '_' + safeDateForFile(state.tawridResult.date),
-      reportTitle: 'تقرير توريد',
-      meta: [
-        ['اسم المندوب', state.user.name],
-        ['الفرع', state.user.branch || '—'],
-        ['التاريخ', state.tawridResult.date],
-        ['عدد الأصناف', state.tawridItems.length],
-      ],
-      headers: ['اسم الصنف', 'الكمية'],
-      rows: rows,
-      totalsLabel: 'إجمالي الكمية',
-      totalsValue: totalQty,
-      totalsIsCurrency: false,
-    };
-  }
-
-  async function downloadTawridExcel(){
-    if(!state.tawridFinalized) return;
-    const { blob, fileName } = await buildExcelBlob(tawridExcelOpts());
-    triggerBlobDownload(blob, fileName);
-  }
-
-  async function shareTawridExcel(){
-    if(!state.tawridFinalized) return;
-    const opts = tawridExcelOpts();
-    const { blob, fileName } = await buildInvoicePdfBlob(opts);
-    const shared = await sharePdfFile(blob, fileName, opts.fileName);
-    if(!shared){
-      triggerPdfDownload(blob, fileName);
-      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-    }
-  }
-
   // ============ الجرد ============
   function loadJard(){
     showLoading(true);
@@ -2020,11 +1974,7 @@
     document.getElementById('jardLockBadge').hidden = !state.jardFinalized;
     document.getElementById('saveJardBtn').hidden = state.jardFinalized;
     document.getElementById('saveJardBtn').disabled = state.jardFinalized;
-    document.getElementById('jardDownloadBtn').disabled = !state.jardFinalized;
-    document.getElementById('jardDownloadBtn').textContent = state.jardFinalized
-      ? '⬇ تحميل Excel'
-      : '⬇ تحميل Excel (متاح بعد الحفظ)';
-    document.getElementById('jardShareBtn').disabled = !state.jardFinalized;
+    document.getElementById('jardHistoryHint').hidden = !state.jardFinalized;
 
     renderJardItemsList();
     setView('viewJard');
@@ -2104,43 +2054,6 @@
         if(btn) btn.disabled = false;
         onError(err);
       });
-  }
-
-  function jardExcelOpts(){
-    const rows = state.jardItems.map(it => [it.itemName, it.count]);
-    const totalCount = state.jardItems.reduce((s, it) => s + (Number(it.count) || 0), 0);
-    return {
-      fileName: 'جرد_' + state.user.name + '_' + safeDateForFile(state.jardResult.date),
-      reportTitle: 'تقرير جرد',
-      meta: [
-        ['اسم المندوب', state.user.name],
-        ['الفرع', state.user.branch || '—'],
-        ['التاريخ', state.jardResult.date],
-        ['عدد الأصناف', state.jardItems.length],
-      ],
-      headers: ['اسم الصنف', 'الجرد'],
-      rows: rows,
-      totalsLabel: 'إجمالي الجرد',
-      totalsValue: totalCount,
-      totalsIsCurrency: false,
-    };
-  }
-
-  async function downloadJardExcel(){
-    if(!state.jardFinalized) return;
-    const { blob, fileName } = await buildExcelBlob(jardExcelOpts());
-    triggerBlobDownload(blob, fileName);
-  }
-
-  async function shareJardExcel(){
-    if(!state.jardFinalized) return;
-    const opts = jardExcelOpts();
-    const { blob, fileName } = await buildInvoicePdfBlob(opts);
-    const shared = await sharePdfFile(blob, fileName, opts.fileName);
-    if(!shared){
-      triggerPdfDownload(blob, fileName);
-      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-    }
   }
 
   // ============ إضافة مندوب (مشرفين فقط) ============
@@ -2657,8 +2570,9 @@
   const BRAND_ZEBRA = 'FFEAF2FA';
   const BRAND_FRAME = 'FF1F4E79';
 
-  // ============ توليد ملف Excel منسّق (يُستخدم في كل الشاشات) — بيرجع Blob بس من غير تنزيل ============
+  // ============ توليد ملف Excel منسّق (يُستخدم من شاشة "سجل فواتيري" بس) — بيرجع Blob بس من غير تنزيل ============
   async function buildExcelBlob(opts){
+    await ensureExcelJsLoaded_();
     const headers = opts.headers;
     const rows = opts.rows;
     const meta = opts.meta || [];
@@ -2882,50 +2796,62 @@
     return { blob: blob, fileName: opts.fileName };
   }
 
-  // ============ توليد نفس التقرير كملف PDF (يُستخدم في "مشاركة" فقط — التنزيل فاضل Excel) ============
+  // ============ توليد نفس التقرير كصورة PNG (يُستخدم في "مشاركة" فقط — التنزيل فاضل Excel) ============
   // بنبني نفس بيانات التقرير كصفحة HTML عادية بخط عربي واضح وألوان هويّة الشركة، وبعدين بنصوّرها
-  // (html2canvas) ونحطها جوه ملف PDF (jsPDF). الطريقة دي بتضمن إن العربي يتكتب صح 100% (زي ما
-  // المتصفح نفسه بيعرضه) من غير مشاكل الخطوط المعروفة مع مكتبات PDF اللي بتكتب نص عربي مباشرة.
-  async function buildInvoicePdfBlob(opts){
+  // (html2canvas) ونطلعها كصورة PNG واحدة. الطريقة دي بتضمن إن العربي يتكتب صح 100% (زي ما
+  // المتصفح نفسه بيعرضه)، وأخف وأسرع بكتير من تجميعها في ملف PDF (مفيش تقسيم صفحات ولا مكتبة
+  // إضافية) — والصورة كمان بتتفتح مباشرة جوه واتساب من غير ما تحتاج فاتح PDF منفصل.
+  // ARGB (زي 'FF1F4E79') لـ CSS hex عادي ('#1F4E79') — عشان نستخدم نفس ألوان BRAND_* بتاعة
+  // ملف الإكسل هنا بالظبط، فتطلع الصورة بنفس هوية الشكل تمامًا
+  function argbToCss_(argb){ return '#' + argb.slice(2); }
+
+  async function buildInvoiceImageBlob(opts){
+    await ensureHtml2CanvasLoaded_();
     const headers = opts.headers;
     const rows = opts.rows;
     const meta = opts.meta || [];
-    const PDF_NAVY = '#0c1730';
-    const PDF_GOLD = '#b6862f';
-    const PDF_GOLD_BG = '#faf3e1';
-    const PDF_BORDER = '#e4dfd1';
-    const PDF_ZEBRA = '#f7f6f2';
+    // نفس ألوان "الأزرق الكوربوريتي" المستخدمة في ملف الإكسل بالظبط (BRAND_* فوق)
+    const C_BANNER = argbToCss_(BRAND_BANNER);
+    const C_SUBTITLE = argbToCss_(BRAND_SUBTITLE_BG);
+    const C_META_BG = argbToCss_(BRAND_META_BG);
+    const C_META_BORDER = argbToCss_(BRAND_META_BORDER);
+    const C_GRID = argbToCss_(BRAND_GRID);
+    const C_ZEBRA = argbToCss_(BRAND_ZEBRA);
+    const C_FRAME = argbToCss_(BRAND_FRAME);
+    const C_ACCENT = argbToCss_(BRAND_ACCENT);
 
     const isNumericCol = headers.map(function(_, i){ return isNumericCol_(rows.map(function(r){ return r[i]; })); });
     const isCurrencyCol = headers.map(function(h, i){ return isNumericCol[i] && isCurrencyHeader_(h); });
 
-    const metaHtml = meta.map(function(pair){
-      return '<div style="padding:9px 14px; border-bottom:1px solid ' + PDF_BORDER + '; font-size:15px; font-weight:700; color:#1a1a1a;">' +
-        '<span style="color:' + PDF_NAVY + ';">' + escapeHtml_(pair[0]) + ':</span>&nbsp;&nbsp;' + escapeHtml_(String(pair[1])) +
+    const metaHtml = meta.map(function(pair, i){
+      const isLast = i === meta.length - 1;
+      return '<div style="padding:9px 14px; ' + (isLast ? '' : 'border-bottom:1px solid ' + C_META_BORDER + '; ') +
+        'font-size:15px; font-weight:700; color:#1a1a1a; background:' + C_META_BG + ';">' +
+        '<span style="color:' + C_BANNER + ';">' + escapeHtml_(pair[0]) + ':</span>&nbsp;&nbsp;' + escapeHtml_(String(pair[1])) +
         '</div>';
     }).join('');
 
     const headHtml = headers.map(function(h){
-      return '<th style="padding:10px 8px; font-size:14.5px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + ';">' + escapeHtml_(h) + '</th>';
+      return '<th style="padding:10px 8px; font-size:14.5px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_ACCENT + ';">' + escapeHtml_(h) + '</th>';
     }).join('');
 
     const rowsHtml = rows.map(function(row, ri){
-      const bg = (ri % 2 === 1) ? PDF_ZEBRA : '#ffffff';
+      const bg = (ri % 2 === 1) ? C_ZEBRA : '#ffffff';
       const cells = row.map(function(val, i){
         const align = isNumericCol[i] ? 'center' : 'right';
         let display = val === null || val === undefined ? '' : val;
         if(typeof display === 'number'){
           display = isCurrencyCol[i] ? (display.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م') : display.toLocaleString('en-US');
         }
-        return '<td style="padding:8px; font-size:14px; font-weight:700; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + PDF_BORDER + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
+        return '<td style="padding:8px; font-size:14px; font-weight:700; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + C_GRID + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
       }).join('');
       return '<tr>' + cells + '</tr>';
     }).join('');
 
     const totalsHtml = opts.totalsLabel ? (
       '<tr>' +
-        '<td colspan="' + (headers.length - 1) + '" style="padding:10px 8px; font-size:15px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
-        '<td style="padding:10px 8px; font-size:16px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + '; text-align:center;">' +
+        '<td colspan="' + (headers.length - 1) + '" style="padding:10px 8px; font-size:15px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
+        '<td style="padding:10px 8px; font-size:16px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:center;">' +
           (typeof opts.totalsValue === 'number'
             ? (opts.totalsIsCurrency === false ? opts.totalsValue.toLocaleString('en-US') : opts.totalsValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م')
             : escapeHtml_(String(opts.totalsValue))) +
@@ -2941,10 +2867,10 @@
     container.style.cssText = 'position:fixed; top:0; left:-99999px; width:794px; background:#ffffff; direction:rtl; font-family:"Cairo","Tajawal",Arial,sans-serif;';
     container.innerHTML =
       '<div style="padding:24px;">' +
-        '<div style="background:' + PDF_NAVY + '; color:#fff; text-align:center; font-size:22px; font-weight:900; padding:16px; border-radius:10px 10px 0 0;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
-        '<div style="background:' + PDF_GOLD + '; color:#fff; text-align:center; font-size:15px; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + '</div>' +
-        '<div style="background:' + PDF_GOLD_BG + '; border:1px solid ' + PDF_BORDER + '; border-top:none;">' + metaHtml + '</div>' +
-        '<table style="width:100%; border-collapse:collapse; margin-top:14px;"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
+        '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; font-size:20px; font-weight:900; padding:16px;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
+        '<div style="background:' + C_SUBTITLE + '; color:#fff; text-align:center; font-size:14.5px; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + '</div>' +
+        '<div style="border:2px solid ' + C_ACCENT + '; border-top:none; margin-bottom:14px;">' + metaHtml + '</div>' +
+        '<table style="width:100%; border-collapse:collapse; border:2px solid ' + C_FRAME + ';"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
         '<div style="text-align:center; font-size:11px; color:#9a9a9a; font-style:italic; margin-top:14px;">تم إنشاء الملف تلقائيًا بتاريخ ' + stamp + '</div>' +
       '</div>';
     document.body.appendChild(container);
@@ -2952,38 +2878,7 @@
     let blob;
     try{
       const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-      const imgData = canvas.toDataURL('image/png');
-      const { jsPDF } = window.jspdf;
-      const pageWidthMm = 210, pageHeightMm = 297, marginMm = 8;
-      const usableWidthMm = pageWidthMm - marginMm * 2;
-      const imgHeightMm = (canvas.height * usableWidthMm) / canvas.width;
-      const doc = new jsPDF('p', 'mm', 'a4');
-      const usableHeightMm = pageHeightMm - marginMm * 2;
-
-      if(imgHeightMm <= usableHeightMm){
-        doc.addImage(imgData, 'PNG', marginMm, marginMm, usableWidthMm, imgHeightMm);
-      } else {
-        // التقرير أطول من صفحة A4 واحدة — نقسّم الصورة على شرائح ونحط كل شريحة في صفحة
-        const pxPerMm = canvas.width / usableWidthMm;
-        const pageHeightPx = usableHeightMm * pxPerMm;
-        let renderedPx = 0;
-        let pageIdx = 0;
-        while(renderedPx < canvas.height){
-          const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
-          const sliceCanvas = document.createElement('canvas');
-          sliceCanvas.width = canvas.width;
-          sliceCanvas.height = sliceHeightPx;
-          const ctx = sliceCanvas.getContext('2d');
-          ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
-          const sliceData = sliceCanvas.toDataURL('image/png');
-          const sliceHeightMm = (sliceHeightPx * usableWidthMm) / canvas.width;
-          if(pageIdx > 0) doc.addPage();
-          doc.addImage(sliceData, 'PNG', marginMm, marginMm, usableWidthMm, sliceHeightMm);
-          renderedPx += sliceHeightPx;
-          pageIdx++;
-        }
-      }
-      blob = doc.output('blob');
+      blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
     } finally {
       document.body.removeChild(container);
     }
@@ -2996,21 +2891,21 @@
     });
   }
 
-  function triggerPdfDownload(blob, fileName){
+  function triggerImageDownload(blob, fileName){
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName + '.pdf';
+    a.download = fileName + '.png';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
-  // زي shareExcelFile بالظبط بس لملف PDF بدل Excel — بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
-  async function sharePdfFile(blob, fileName, shareText){
+  // زي shareExcelFile بالظبط بس لصورة PNG بدل Excel — بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
+  async function shareImageFile(blob, fileName, shareText){
     try{
-      const file = new File([blob], fileName + '.pdf', { type: 'application/pdf' });
+      const file = new File([blob], fileName + '.png', { type: 'image/png' });
       if(navigator.canShare && navigator.canShare({ files: [file] })){
         await navigator.share({ files: [file], title: fileName, text: shareText || '' });
         return true;
