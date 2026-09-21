@@ -318,6 +318,41 @@
     display:flex; justify-content:space-between; align-items:center;
     padding-top:16px; margin-top:6px; font-weight:900; font-size:18px; color:var(--gold-d);
   }
+  .dayChipsWrap{display:flex; flex-wrap:wrap; margin-bottom:14px;}
+  .dayChip{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:9px 14px; border-radius:20px; border:1px solid var(--border);
+    background:var(--card2); color:var(--muted2); font-weight:700; font-size:13.5px;
+    cursor:pointer; margin:4px; user-select:none;
+  }
+  .dayChip.active{background:var(--gold-bg); border-color:var(--gold); color:var(--gold-d);}
+  .profilePhotoWrap{display:flex; flex-direction:column; align-items:center; margin-bottom:18px; gap:10px;}
+  .profilePhotoImg{
+    width:110px; height:110px; border-radius:50%; object-fit:cover;
+    border:3px solid var(--gold); background:var(--card2);
+  }
+  .profilePhotoPlaceholder{
+    width:110px; height:110px; border-radius:50%; background:var(--card2); border:2px dashed var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:34px; color:var(--muted);
+  }
+  .videoCard{
+    background:var(--card2); border:1px solid var(--border); border-radius:13px;
+    padding:14px 16px; margin-bottom:12px;
+  }
+  .videoCard .vTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:10px;}
+  .videoCard iframe{width:100%; aspect-ratio:16/9; border:none; border-radius:9px;}
+  .suggRow{
+    background:var(--card2); border:1px solid var(--border); border-radius:13px;
+    padding:14px 16px; margin-bottom:9px;
+  }
+  .suggRow .sMeta{font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:700;}
+  .suggRow .sText{font-size:14.5px; color:var(--text); font-weight:600; white-space:pre-wrap;}
+  textarea{
+    width:100%; padding:14px 15px; border-radius:11px; border:1px solid var(--border);
+    background:var(--card2); color:var(--text); font-size:16px; margin-bottom:14px;
+    font-family:inherit; resize:vertical; min-height:110px;
+  }
+  textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
 </style>
 </head>
 <body>
@@ -417,6 +452,9 @@
       </button>
     </div>
 
+    <button class="adminLink" id="profileLink" onclick="openScreen('profile')" style="border-color:var(--navy); background:#eef1f7; color:var(--navy);">⚙ إعداداتي</button>
+    <button class="adminLink" id="videosLink" onclick="openScreen('videos')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">🎬 فيديوهات تعليمية</button>
+    <button class="adminLink" id="suggestionLink" onclick="openScreen('suggestion')" style="border-color:var(--gold); background:var(--gold-bg); color:var(--gold-d);">💡 ابعت اقتراح</button>
     <button class="adminLink" id="myStatsLink" onclick="openScreen('mystats')" style="border-color:var(--green); background:var(--green-bg); color:var(--green);">📊 مبيعاتي (النهاردة ومن أول الشهر)</button>
     <button class="adminLink" id="itemSalesLink" onclick="openScreen('itemsales')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">📈 مبيعات الأصناف الشهرية</button>
     <button class="adminLink" id="balancesLink" onclick="openScreen('balances')" style="border-color:var(--gold); background:var(--gold-bg); color:var(--gold-d);">📦 أرصدتي</button>
@@ -660,6 +698,62 @@
       <div class="cardTitle">كل الأصناف الحالية</div>
       <div id="asnafList"><div class="empty">جاري التحميل...</div></div>
     </div>
+
+    <div class="card">
+      <div class="cardTitle">مقترحات المناديب</div>
+      <div id="suggestionsAdminList"><div class="empty">جاري التحميل...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="cardTitle">إضافة فيديو تعليمي</div>
+      <label>عنوان الفيديو</label>
+      <input type="text" id="videoTitleInput" placeholder="مثال: طريقة تركيب الخلاط">
+      <label>رابط الفيديو (يوتيوب أو جوجل درايف)</label>
+      <input type="text" id="videoUrlInput" class="ltrNum" dir="ltr" placeholder="https://youtube.com/... أو https://drive.google.com/...">
+      <button class="primary" onclick="handleAddVideo()">إضافة الفيديو</button>
+    </div>
+    <div class="card">
+      <div class="cardTitle">الفيديوهات الحالية</div>
+      <div id="videosAdminList"><div class="empty">جاري التحميل...</div></div>
+    </div>
+  </div>
+
+  <!-- ============ شاشة إعداداتي (بيانات المندوب) ============ -->
+  <div id="viewProfile" hidden>
+    <div class="card">
+      <div class="cardTitle">بياناتي</div>
+      <div class="profilePhotoWrap">
+        <img id="profilePhotoImg" class="profilePhotoImg" hidden>
+        <div id="profilePhotoPlaceholder" class="profilePhotoPlaceholder">👤</div>
+        <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;" onchange="handlePhotoSelected(event)">
+        <button class="ghost" style="margin-top:0; width:auto; padding:10px 20px;" onclick="document.getElementById('profilePhotoInput').click()">📷 تغيير الصورة</button>
+      </div>
+      <label>السن</label>
+      <input type="number" id="profileAgeInput" min="16" max="75" inputmode="numeric" placeholder="مثال: 28">
+      <label>عدد سنوات الخبرة في الشغل</label>
+      <input type="number" id="profileExperienceInput" min="0" max="60" inputmode="numeric" placeholder="مثال: 3">
+      <label>الإجازة الأسبوعية (تقدر تختار أكتر من يوم)</label>
+      <div class="dayChipsWrap" id="weeklyOffChipsWrap"></div>
+      <button class="finalize" id="saveProfileBtn" onclick="handleSaveProfile()">✔ حفظ بياناتي</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة ابعت اقتراح ============ -->
+  <div id="viewSuggestion" hidden>
+    <div class="card">
+      <div class="cardTitle">ابعتلنا اقتراحك أو ملاحظتك</div>
+      <label>اكتب اقتراحك هنا</label>
+      <textarea id="suggestionTextInput" placeholder="اكتب اقتراحك أو ملاحظتك..."></textarea>
+      <button class="finalize" onclick="handleSendSuggestion()">✔ إرسال الاقتراح</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة الفيديوهات التعليمية ============ -->
+  <div id="viewVideos" hidden>
+    <div class="card">
+      <div class="cardTitle">الفيديوهات التعليمية</div>
+      <div id="videosList"><div class="empty">جاري التحميل...</div></div>
+    </div>
   </div>
 
   <!-- ============ مراجعة الفاتورة قبل الترحيل ============ -->
@@ -781,7 +875,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory','viewItemSales'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory','viewItemSales','viewProfile','viewSuggestion','viewVideos'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -839,6 +933,8 @@
     document.getElementById('jardHomeBtn').hidden = state.isAdmin;
     document.getElementById('pricesLink').hidden = state.isAdmin;
     document.getElementById('invoiceHistoryLink').hidden = state.isAdmin;
+    document.getElementById('profileLink').hidden = state.isAdmin;
+    document.getElementById('suggestionLink').hidden = state.isAdmin;
     document.getElementById('myStatsLink').textContent = state.isAdmin
       ? '📊 مبيعات المندوبين وتارجتهم'
       : '📊 مبيعاتي (النهاردة ومن أول الشهر)';
@@ -975,6 +1071,9 @@
     if(name === 'stale'){ loadStale(''); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
+    if(name === 'profile'){ loadProfile(); return; }
+    if(name === 'suggestion'){ loadSuggestionScreen(); return; }
+    if(name === 'videos'){ loadVideosScreen(); return; }
     loadInvoice(name);
   }
 
@@ -1324,6 +1423,8 @@
     setView('viewAdmin');
     refreshRepsList();
     refreshAsnafList();
+    refreshSuggestionsAdmin();
+    refreshVideosAdmin();
   }
 
   function refreshRepsList(){
@@ -2137,6 +2238,228 @@
         refreshAsnafList();
       })
       .catch(onError);
+  }
+
+  // ============ إعداداتي (بيانات المندوب: صورة، سن، خبرة، إجازة أسبوعية) ============
+  let selectedWeeklyOff_ = [];
+
+  function loadProfile(){
+    document.getElementById('pageTitle').textContent = 'إعداداتي';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('bootstrapProfile', [state.auth])
+      .then(function(data){
+        showLoading(false);
+        renderProfile(data);
+        setView('viewProfile');
+      })
+      .catch(onError);
+  }
+
+  function renderProfile(data){
+    const profile = data.profile || {};
+    const img = document.getElementById('profilePhotoImg');
+    const placeholder = document.getElementById('profilePhotoPlaceholder');
+    if(profile.photoUrl){
+      img.src = profile.photoUrl;
+      img.hidden = false;
+      placeholder.hidden = true;
+    } else {
+      img.hidden = true;
+      placeholder.hidden = false;
+    }
+    document.getElementById('profileAgeInput').value = profile.age != null ? profile.age : '';
+    document.getElementById('profileExperienceInput').value = profile.experienceYears != null ? profile.experienceYears : '';
+    selectedWeeklyOff_ = Array.isArray(profile.weeklyOff) ? profile.weeklyOff.slice() : [];
+
+    const options = data.weeklyOffOptions || [];
+    const wrap = document.getElementById('weeklyOffChipsWrap');
+    wrap.innerHTML = options.map(function(day){
+      const active = selectedWeeklyOff_.indexOf(day) !== -1;
+      return '<div class="dayChip' + (active ? ' active' : '') + '" data-day="' + escapeHtml(day) + '" onclick="toggleWeeklyOffDay(this)">' + escapeHtml(day) + '</div>';
+    }).join('');
+  }
+
+  function toggleWeeklyOffDay(el){
+    const day = el.dataset.day;
+    const idx = selectedWeeklyOff_.indexOf(day);
+    if(idx === -1){ selectedWeeklyOff_.push(day); el.classList.add('active'); }
+    else { selectedWeeklyOff_.splice(idx, 1); el.classList.remove('active'); }
+  }
+
+  function handleSaveProfile(){
+    clearMsg();
+    const ageRaw = document.getElementById('profileAgeInput').value;
+    const expRaw = document.getElementById('profileExperienceInput').value;
+    const profile = {
+      age: ageRaw === '' ? null : Number(ageRaw),
+      experienceYears: expRaw === '' ? null : Number(expRaw),
+      weeklyOff: selectedWeeklyOff_,
+    };
+    showLoading(true);
+    callApi('saveMyProfile', [state.auth, profile])
+      .then(function(){
+        showLoading(false);
+        showMsg('تم حفظ بياناتك بنجاح ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  // تصغير الصورة بـ Canvas قبل الرفع (أقصى بعد 500px، جودة JPEG 0.82) عشان الملف يفضل صغير
+  // ومناسب لحجم الطلب اللي Apps Script بيقبله
+  function handlePhotoSelected(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    clearMsg();
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = new Image();
+      img.onload = function(){
+        let w = img.width, h = img.height;
+        const maxDim = 500;
+        if(w > maxDim || h > maxDim){
+          if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        const base64Data = dataUrl.split(',')[1];
+        showLoading(true);
+        callApi('uploadMyPhoto', [state.auth, base64Data, 'image/jpeg'])
+          .then(function(result){
+            showLoading(false);
+            const imgEl = document.getElementById('profilePhotoImg');
+            imgEl.src = result.photoUrl;
+            imgEl.hidden = false;
+            document.getElementById('profilePhotoPlaceholder').hidden = true;
+            showMsg('تم تحديث الصورة بنجاح ✔', 'success');
+          })
+          .catch(onError);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  // ============ ابعت اقتراح ============
+  function loadSuggestionScreen(){
+    document.getElementById('pageTitle').textContent = 'ابعت اقتراح';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('suggestionTextInput').value = '';
+    setView('viewSuggestion');
+  }
+
+  function handleSendSuggestion(){
+    clearMsg();
+    const text = document.getElementById('suggestionTextInput').value.trim();
+    if(!text){ showMsg('اكتب اقتراحك الأول', 'error'); return; }
+    showLoading(true);
+    callApi('addSuggestion', [state.auth, text])
+      .then(function(){
+        showLoading(false);
+        document.getElementById('suggestionTextInput').value = '';
+        showMsg('تم إرسال اقتراحك بنجاح، شكرًا ليك ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  // ============ الفيديوهات التعليمية ============
+  function loadVideosScreen(){
+    document.getElementById('pageTitle').textContent = 'فيديوهات تعليمية';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('listVideos', [state.auth])
+      .then(function(videos){
+        showLoading(false);
+        renderVideosList(videos, 'videosList', false);
+        setView('viewVideos');
+      })
+      .catch(onError);
+  }
+
+  function renderVideosList(videos, containerId, adminMode){
+    const el = document.getElementById(containerId);
+    if(!videos || !videos.length){
+      el.innerHTML = '<div class="empty">لسه مفيش فيديوهات مضافة</div>';
+      return;
+    }
+    el.innerHTML = videos.map(function(v){
+      const delBtn = adminMode
+        ? '<button class="delBtn" style="margin-top:8px;" onclick="handleDeleteVideo(\'' + String(v.id).replace(/'/g, "\\'") + '\')">🗑 حذف</button>'
+        : '';
+      return (
+        '<div class="videoCard">' +
+          '<div class="vTitle">' + escapeHtml(v.title) + '</div>' +
+          '<iframe src="' + escapeHtml(v.embedUrl) + '" allowfullscreen loading="lazy"></iframe>' +
+          delBtn +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function refreshVideosAdmin(){
+    document.getElementById('videosAdminList').innerHTML = '<div class="empty">جاري التحميل...</div>';
+    callApi('listVideos', [state.auth])
+      .then(function(videos){ renderVideosList(videos, 'videosAdminList', true); })
+      .catch(onError);
+  }
+
+  function handleAddVideo(){
+    clearMsg();
+    const title = document.getElementById('videoTitleInput').value.trim();
+    const url = document.getElementById('videoUrlInput').value.trim();
+    if(!title){ showMsg('اكتب عنوان الفيديو', 'error'); return; }
+    if(!url){ showMsg('اكتب رابط الفيديو', 'error'); return; }
+    showLoading(true);
+    callApi('addVideo', [state.auth, title, url])
+      .then(function(){
+        showLoading(false);
+        document.getElementById('videoTitleInput').value = '';
+        document.getElementById('videoUrlInput').value = '';
+        showMsg('تم إضافة الفيديو بنجاح ✔', 'success');
+        refreshVideosAdmin();
+      })
+      .catch(onError);
+  }
+
+  function handleDeleteVideo(videoId){
+    clearMsg();
+    if(!confirm('متأكد إنك عاوز تحذف الفيديو ده؟')) return;
+    showLoading(true);
+    callApi('deleteVideo', [state.auth, videoId])
+      .then(function(){
+        showLoading(false);
+        showMsg('تم حذف الفيديو ✔', 'success');
+        refreshVideosAdmin();
+      })
+      .catch(onError);
+  }
+
+  // ============ مقترحات المناديب (صاحب الحساب فقط) ============
+  function refreshSuggestionsAdmin(){
+    document.getElementById('suggestionsAdminList').innerHTML = '<div class="empty">جاري التحميل...</div>';
+    callApi('listSuggestions', [state.auth])
+      .then(renderSuggestionsAdminList)
+      .catch(onError);
+  }
+
+  function renderSuggestionsAdminList(suggestions){
+    const el = document.getElementById('suggestionsAdminList');
+    if(!suggestions || !suggestions.length){
+      el.innerHTML = '<div class="empty">لسه مفيش اقتراحات متبعتة</div>';
+      return;
+    }
+    el.innerHTML = suggestions.map(function(s){
+      return (
+        '<div class="suggRow">' +
+          '<div class="sMeta">' + escapeHtml(s.repName) + ' · ' + escapeHtml(s.date) + '</div>' +
+          '<div class="sText">' + escapeHtml(s.text) + '</div>' +
+        '</div>'
+      );
+    }).join('');
   }
 
   // ============ مشاركة/تنزيل ملف Excel ============
