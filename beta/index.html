@@ -2971,14 +2971,14 @@
 
     const metaHtml = meta.map(function(pair, i){
       const isLast = i === meta.length - 1;
-      return '<div style="padding:9px 14px; ' + (isLast ? '' : 'border-bottom:1px solid ' + C_META_BORDER + '; ') +
-        'font-size:15px; font-weight:700; color:#1a1a1a; background:' + C_META_BG + ';">' +
+      return '<div style="padding:10px 14px; ' + (isLast ? '' : 'border-bottom:1px solid ' + C_META_BORDER + '; ') +
+        'font-size:16.5px; font-weight:700; color:#1a1a1a; background:' + C_META_BG + ';">' +
         '<span style="color:' + C_BANNER + ';">' + escapeHtml_(pair[0]) + ':</span>&nbsp;&nbsp;' + escapeHtml_(String(pair[1])) +
         '</div>';
     }).join('');
 
     const headHtml = headers.map(function(h){
-      return '<th style="padding:10px 8px; font-size:14.5px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_ACCENT + ';">' + escapeHtml_(h) + '</th>';
+      return '<th style="padding:13px 10px; font-size:18px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_ACCENT + ';">' + escapeHtml_(h) + '</th>';
     }).join('');
 
     const rowsHtml = rows.map(function(row, ri){
@@ -2989,15 +2989,15 @@
         if(typeof display === 'number'){
           display = isCurrencyCol[i] ? (display.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م') : display.toLocaleString('en-US');
         }
-        return '<td style="padding:8px; font-size:14px; font-weight:700; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + C_GRID + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
+        return '<td style="padding:12px 10px; font-size:19px; font-weight:800; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + C_GRID + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
       }).join('');
       return '<tr>' + cells + '</tr>';
     }).join('');
 
     const totalsHtml = opts.totalsLabel ? (
       '<tr>' +
-        '<td colspan="' + (headers.length - 1) + '" style="padding:10px 8px; font-size:15px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
-        '<td style="padding:10px 8px; font-size:16px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:center;">' +
+        '<td colspan="' + (headers.length - 1) + '" style="padding:13px 10px; font-size:19px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
+        '<td style="padding:13px 10px; font-size:20px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:center;">' +
           (typeof opts.totalsValue === 'number'
             ? (opts.totalsIsCurrency === false ? opts.totalsValue.toLocaleString('en-US') : opts.totalsValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م')
             : escapeHtml_(String(opts.totalsValue))) +
