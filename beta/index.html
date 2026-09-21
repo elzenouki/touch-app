@@ -335,12 +335,12 @@
     width:110px; height:110px; border-radius:50%; background:var(--card2); border:2px dashed var(--border);
     display:flex; align-items:center; justify-content:center; font-size:34px; color:var(--muted);
   }
-  .videoCard{
+  .productCard{
     background:var(--card2); border:1px solid var(--border); border-radius:13px;
     padding:14px 16px; margin-bottom:12px;
   }
-  .videoCard .vTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:10px;}
-  .videoCard iframe{width:100%; aspect-ratio:16/9; border:none; border-radius:9px;}
+  .productCard .pTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:8px;}
+  .productCard .pSpecs{font-size:14.5px; color:var(--text); font-weight:600; white-space:pre-wrap; line-height:1.7;}
   .suggRow{
     background:var(--card2); border:1px solid var(--border); border-radius:13px;
     padding:14px 16px; margin-bottom:9px;
@@ -453,7 +453,7 @@
     </div>
 
     <button class="adminLink" id="profileLink" onclick="openScreen('profile')" style="border-color:var(--navy); background:#eef1f7; color:var(--navy);">⚙ إعداداتي</button>
-    <button class="adminLink" id="videosLink" onclick="openScreen('videos')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">🎬 فيديوهات تعليمية</button>
+    <button class="adminLink" id="productsLink" onclick="openScreen('products')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">📄 وصف المنتجات</button>
     <button class="adminLink" id="suggestionLink" onclick="openScreen('suggestion')" style="border-color:var(--gold); background:var(--gold-bg); color:var(--gold-d);">💡 ابعت اقتراح</button>
     <button class="adminLink" id="myStatsLink" onclick="openScreen('mystats')" style="border-color:var(--green); background:var(--green-bg); color:var(--green);">📊 مبيعاتي (النهاردة ومن أول الشهر)</button>
     <button class="adminLink" id="itemSalesLink" onclick="openScreen('itemsales')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">📈 مبيعات الأصناف الشهرية</button>
@@ -705,16 +705,16 @@
     </div>
 
     <div class="card">
-      <div class="cardTitle">إضافة فيديو تعليمي</div>
-      <label>عنوان الفيديو</label>
-      <input type="text" id="videoTitleInput" placeholder="مثال: طريقة تركيب الخلاط">
-      <label>رابط الفيديو (يوتيوب أو جوجل درايف)</label>
-      <input type="text" id="videoUrlInput" class="ltrNum" dir="ltr" placeholder="https://youtube.com/... أو https://drive.google.com/...">
-      <button class="primary" onclick="handleAddVideo()">إضافة الفيديو</button>
+      <div class="cardTitle">إضافة وصف منتج</div>
+      <label>اسم المنتج</label>
+      <input type="text" id="productNameInput" placeholder="مثال: خلاط انسباير 600">
+      <label>المواصفات</label>
+      <textarea id="productSpecsInput" placeholder="اكتب مواصفات المنتج هنا..."></textarea>
+      <button class="primary" onclick="handleAddProduct()">إضافة المنتج</button>
     </div>
     <div class="card">
-      <div class="cardTitle">الفيديوهات الحالية</div>
-      <div id="videosAdminList"><div class="empty">جاري التحميل...</div></div>
+      <div class="cardTitle">المنتجات الحالية</div>
+      <div id="productsAdminList"><div class="empty">جاري التحميل...</div></div>
     </div>
   </div>
 
@@ -748,11 +748,11 @@
     </div>
   </div>
 
-  <!-- ============ شاشة الفيديوهات التعليمية ============ -->
-  <div id="viewVideos" hidden>
+  <!-- ============ شاشة وصف المنتجات ============ -->
+  <div id="viewProducts" hidden>
     <div class="card">
-      <div class="cardTitle">الفيديوهات التعليمية</div>
-      <div id="videosList"><div class="empty">جاري التحميل...</div></div>
+      <div class="cardTitle">وصف المنتجات</div>
+      <div id="productsList"><div class="empty">جاري التحميل...</div></div>
     </div>
   </div>
 
@@ -875,7 +875,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory','viewItemSales','viewProfile','viewSuggestion','viewVideos'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory','viewItemSales','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -1073,7 +1073,7 @@
     if(name === 'history'){ loadInvoiceHistory(); return; }
     if(name === 'profile'){ loadProfile(); return; }
     if(name === 'suggestion'){ loadSuggestionScreen(); return; }
-    if(name === 'videos'){ loadVideosScreen(); return; }
+    if(name === 'products'){ loadProductsScreen(); return; }
     loadInvoice(name);
   }
 
@@ -1424,7 +1424,7 @@
     refreshRepsList();
     refreshAsnafList();
     refreshSuggestionsAdmin();
-    refreshVideosAdmin();
+    refreshProductsAdmin();
   }
 
   function refreshRepsList(){
@@ -2366,74 +2366,74 @@
       .catch(onError);
   }
 
-  // ============ الفيديوهات التعليمية ============
-  function loadVideosScreen(){
-    document.getElementById('pageTitle').textContent = 'فيديوهات تعليمية';
+  // ============ وصف المنتجات ============
+  function loadProductsScreen(){
+    document.getElementById('pageTitle').textContent = 'وصف المنتجات';
     document.getElementById('pageSub').textContent = state.user.name;
     showLoading(true);
-    callApi('listVideos', [state.auth])
-      .then(function(videos){
+    callApi('listProductDescriptions', [state.auth])
+      .then(function(products){
         showLoading(false);
-        renderVideosList(videos, 'videosList', false);
-        setView('viewVideos');
+        renderProductsList(products, 'productsList', false);
+        setView('viewProducts');
       })
       .catch(onError);
   }
 
-  function renderVideosList(videos, containerId, adminMode){
+  function renderProductsList(products, containerId, adminMode){
     const el = document.getElementById(containerId);
-    if(!videos || !videos.length){
-      el.innerHTML = '<div class="empty">لسه مفيش فيديوهات مضافة</div>';
+    if(!products || !products.length){
+      el.innerHTML = '<div class="empty">لسه مفيش منتجات متضافة</div>';
       return;
     }
-    el.innerHTML = videos.map(function(v){
+    el.innerHTML = products.map(function(p){
       const delBtn = adminMode
-        ? '<button class="delBtn" style="margin-top:8px;" onclick="handleDeleteVideo(\'' + String(v.id).replace(/'/g, "\\'") + '\')">🗑 حذف</button>'
+        ? '<button class="delBtn" style="margin-top:8px;" onclick="handleDeleteProduct(\'' + String(p.id).replace(/'/g, "\\'") + '\')">🗑 حذف</button>'
         : '';
       return (
-        '<div class="videoCard">' +
-          '<div class="vTitle">' + escapeHtml(v.title) + '</div>' +
-          '<iframe src="' + escapeHtml(v.embedUrl) + '" allowfullscreen loading="lazy"></iframe>' +
+        '<div class="productCard">' +
+          '<div class="pTitle">' + escapeHtml(p.name) + '</div>' +
+          '<div class="pSpecs">' + escapeHtml(p.specs) + '</div>' +
           delBtn +
         '</div>'
       );
     }).join('');
   }
 
-  function refreshVideosAdmin(){
-    document.getElementById('videosAdminList').innerHTML = '<div class="empty">جاري التحميل...</div>';
-    callApi('listVideos', [state.auth])
-      .then(function(videos){ renderVideosList(videos, 'videosAdminList', true); })
+  function refreshProductsAdmin(){
+    document.getElementById('productsAdminList').innerHTML = '<div class="empty">جاري التحميل...</div>';
+    callApi('listProductDescriptions', [state.auth])
+      .then(function(products){ renderProductsList(products, 'productsAdminList', true); })
       .catch(onError);
   }
 
-  function handleAddVideo(){
+  function handleAddProduct(){
     clearMsg();
-    const title = document.getElementById('videoTitleInput').value.trim();
-    const url = document.getElementById('videoUrlInput').value.trim();
-    if(!title){ showMsg('اكتب عنوان الفيديو', 'error'); return; }
-    if(!url){ showMsg('اكتب رابط الفيديو', 'error'); return; }
+    const name = document.getElementById('productNameInput').value.trim();
+    const specs = document.getElementById('productSpecsInput').value.trim();
+    if(!name){ showMsg('اكتب اسم المنتج', 'error'); return; }
+    if(!specs){ showMsg('اكتب مواصفات المنتج', 'error'); return; }
     showLoading(true);
-    callApi('addVideo', [state.auth, title, url])
+    callApi('addProductDescription', [state.auth, name, specs])
       .then(function(){
         showLoading(false);
-        document.getElementById('videoTitleInput').value = '';
-        document.getElementById('videoUrlInput').value = '';
-        showMsg('تم إضافة الفيديو بنجاح ✔', 'success');
-        refreshVideosAdmin();
+        document.getElementById('productNameInput').value = '';
+        document.getElementById('productSpecsInput').value = '';
+        showMsg('تم إضافة المنتج بنجاح ✔', 'success');
+        refreshProductsAdmin();
       })
       .catch(onError);
   }
 
-  function handleDeleteVideo(videoId){
+  function handleDeleteProduct(productId){
     clearMsg();
-    if(!confirm('متأكد إنك عاوز تحذف الفيديو ده؟')) return;
+    if(!confirm('متأكد إنك عاوز تحذف المنتج ده؟')) return;
     showLoading(true);
-    callApi('deleteVideo', [state.auth, videoId])
+    callApi('deleteProductDescription', [state.auth, productId])
       .then(function(){
         showLoading(false);
-        showMsg('تم حذف الفيديو ✔', 'success');
-        refreshVideosAdmin();
+        showMsg('تم حذف المنتج ✔', 'success');
+        refreshProductsAdmin();
       })
       .catch(onError);
   }
