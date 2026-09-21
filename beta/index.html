@@ -1039,9 +1039,9 @@
     document.getElementById('invoiceHistoryLink').hidden = state.isAdmin;
     document.getElementById('profileLink').hidden = state.isAdmin;
     document.getElementById('suggestionLink').hidden = state.isAdmin;
-    document.getElementById('myStatsLink').textContent = state.isAdmin
-      ? '📊 مبيعات المندوبين وتارجتهم'
-      : '📊 مبيعاتي (النهاردة ومن أول الشهر)';
+    document.querySelector('#myStatsLink .title').textContent = state.isAdmin
+      ? 'مبيعات المندوبين'
+      : 'مبيعاتي';
   }
 
   // بيعرض صورة البروفايل (لو موجودة) بدل الأيقونة الافتراضية "✦" في كارت الترحيب بالشاشة الرئيسية
@@ -1476,7 +1476,7 @@
     const label = result.qtyLabel || 'الكمية';
     const rows = result.items.map(it => [it['اسم الصنف'], it[label]]);
     return {
-      fileName: result.type + '_' + state.user.name + '_' + safeDateForFile(result.date),
+      fileName: result.type + ' - ' + safeDateForFile(result.date) + ' - ' + (result.repName || state.user.name),
       reportTitle: 'تقرير ' + result.type,
       meta: [
         ['اسم المندوب', result.repName || state.user.name],
@@ -1886,7 +1886,7 @@
       return [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
     });
     return {
-      fileName: label + '_' + state.user.name + '_' + safeDateForFile(result.date),
+      fileName: label + ' - ' + safeDateForFile(result.date) + ' - ' + state.user.name,
       reportTitle: 'تقرير ' + label,
       meta: [
         ['اسم المندوب', state.user.name],
@@ -2025,7 +2025,7 @@
     const date = (state.tawridResult && state.tawridResult.date) || '';
     const repName = (state.tawridResult && state.tawridResult.repName) || state.user.name;
     return {
-      fileName: 'توريد_' + state.user.name + '_' + safeDateForFile(date),
+      fileName: 'توريد - ' + safeDateForFile(date) + ' - ' + repName,
       reportTitle: 'تقرير توريد',
       meta: [
         ['اسم المندوب', repName],
@@ -2170,7 +2170,7 @@
     const date = (state.jardResult && state.jardResult.date) || '';
     const repName = (state.jardResult && state.jardResult.repName) || state.user.name;
     return {
-      fileName: 'جرد_' + state.user.name + '_' + safeDateForFile(date),
+      fileName: 'جرد - ' + safeDateForFile(date) + ' - ' + repName,
       reportTitle: 'تقرير جرد',
       meta: [
         ['اسم المندوب', repName],
