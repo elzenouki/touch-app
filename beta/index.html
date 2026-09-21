@@ -339,8 +339,27 @@
     background:var(--card2); border:1px solid var(--border); border-radius:13px;
     padding:14px 16px; margin-bottom:12px;
   }
-  .productCard .pTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:8px;}
-  .productCard .pSpecs{font-size:14.5px; color:var(--text); font-weight:600; white-space:pre-wrap; line-height:1.7;}
+  .productCard .pTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:10px;}
+  .productPhotos{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
+  .productPhotos img{
+    width:84px; height:84px; object-fit:cover; border-radius:10px;
+    border:1px solid var(--border); cursor:pointer; background:#fff;
+  }
+  .pSpecsList{margin:0; padding-inline-start:20px; font-size:14.5px; color:var(--text); font-weight:600; line-height:1.8;}
+  .pSpecsList li{margin-bottom:4px;}
+  .productPhotoPicker{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .productPhotoPicker .thumb{position:relative; width:76px; height:76px;}
+  .productPhotoPicker .thumb img{width:100%; height:100%; object-fit:cover; border-radius:10px; border:1px solid var(--border);}
+  .productPhotoPicker .rmBtn{
+    position:absolute; top:-7px; left:-7px; width:22px; height:22px; border-radius:50%;
+    background:var(--red); color:#fff; border:2px solid #fff; font-size:13px; line-height:1;
+    cursor:pointer; padding:0;
+  }
+  .productPhotoAddBtn{
+    width:76px; height:76px; border-radius:10px; border:2px dashed var(--border);
+    background:var(--card2); color:var(--muted); font-size:24px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-family:inherit;
+  }
   .suggRow{
     background:var(--card2); border:1px solid var(--border); border-radius:13px;
     padding:14px 16px; margin-bottom:9px;
@@ -708,8 +727,13 @@
       <div class="cardTitle">إضافة وصف منتج</div>
       <label>اسم المنتج</label>
       <input type="text" id="productNameInput" placeholder="مثال: خلاط انسباير 600">
-      <label>المواصفات</label>
-      <textarea id="productSpecsInput" placeholder="اكتب مواصفات المنتج هنا..."></textarea>
+      <label>المواصفات (اكتب كل ميزة في سطر لوحدها)</label>
+      <textarea id="productSpecsInput" placeholder="مثال:&#10;3000 وات&#10;قاعدة من السيراميك&#10;خاصية الاغلاق الذاتي"></textarea>
+      <label>صور المنتج (اختياري، حد أقصى 5 صور)</label>
+      <div class="productPhotoPicker" id="productPhotoPicker">
+        <button type="button" class="productPhotoAddBtn" onclick="document.getElementById('productPhotoInput').click()">+</button>
+      </div>
+      <input type="file" id="productPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleProductPhotosSelected(event)">
       <button class="primary" onclick="handleAddProduct()">إضافة المنتج</button>
     </div>
     <div class="card">
@@ -1420,6 +1444,10 @@
     document.getElementById('repEmailInput').value = '';
     document.getElementById('asnafCodeInput').value = '';
     document.getElementById('asnafNameInput').value = '';
+    document.getElementById('productNameInput').value = '';
+    document.getElementById('productSpecsInput').value = '';
+    selectedProductPhotos_ = [];
+    renderProductPhotoPicker();
     setView('viewAdmin');
     refreshRepsList();
     refreshAsnafList();
@@ -2390,14 +2418,89 @@
       const delBtn = adminMode
         ? '<button class="delBtn" style="margin-top:8px;" onclick="handleDeleteProduct(\'' + String(p.id).replace(/'/g, "\\'") + '\')">🗑 حذف</button>'
         : '';
+      const photosHtml = (p.photos && p.photos.length)
+        ? '<div class="productPhotos">' + p.photos.map(function(url){
+            return '<img src="' + escapeHtml(url) + '" loading="lazy" onclick="window.open(\'' + escapeHtml(url).replace(/'/g, "\\'") + '\', \'_blank\')">';
+          }).join('') + '</div>'
+        : '';
+      const lines = String(p.specs || '').split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+      const specsHtml = lines.length
+        ? '<ul class="pSpecsList">' + lines.map(function(l){ return '<li>' + escapeHtml(l) + '</li>'; }).join('') + '</ul>'
+        : '';
       return (
         '<div class="productCard">' +
           '<div class="pTitle">' + escapeHtml(p.name) + '</div>' +
-          '<div class="pSpecs">' + escapeHtml(p.specs) + '</div>' +
+          photosHtml +
+          specsHtml +
           delBtn +
         '</div>'
       );
     }).join('');
+  }
+
+  // ============ اختيار صور المنتج (قبل الإضافة) — بتتصغّر بالمتصفح زي صورة البروفايل بالظبط ============
+  let selectedProductPhotos_ = []; // [{dataUrl, base64Data, mimeType}]
+
+  function resizeImageFile_(file, maxDim, quality){
+    return new Promise(function(resolve, reject){
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = function(ev){
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = function(){
+          let w = img.width, h = img.height;
+          if(w > maxDim || h > maxDim){
+            if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve({ dataUrl: dataUrl, base64Data: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderProductPhotoPicker(){
+    const wrap = document.getElementById('productPhotoPicker');
+    const thumbsHtml = selectedProductPhotos_.map(function(p, idx){
+      return (
+        '<div class="thumb">' +
+          '<img src="' + p.dataUrl + '">' +
+          '<button type="button" class="rmBtn" onclick="removeSelectedProductPhoto(' + idx + ')">✕</button>' +
+        '</div>'
+      );
+    }).join('');
+    const addBtnHtml = selectedProductPhotos_.length < 5
+      ? '<button type="button" class="productPhotoAddBtn" onclick="document.getElementById(\'productPhotoInput\').click()">+</button>'
+      : '';
+    wrap.innerHTML = thumbsHtml + addBtnHtml;
+  }
+
+  function handleProductPhotosSelected(e){
+    clearMsg();
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if(!files.length) return;
+    const remaining = 5 - selectedProductPhotos_.length;
+    if(remaining <= 0){ showMsg('أقصى عدد صور للمنتج الواحد هو 5 صور', 'error'); return; }
+    const toProcess = files.slice(0, remaining);
+    Promise.all(toProcess.map(function(f){ return resizeImageFile_(f, 900, 0.82); }))
+      .then(function(results){
+        selectedProductPhotos_ = selectedProductPhotos_.concat(results);
+        renderProductPhotoPicker();
+      })
+      .catch(function(){ showMsg('حصل خطأ في تحميل إحدى الصور، حاول تاني', 'error'); });
+  }
+
+  function removeSelectedProductPhoto(idx){
+    selectedProductPhotos_.splice(idx, 1);
+    renderProductPhotoPicker();
   }
 
   function refreshProductsAdmin(){
@@ -2413,12 +2516,15 @@
     const specs = document.getElementById('productSpecsInput').value.trim();
     if(!name){ showMsg('اكتب اسم المنتج', 'error'); return; }
     if(!specs){ showMsg('اكتب مواصفات المنتج', 'error'); return; }
+    const photos = selectedProductPhotos_.map(function(p){ return { base64Data: p.base64Data, mimeType: p.mimeType }; });
     showLoading(true);
-    callApi('addProductDescription', [state.auth, name, specs])
+    callApi('addProductDescription', [state.auth, name, specs, photos])
       .then(function(){
         showLoading(false);
         document.getElementById('productNameInput').value = '';
         document.getElementById('productSpecsInput').value = '';
+        selectedProductPhotos_ = [];
+        renderProductPhotoPicker();
         showMsg('تم إضافة المنتج بنجاح ✔', 'success');
         refreshProductsAdmin();
       })
