@@ -21,9 +21,10 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-<!-- ExcelJS و html2canvas اتشالوا من هنا عشان يتحمّلوا بس وقت الحاجة الفعلية ليهم (تحميل/مشاركة
-     من شاشة "سجل فواتيري")، مش مع كل فتح للتطبيق — ده بيسرّع فتح التطبيق بشكل ملحوظ، خصوصًا على
-     نت ضعيف. شوف loadScriptOnce_ تحت. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<!-- محتاجينهم عشان مشاركة الفاتورة تطلع PDF (بدل Excel) — التنزيل نفسه فاضل Excel زي ما هو -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   :root{
     --bg:#f7f6f2; --card:#ffffff; --card2:#faf8f3; --border:#e4dfd1;
@@ -48,7 +49,7 @@
   }
   .header{
     background:linear-gradient(155deg, var(--navy) 0%, var(--navy2) 55%, var(--navy3) 100%);
-    padding:26px 22px 30px; display:flex; align-items:flex-start; gap:12px;
+    padding:calc(26px + env(safe-area-inset-top)) 22px 30px; display:flex; align-items:flex-start; gap:12px;
     justify-content:space-between;
     position:sticky; top:0; z-index:10;
     box-shadow:0 10px 28px rgba(6,12,28,.32);
@@ -77,10 +78,23 @@
     border-radius:2px;
   }
   .header .sub{font-size:13px; color:#aab4d4; margin-top:9px; font-weight:500; letter-spacing:.2px;}
+  .hadithBox{
+    flex:1; min-width:0; align-self:center;
+    background:rgba(255,255,255,.06); border:1px solid rgba(214,164,40,.35);
+    border-radius:14px; padding:10px 16px; margin:0 4px;
+    text-align:center; transition:opacity .45s ease; opacity:1;
+  }
+  .hadithBox.fading{opacity:0;}
+  .hadithBox .hadithText{
+    display:block; color:#efe6c8; font-size:12.5px; font-weight:700; line-height:1.7;
+    overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3;
+  }
+  .hadithBox .hadithRef{display:block; margin-top:6px; font-size:10.5px; color:var(--gold-light); font-weight:800;}
+  @media (max-width:600px){ .hadithBox{ display:none; } }
   .backBtn{
     background:rgba(255,255,255,.05); color:var(--gold-light); border:1px solid rgba(214,164,40,.55);
-    border-radius:10px; padding:9px 17px; font-size:14.5px; cursor:pointer; font-weight:700;
-    letter-spacing:.2px; flex-shrink:0;
+    border-radius:10px; padding:12px 17px; font-size:14.5px; cursor:pointer; font-weight:700;
+    letter-spacing:.2px; flex-shrink:0; align-self:center; min-height:44px;
   }
   .backBtn:active{background:rgba(214,164,40,.14);}
   .wrap{max-width:640px; margin:0 auto; padding:26px 20px 44px;}
@@ -112,19 +126,15 @@
     content:''; position:absolute; inset-inline-start:0; bottom:0; height:3px; width:100%;
     background:linear-gradient(90deg, var(--gold) 0%, transparent 60%);
   }
-  .welcomeRow{display:flex; flex-direction:row-reverse; align-items:center; gap:16px; position:relative;}
   .welcomeCard .badgeIcon{
-    position:relative; width:78px; height:78px; border-radius:18px; flex-shrink:0;
+    position:relative; width:46px; height:46px; border-radius:50%;
     background:linear-gradient(135deg, var(--gold-light), var(--gold));
     display:flex; align-items:center; justify-content:center;
-    font-size:30px; box-shadow:0 4px 14px rgba(182,134,47,.35);
-    overflow:hidden;
+    font-size:20px; margin-bottom:14px;
+    box-shadow:0 4px 14px rgba(182,134,47,.35);
   }
-  .welcomeCard .badgeIcon.hasPhoto{ background:#fff; padding:0; }
-  .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:18px; }
-  .welcomeCard .wText{text-align:right;}
   .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
-  .welcomeCard .name{font-size:24px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;}
+  .welcomeCard .name{font-size:26px; font-weight:900; color:#ffffff; margin-top:6px; position:relative; letter-spacing:.2px;}
   .sectionLabel{
     font-size:13px; color:var(--muted2); text-transform:uppercase; letter-spacing:1px;
     margin-bottom:14px; font-weight:800;
@@ -134,23 +144,17 @@
     content:''; width:7px; height:7px; background:var(--gold);
     transform:rotate(45deg); flex-shrink:0; border-radius:1px;
   }
-  .homeGrid{display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-bottom:26px;}
+  .homeGrid{display:flex; flex-direction:column; gap:13px;}
   .homeBtn{
-    position:relative; overflow:hidden;
-    display:flex; flex-direction:column; align-items:center; text-align:center; gap:0;
+    display:flex; align-items:center; gap:16px;
     background:var(--card); border:1px solid var(--border); border-radius:18px;
-    padding:20px 12px 18px; cursor:pointer; width:100%;
-    box-shadow:0 6px 18px rgba(15,28,61,.09);
+    padding:17px 20px; cursor:pointer; text-align:right; width:100%;
+    box-shadow:0 3px 12px rgba(15,28,61,.06);
     transition:box-shadow .15s ease, transform .15s ease;
   }
-  .homeBtn::before{content:''; position:absolute; inset-inline:0; top:0; height:3.5px;}
-  .homeBtn.sales::before{background:linear-gradient(90deg,#2f8f5b,#59c98a);}
-  .homeBtn.returns::before{background:linear-gradient(90deg,#c73e3e,#e07a7a);}
-  .homeBtn.tawrid::before{background:linear-gradient(90deg,#2f5fa8,#6f9bd8);}
-  .homeBtn.jard::before{background:linear-gradient(90deg,#a9781f,#d9ac52);}
   .homeBtn:active{background:#faf9f6; box-shadow:0 1px 4px rgba(15,28,61,.08); transform:scale(.99);}
   .homeBtn .icon{
-    width:52px; height:52px; border-radius:15px; margin-bottom:11px;
+    width:54px; height:54px; border-radius:50%;
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
     box-shadow:inset 0 0 0 1px rgba(0,0,0,.03);
   }
@@ -158,47 +162,15 @@
   .homeBtn.returns .icon{background:linear-gradient(135deg, var(--red-bg), #f8d9d9);}
   .homeBtn.tawrid .icon{background:linear-gradient(135deg, var(--blue-bg), #d9e4f5);}
   .homeBtn.jard .icon{background:linear-gradient(135deg, var(--gold-bg), #f3e3bd);}
-  .homeBtn .title{font-size:15px; font-weight:800; color:var(--navy);}
-  .homeBtn .desc{font-size:11.5px; color:var(--muted); margin-top:4px; line-height:1.4;}
-  .homeBtn .chev{display:none;}
-
-  /* ============ لوحة "خدمات إضافية" — تجميع باقي الأزرار في شبكة مربعة مصغّرة ============ */
-  .subHeader{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
-  .subHeader .line{flex:1; height:1px; background:var(--border);}
-  .subHeader .lbl{font-size:12px; font-weight:800; color:var(--muted2); white-space:nowrap; text-transform:uppercase; letter-spacing:.5px;}
-  .subPanel{
-    background:linear-gradient(180deg, #fdfcf9, #f6f4ee);
-    border:1px solid var(--border); border-radius:20px; padding:14px;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 3px 10px rgba(15,28,61,.04);
-  }
-  .gridSub{display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px;}
+  .homeBtn .title{font-size:17.5px; font-weight:800; color:var(--navy);}
+  .homeBtn .desc{font-size:13.5px; color:var(--muted); margin-top:3px;}
+  .homeBtn .chev{color:#c3bfae; font-size:19px; margin-inline-start:auto;}
   .adminLink{
-    background:var(--card); border:1px solid var(--border); border-radius:14px;
-    padding:12px 6px 10px; text-align:center; cursor:pointer;
-    box-shadow:0 2px 7px rgba(15,28,61,.05);
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
+    display:flex; align-items:center; justify-content:center; gap:8px;
+    width:100%; padding:16px; border-radius:14px; border:1px solid var(--gold);
+    background:var(--gold-bg); color:var(--gold-d); font-weight:800; font-size:15.5px;
+    cursor:pointer; margin-top:18px; letter-spacing:.2px;
   }
-  .adminLink .icon{
-    width:38px; height:38px; border-radius:50%; margin-bottom:8px;
-    display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
-  }
-  .adminLink .title{font-size:11.5px; font-weight:700; color:var(--navy); line-height:1.3; min-height:28px; display:flex; align-items:center; justify-content:center;}
-  .adminLink.ic-settings .icon{background:#eef1f7; color:var(--navy);}
-  .adminLink.ic-products .icon{background:var(--blue-bg); color:var(--blue);}
-  .adminLink.ic-suggest .icon{background:var(--gold-bg); color:var(--gold-d);}
-  .adminLink.ic-mystats .icon{background:var(--green-bg); color:#2f8f5b;}
-  .adminLink.ic-itemsales .icon{background:var(--blue-bg); color:var(--blue);}
-  .adminLink.ic-balances .icon{background:var(--gold-bg); color:var(--gold-d);}
-  .adminLink.ic-stale .icon{background:var(--red-bg); color:#c73e3e;}
-  .adminLink.ic-history .icon{background:#eef1f7; color:var(--navy);}
-  .adminLink.ic-prices .icon{background:var(--blue-bg); color:var(--blue);}
-  .adminLink.ic-admin .icon{background:var(--gold-bg); color:var(--gold-d);}
-  .adminLink.ic-logout .icon{background:var(--red-bg); color:#c73e3e;}
-  .adminLink.wide{
-    grid-column:1 / -1; flex-direction:row; padding:11px; gap:8px;
-  }
-  .adminLink.wide .icon{margin-bottom:0; width:30px; height:30px;}
-  .adminLink.wide .title{min-height:0;}
   label{display:block; font-size:14.5px; color:var(--muted2); margin-bottom:7px; font-weight:700;}
   select, input{
     width:100%; padding:14px 15px; border-radius:11px; border:1px solid var(--border);
@@ -359,60 +331,6 @@
     display:flex; justify-content:space-between; align-items:center;
     padding-top:16px; margin-top:6px; font-weight:900; font-size:18px; color:var(--gold-d);
   }
-  .dayChipsWrap{display:flex; flex-wrap:wrap; margin-bottom:14px;}
-  .dayChip{
-    display:inline-flex; align-items:center; justify-content:center;
-    padding:9px 14px; border-radius:20px; border:1px solid var(--border);
-    background:var(--card2); color:var(--muted2); font-weight:700; font-size:13.5px;
-    cursor:pointer; margin:4px; user-select:none;
-  }
-  .dayChip.active{background:var(--gold-bg); border-color:var(--gold); color:var(--gold-d);}
-  .profilePhotoWrap{display:flex; flex-direction:column; align-items:center; margin-bottom:18px; gap:10px;}
-  .profilePhotoImg{
-    width:110px; height:110px; border-radius:50%; object-fit:cover;
-    border:3px solid var(--gold); background:var(--card2);
-  }
-  .profilePhotoPlaceholder{
-    width:110px; height:110px; border-radius:50%; background:var(--card2); border:2px dashed var(--border);
-    display:flex; align-items:center; justify-content:center; font-size:34px; color:var(--muted);
-  }
-  .productCard{
-    background:var(--card2); border:1px solid var(--border); border-radius:13px;
-    padding:14px 16px; margin-bottom:12px;
-  }
-  .productCard .pTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:10px;}
-  .productPhotos{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
-  .productPhotos img{
-    width:84px; height:84px; object-fit:cover; border-radius:10px;
-    border:1px solid var(--border); cursor:pointer; background:#fff;
-  }
-  .pSpecsList{margin:0; padding-inline-start:20px; font-size:14.5px; color:var(--text); font-weight:600; line-height:1.8;}
-  .pSpecsList li{margin-bottom:4px;}
-  .productPhotoPicker{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
-  .productPhotoPicker .thumb{position:relative; width:76px; height:76px;}
-  .productPhotoPicker .thumb img{width:100%; height:100%; object-fit:cover; border-radius:10px; border:1px solid var(--border);}
-  .productPhotoPicker .rmBtn{
-    position:absolute; top:-7px; left:-7px; width:22px; height:22px; border-radius:50%;
-    background:var(--red); color:#fff; border:2px solid #fff; font-size:13px; line-height:1;
-    cursor:pointer; padding:0;
-  }
-  .productPhotoAddBtn{
-    width:76px; height:76px; border-radius:10px; border:2px dashed var(--border);
-    background:var(--card2); color:var(--muted); font-size:24px; cursor:pointer;
-    display:flex; align-items:center; justify-content:center; font-family:inherit;
-  }
-  .suggRow{
-    background:var(--card2); border:1px solid var(--border); border-radius:13px;
-    padding:14px 16px; margin-bottom:9px;
-  }
-  .suggRow .sMeta{font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:700;}
-  .suggRow .sText{font-size:14.5px; color:var(--text); font-weight:600; white-space:pre-wrap;}
-  textarea{
-    width:100%; padding:14px 15px; border-radius:11px; border:1px solid var(--border);
-    background:var(--card2); color:var(--text); font-size:16px; margin-bottom:14px;
-    font-family:inherit; resize:vertical; min-height:110px;
-  }
-  textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
 </style>
 </head>
 <body>
@@ -425,6 +343,10 @@
       <span class="brandLine"></span>
       <div class="sub" id="pageSub">جاري التحميل...</div>
     </div>
+  </div>
+  <div class="hadithBox" id="hadithBox">
+    <span class="hadithText" id="hadithText"></span>
+    <span class="hadithRef" id="hadithRef"></span>
   </div>
   <button class="backBtn" id="backBtn" hidden onclick="goHome()">⟵ الرئيسية</button>
 </div>
@@ -463,14 +385,10 @@
 
   <!-- ============ شاشة رئيسية ============ -->
   <div id="viewHome" hidden>
-    <div class="welcomeCard">
-      <div class="welcomeRow">
-        <div class="badgeIcon" id="homeBadgeIcon">✦</div>
-        <div class="wText">
-          <div class="hi">أهلاً بيك</div>
-          <div class="name" id="homeUserName"></div>
-        </div>
-      </div>
+    <div class="welcomeCard center">
+      <div class="badgeIcon" style="margin-inline:auto;">✦</div>
+      <div class="hi">أهلاً بيك</div>
+      <div class="name" id="homeUserName"></div>
     </div>
     <div class="sectionLabel">الإجراءات المتاحة</div>
     <div class="homeGrid">
@@ -480,7 +398,7 @@
         </div>
         <div>
           <div class="title">تسجيل مبيعات</div>
-          <div class="desc">إضافة أصناف لفاتورة مبيعات جديدة</div>
+          <div class="desc">إضافة أصناف لفاتورة مبيعات اليوم</div>
         </div>
         <div class="chev">‹</div>
       </button>
@@ -516,22 +434,14 @@
       </button>
     </div>
 
-    <div class="subHeader"><span class="lbl">خدمات إضافية</span><span class="line"></span></div>
-    <div class="subPanel">
-      <div class="gridSub">
-        <button class="adminLink ic-settings" id="profileLink" onclick="openScreen('profile')"><div class="icon">⚙</div><div class="title">إعداداتي</div></button>
-        <button class="adminLink ic-products" id="productsLink" onclick="openScreen('products')"><div class="icon">📄</div><div class="title">وصف المنتجات</div></button>
-        <button class="adminLink ic-suggest" id="suggestionLink" onclick="openScreen('suggestion')"><div class="icon">💡</div><div class="title">ابعت اقتراح</div></button>
-        <button class="adminLink ic-mystats" id="myStatsLink" onclick="openScreen('mystats')"><div class="icon">📊</div><div class="title">مبيعاتي</div></button>
-        <button class="adminLink ic-itemsales" id="itemSalesLink" onclick="openScreen('itemsales')"><div class="icon">📈</div><div class="title">مبيعات الأصناف</div></button>
-        <button class="adminLink ic-balances" id="balancesLink" onclick="openScreen('balances')"><div class="icon">📦</div><div class="title">أرصدتي</div></button>
-        <button class="adminLink ic-stale" id="staleLink" onclick="openScreen('stale')"><div class="icon">📦</div><div class="title">الرواكد</div></button>
-        <button class="adminLink ic-history" id="invoiceHistoryLink" onclick="openScreen('history')"><div class="icon">📋</div><div class="title">سجل فواتيري</div></button>
-        <button class="adminLink ic-prices" id="pricesLink" onclick="openScreen('prices')"><div class="icon">💰</div><div class="title">أسعاري</div></button>
-        <button class="adminLink wide ic-admin" id="adminLink" onclick="openScreen('admin')" hidden><div class="icon">⚙</div><div class="title">إدارة المناديب والمشرفين</div></button>
-        <button class="adminLink wide ic-logout" onclick="handleLogout()"><div class="icon">⎋</div><div class="title">تسجيل خروج</div></button>
-      </div>
-    </div>
+    <button class="adminLink" id="myStatsLink" onclick="openScreen('mystats')" style="border-color:var(--green); background:var(--green-bg); color:var(--green);">📊 مبيعاتي (النهاردة ومن أول الشهر)</button>
+    <button class="adminLink" id="itemSalesLink" onclick="openScreen('itemsales')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">📈 مبيعات الأصناف الشهرية</button>
+    <button class="adminLink" id="balancesLink" onclick="openScreen('balances')" style="border-color:var(--gold); background:var(--gold-bg); color:var(--gold-d);">📦 أرصدتي</button>
+    <button class="adminLink" id="staleLink" onclick="openScreen('stale')" style="border-color:var(--red); background:var(--red-bg); color:var(--red);">📦 الرواكد</button>
+    <button class="adminLink" id="invoiceHistoryLink" onclick="openScreen('history')" style="border-color:var(--navy); background:#eef1f7; color:var(--navy);">📋 سجل فواتيري</button>
+    <button class="adminLink" id="pricesLink" onclick="openScreen('prices')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">💰 أسعاري (تحديد وتعديل أسعار الأصناف)</button>
+    <button class="adminLink" id="adminLink" onclick="openScreen('admin')" hidden>⚙ إدارة المناديب والمشرفين</button>
+    <button class="adminLink" onclick="handleLogout()" style="border-color:var(--red); background:var(--red-bg); color:var(--red); margin-top:10px;">⎋ تسجيل خروج</button>
   </div>
 
   <!-- ============ شاشة فاتورة (مبيعات / مرتجع) ============ -->
@@ -576,10 +486,8 @@
         <span class="val" id="grandTotal">0</span>
       </div>
       <button class="finalize" id="finalizeBtn" onclick="handleFinalize()">✔ موافق وترحيل</button>
-      <div id="invoiceDownloadRow" hidden style="margin-top:10px;">
-        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareInvoiceExcel()">📤 مشاركة صورة الفاتورة</button>
-        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
-      </div>
+      <button class="ghost" id="downloadBtn" onclick="downloadInvoiceExcel()" disabled>⬇ تحميل Excel (متاح بعد الترحيل)</button>
+      <button class="whatsapp" id="shareBtn" onclick="shareInvoiceExcel()" disabled>📤 مشاركة عبر واتساب</button>
     </div>
   </div>
 
@@ -604,10 +512,8 @@
       <div class="cardTitle">أصناف التوريد</div>
       <div id="tawridList"></div>
       <button class="finalize" id="saveTawridBtn" onclick="handleSaveTawrid()">✔ تأكيد التوريد</button>
-      <div id="tawridDownloadRow" hidden style="margin-top:10px;">
-        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareTawridExcel()">📤 مشاركة صورة التوريد</button>
-        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
-      </div>
+      <button class="ghost" id="tawridDownloadBtn" onclick="downloadTawridExcel()" disabled>⬇ تحميل Excel (متاح بعد التأكيد)</button>
+      <button class="whatsapp" id="tawridShareBtn" onclick="shareTawridExcel()" disabled>📤 مشاركة عبر واتساب</button>
     </div>
   </div>
 
@@ -621,10 +527,8 @@
       <div class="cardTitle">اكتب العدد الموجود عندك لكل صنف — سيب أي صنف فاضي لو مش موجود عندك خالص</div>
       <div id="jardItemsList"></div>
       <button class="finalize" id="saveJardBtn" onclick="handleSaveJard()">✔ حفظ الجرد</button>
-      <div id="jardDownloadRow" hidden style="margin-top:10px;">
-        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareJardExcel()">📤 مشاركة صورة الجرد</button>
-        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
-      </div>
+      <button class="ghost" id="jardDownloadBtn" onclick="downloadJardExcel()" disabled>⬇ تحميل Excel (متاح بعد الحفظ)</button>
+      <button class="whatsapp" id="jardShareBtn" onclick="shareJardExcel()" disabled>📤 مشاركة عبر واتساب</button>
     </div>
   </div>
 
@@ -773,67 +677,6 @@
       <div class="cardTitle">كل الأصناف الحالية</div>
       <div id="asnafList"><div class="empty">جاري التحميل...</div></div>
     </div>
-
-    <div class="card">
-      <div class="cardTitle">مقترحات المناديب</div>
-      <div id="suggestionsAdminList"><div class="empty">جاري التحميل...</div></div>
-    </div>
-
-    <div class="card">
-      <div class="cardTitle">إضافة وصف منتج</div>
-      <label>اسم المنتج</label>
-      <input type="text" id="productNameInput" placeholder="مثال: خلاط انسباير 600">
-      <label>المواصفات (اكتب كل ميزة في سطر لوحدها)</label>
-      <textarea id="productSpecsInput" placeholder="مثال:&#10;3000 وات&#10;قاعدة من السيراميك&#10;خاصية الاغلاق الذاتي"></textarea>
-      <label>صور المنتج (اختياري، حد أقصى 5 صور)</label>
-      <div class="productPhotoPicker" id="productPhotoPicker">
-        <button type="button" class="productPhotoAddBtn" onclick="document.getElementById('productPhotoInput').click()">+</button>
-      </div>
-      <input type="file" id="productPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleProductPhotosSelected(event)">
-      <button class="primary" onclick="handleAddProduct()">إضافة المنتج</button>
-    </div>
-    <div class="card">
-      <div class="cardTitle">المنتجات الحالية</div>
-      <div id="productsAdminList"><div class="empty">جاري التحميل...</div></div>
-    </div>
-  </div>
-
-  <!-- ============ شاشة إعداداتي (بيانات المندوب) ============ -->
-  <div id="viewProfile" hidden>
-    <div class="card">
-      <div class="cardTitle">بياناتي</div>
-      <div class="profilePhotoWrap">
-        <img id="profilePhotoImg" class="profilePhotoImg" hidden>
-        <div id="profilePhotoPlaceholder" class="profilePhotoPlaceholder">👤</div>
-        <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;" onchange="handlePhotoSelected(event)">
-        <button class="ghost" style="margin-top:0; width:auto; padding:10px 20px;" onclick="document.getElementById('profilePhotoInput').click()">📷 تغيير الصورة</button>
-      </div>
-      <label>السن</label>
-      <input type="number" id="profileAgeInput" min="16" max="75" inputmode="numeric" placeholder="مثال: 28">
-      <label>عدد سنوات الخبرة في الشغل</label>
-      <input type="number" id="profileExperienceInput" min="0" max="60" inputmode="numeric" placeholder="مثال: 3">
-      <label>الإجازة الأسبوعية (تقدر تختار أكتر من يوم)</label>
-      <div class="dayChipsWrap" id="weeklyOffChipsWrap"></div>
-      <button class="finalize" id="saveProfileBtn" onclick="handleSaveProfile()">✔ حفظ بياناتي</button>
-    </div>
-  </div>
-
-  <!-- ============ شاشة ابعت اقتراح ============ -->
-  <div id="viewSuggestion" hidden>
-    <div class="card">
-      <div class="cardTitle">ابعتلنا اقتراحك أو ملاحظتك</div>
-      <label>اكتب اقتراحك هنا</label>
-      <textarea id="suggestionTextInput" placeholder="اكتب اقتراحك أو ملاحظتك..."></textarea>
-      <button class="finalize" onclick="handleSendSuggestion()">✔ إرسال الاقتراح</button>
-    </div>
-  </div>
-
-  <!-- ============ شاشة وصف المنتجات ============ -->
-  <div id="viewProducts" hidden>
-    <div class="card">
-      <div class="cardTitle">وصف المنتجات</div>
-      <div id="productsList"><div class="empty">جاري التحميل...</div></div>
-    </div>
   </div>
 
   <!-- ============ مراجعة الفاتورة قبل الترحيل ============ -->
@@ -854,17 +697,51 @@
 </div>
 
 <script>
+  // ============ أحاديث نبوية بتتبدّل عشوائيًا في الهيدر (تجميلي بس، مفيش أي تأثير على منطق التطبيق) ============
+  const HADITH_LIST_ = [
+    { text: 'إنَّما الأعمالُ بالنِّيَّاتِ', ref: 'متفق عليه (البخاري ومسلم)' },
+    { text: 'لا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ', ref: 'متفق عليه' },
+    { text: 'مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ', ref: 'متفق عليه' },
+    { text: 'الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ', ref: 'رواه البخاري' },
+    { text: 'التَّاجِرُ الصَّدُوقُ الأَمِينُ مَعَ النَّبِيِّينَ وَالصِّدِّيقِينَ وَالشُّهَدَاءِ', ref: 'رواه الترمذي (حديث حسن)' },
+    { text: 'مَنْ غَشَّنَا فَلَيْسَ مِنَّا', ref: 'رواه مسلم' },
+    { text: 'البَيِّعَانِ بِالخِيَارِ مَا لَمْ يَتَفَرَّقَا', ref: 'متفق عليه' },
+    { text: 'الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ', ref: 'متفق عليه' },
+    { text: 'لا ضَرَرَ وَلا ضِرَارَ', ref: 'رواه ابن ماجه وأحمد (حديث حسن)' },
+    { text: 'مَنْ يَسَّرَ عَلَى مُعْسِرٍ يَسَّرَ اللَّهُ عَلَيْهِ فِي الدُّنْيَا وَالآخِرَةِ', ref: 'رواه مسلم' },
+  ];
+  let hadithLastIndex_ = -1;
+  function showRandomHadith_(){
+    const box = document.getElementById('hadithBox');
+    if(!box) return;
+    let idx;
+    do { idx = Math.floor(Math.random() * HADITH_LIST_.length); } while(idx === hadithLastIndex_ && HADITH_LIST_.length > 1);
+    hadithLastIndex_ = idx;
+    box.classList.add('fading');
+    setTimeout(function(){
+      const h = HADITH_LIST_[idx];
+      document.getElementById('hadithText').textContent = h.text;
+      document.getElementById('hadithRef').textContent = h.ref;
+      box.classList.remove('fading');
+    }, 260);
+  }
+  function startHadithRotation_(){
+    showRandomHadith_();
+    setInterval(showRandomHadith_, 15000); // كل 15 ثانية يتغيّر لحديث تاني عشوائي
+  }
+
   let state = {
     screen: null,          // 'sales' | 'returns' | 'jard' | 'tawrid' | 'admin'
     auth: null,            // {email, pin} — بيتبعت مع كل طلب للسيرفر عشان يتعرف على المستخدم
     user: null,
     isAdmin: false,
     asnaf: [],
-    draftItems: [],         // أصناف الفاتورة (بيع أو مرتجع) قبل الترحيل — بتتجمع في المتصفح بس
+    draftItems: [],         // فاتورة المرتجع بس (بيع بقى فوري، مفيش دفعة/ترحيل): {itemName, qty, price, returnKind?}
     finalized: false,
-    finalResult: null,      // نتيجة finalizeInvoice
+    finalResult: null,      // نتيجة finalizeInvoice (مرتجع بس)
     pendingFinalizeId: null, // رقم مرجعي فريد لعملية الترحيل الحالية — بيمنع تسجيل نفس الفاتورة مرتين لو حصل دبل كليك
     finalizeInFlight: false, // true من لحظة الضغط على "تأكيد الترحيل" لحد ما يوصل الرد — بيمنع أي ضغطة تانية تتنفذ في الوقت ده
+    todaySaleInvoice: { sessionId: null, date: '', items: [], total: 0 }, // فاتورة بيع اليوم التراكمية — بتتحدّث فورًا مع كل إضافة/تعديل/مسح
     jardItems: [],           // {itemName, count}
     jardFinalized: false,
     jardResult: null,
@@ -905,29 +782,6 @@
         }
         throw err;
       });
-  }
-
-  // ============ تحميل مكتبات خارجية (ExcelJS / html2canvas) عند الحاجة الفعلية بس ============
-  // بدل ما نحملهم مع كل فتح للتطبيق (كانوا بيتحملوا في <head> قبل كده)، بنحملهم أول مرة يحتاجهم
-  // فيها المستخدم فعلاً — تنزيل أو مشاركة ملف من شاشة "سجل فواتيري" — وبعدين بيفضلوا محفوظين في
-  // المتصفح (Promise واحد لكل رابط) فمش بيتحمّلوا تاني في نفس الجلسة.
-  const _loadedScripts_ = {};
-  function loadScriptOnce_(src){
-    if(_loadedScripts_[src]) return _loadedScripts_[src];
-    _loadedScripts_[src] = new Promise(function(resolve, reject){
-      const s = document.createElement('script');
-      s.src = src;
-      s.onload = function(){ resolve(); };
-      s.onerror = function(){ delete _loadedScripts_[src]; reject(new Error('تعذر تحميل مكتبة مطلوبة — تأكد إنك متصل بالإنترنت وحاول تاني')); };
-      document.head.appendChild(s);
-    });
-    return _loadedScripts_[src];
-  }
-  function ensureExcelJsLoaded_(){
-    return loadScriptOnce_('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
-  }
-  function ensureHtml2CanvasLoaded_(){
-    return loadScriptOnce_('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
   }
 
   // رقم مرجعي فريد (مش لازم يبقى UUID رسمي، بس محتاج يبقى مختلف كل مرة) — بيتبعت مع طلبات
@@ -978,7 +832,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory','viewItemSales','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory','viewItemSales'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -1026,7 +880,6 @@
     state.isOwner = !!(user && String(user.email || '').trim().toLowerCase() === OWNER_EMAIL_);
     document.getElementById('homeUserName').textContent = user.name;
     document.getElementById('adminLink').hidden = !state.isOwner;
-    renderHomeBadgeIcon(user.photoUrl);
 
     // المشرف مش مندوب بيسجّل مبيعات — شغله إنه يتابع ويشرف بس، فبنخفي عنه شاشات الإدخال دي
     // (بيع/مرتجع/توريد/جرد/أسعاري). إدارة المناديب والمشرفين بقت مقصورة على صاحب الحساب
@@ -1037,23 +890,9 @@
     document.getElementById('jardHomeBtn').hidden = state.isAdmin;
     document.getElementById('pricesLink').hidden = state.isAdmin;
     document.getElementById('invoiceHistoryLink').hidden = state.isAdmin;
-    document.getElementById('profileLink').hidden = state.isAdmin;
-    document.getElementById('suggestionLink').hidden = state.isAdmin;
-    document.querySelector('#myStatsLink .title').textContent = state.isAdmin
-      ? 'مبيعات المندوبين'
-      : 'مبيعاتي';
-  }
-
-  // بيعرض صورة البروفايل (لو موجودة) بدل الأيقونة الافتراضية "✦" في كارت الترحيب بالشاشة الرئيسية
-  function renderHomeBadgeIcon(photoUrl){
-    const el = document.getElementById('homeBadgeIcon');
-    if(photoUrl){
-      el.classList.add('hasPhoto');
-      el.innerHTML = '<img src="' + escapeHtml(photoUrl) + '">';
-    } else {
-      el.classList.remove('hasPhoto');
-      el.innerHTML = '✦';
-    }
+    document.getElementById('myStatsLink').textContent = state.isAdmin
+      ? '📊 مبيعات المندوبين وتارجتهم'
+      : '📊 مبيعاتي (النهاردة ومن أول الشهر)';
   }
 
   function handleLogout(){
@@ -1146,6 +985,7 @@
   }
 
   function init(){
+    startHadithRotation_();
     showLoading(true);
     const saved = loadAuth();
     if(!saved){
@@ -1187,9 +1027,6 @@
     if(name === 'stale'){ loadStale(''); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
-    if(name === 'profile'){ loadProfile(); return; }
-    if(name === 'suggestion'){ loadSuggestionScreen(); return; }
-    if(name === 'products'){ loadProductsScreen(); return; }
     loadInvoice(name);
   }
 
@@ -1470,13 +1307,13 @@
     }).join('');
   }
 
-  // بيبني نفس شكل "opts" اللي buildExcelBlob/buildInvoiceImageBlob محتاجينه، لكن لنتيجة يوم
+  // بيبني نفس شكل "opts" اللي buildExcelBlob/buildInvoicePdfBlob محتاجينه، لكن لنتيجة يوم
   // جرد/توريد (result.qtyLabel = 'العدد' أو 'الكمية'، مفيش سعر/إجمالي مالي هنا خالص)
   function buildJardTawridExcelOptsFromResult_(result){
     const label = result.qtyLabel || 'الكمية';
     const rows = result.items.map(it => [it['اسم الصنف'], it[label]]);
     return {
-      fileName: result.type + ' - ' + safeDateForFile(result.date) + ' - ' + (result.repName || state.user.name),
+      fileName: result.type + '_' + state.user.name + '_' + safeDateForFile(result.date),
       reportTitle: 'تقرير ' + result.type,
       meta: [
         ['اسم المندوب', result.repName || state.user.name],
@@ -1517,11 +1354,11 @@
     callApi('getInvoiceDetails', [state.auth, sessionId])
       .then(async function(result){
         const opts = historyExcelOptsFromResult_(result);
-        const { blob, fileName } = await buildInvoiceImageBlob(opts);
+        const { blob, fileName } = await buildInvoicePdfBlob(opts);
         showLoading(false);
-        const shared = await shareImageFile(blob, fileName, opts.fileName);
+        const shared = await sharePdfFile(blob, fileName, opts.fileName);
         if(!shared){
-          triggerImageDownload(blob, fileName);
+          triggerPdfDownload(blob, fileName);
           showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
         }
       })
@@ -1536,15 +1373,9 @@
     document.getElementById('repEmailInput').value = '';
     document.getElementById('asnafCodeInput').value = '';
     document.getElementById('asnafNameInput').value = '';
-    document.getElementById('productNameInput').value = '';
-    document.getElementById('productSpecsInput').value = '';
-    selectedProductPhotos_ = [];
-    renderProductPhotoPicker();
     setView('viewAdmin');
     refreshRepsList();
     refreshAsnafList();
-    refreshSuggestionsAdmin();
-    refreshProductsAdmin();
   }
 
   function refreshRepsList(){
@@ -1604,8 +1435,17 @@
       .then(function(data){
         state.asnaf = data.asnaf;
         state.myPrices = data.prices || {};
-        showLoading(false);
-        renderInvoice(name);
+        if(name === 'returns'){
+          showLoading(false);
+          renderInvoice(name);
+          return;
+        }
+        // مبيعات: مفيش ترحيل خالص، فنجيب فاتورة النهاردة التراكمية (لو موجودة) عشان نعرضها
+        return callApi('getMySaleInvoiceToday', [state.auth]).then(function(saleData){
+          state.todaySaleInvoice = saleData;
+          showLoading(false);
+          renderInvoice(name);
+        });
       })
       .catch(onError);
   }
@@ -1693,12 +1533,9 @@
     });
   });
 
-  // بترسم شاشة الفاتورة (بيع أو مرتجع) — نفس السلوك بالظبط للاتنين: أصناف بتتجمع محليًا في
-  // state.draftItems، ومفيش أي كتابة على الشيت غير لما المندوب يدوس "موافق وترحيل" ويأكد من
-  // شاشة المراجعة (finalizeInvoice بتكتب كل الأصناف مرة واحدة وتقفل الفاتورة فورًا).
   function renderInvoice(name){
     const isReturns = (name === 'returns');
-    document.getElementById('pageTitle').textContent = isReturns ? 'تسجيل مرتجع' : 'تسجيل مبيعات';
+    document.getElementById('pageTitle').textContent = isReturns ? 'تسجيل مرتجع' : 'مبيعاتي اليوم';
     document.getElementById('pageSub').textContent = state.user.name;
     document.getElementById('invBadge').textContent = state.user.name;
 
@@ -1707,20 +1544,132 @@
     document.getElementById('returnKindWrap').hidden = !isReturns;
     document.getElementById('returnKindInput').value = '';
 
-    document.getElementById('lockBadge').hidden = !state.finalized;
-    document.getElementById('addBtn').disabled = state.finalized;
-    document.getElementById('finalizeBtn').hidden = state.finalized;
-    // لازم نرجّع الزرار "شغال" هنا كل مرة الشاشة دي بترندر من الأول (فاتورة جديدة)، عشان القفل
-    // اللي بيحصل في confirmFinalizeFromReview وقت الترحيل ميفضلش عالق على الفاتورة الجديدة اللي بعدها
-    document.getElementById('finalizeBtn').disabled = state.finalized;
-    acSetDisabled(AC_CONFIGS.item, state.finalized);
-    document.getElementById('qtyInput').disabled = state.finalized;
-    document.getElementById('priceInput').disabled = state.finalized;
-    document.getElementById('returnKindInput').disabled = state.finalized;
-    document.getElementById('invoiceDownloadRow').hidden = !state.finalized;
-    renderItemsList();
+    if(isReturns){
+      document.getElementById('lockBadge').hidden = !state.finalized;
+      document.getElementById('addBtn').disabled = state.finalized;
+      document.getElementById('finalizeBtn').hidden = state.finalized;
+      // لازم نرجّع الزرار "شغال" هنا كل مرة الشاشة دي بترندر من الأول (فاتورة جديدة/مرتجع جديد)،
+      // عشان القفل اللي بيحصل في confirmFinalizeFromReview وقت الترحيل ميفضلش عالق على الفاتورة
+      // الجديدة اللي بعدها
+      document.getElementById('finalizeBtn').disabled = state.finalized;
+      acSetDisabled(AC_CONFIGS.item, state.finalized);
+      document.getElementById('qtyInput').disabled = state.finalized;
+      document.getElementById('priceInput').disabled = state.finalized;
+      document.getElementById('returnKindInput').disabled = state.finalized;
+      document.getElementById('downloadBtn').disabled = !state.finalized;
+      document.getElementById('downloadBtn').textContent = state.finalized
+        ? '⬇ تحميل Excel'
+        : '⬇ تحميل Excel (متاح بعد الترحيل)';
+      document.getElementById('shareBtn').disabled = !state.finalized;
+      renderItemsList();
+    } else {
+      // مبيعات: مفيش ترحيل خالص — كل صنف بيتسجل فورًا على السيرفر في فاتورة اليوم التراكمية،
+      // وتقدر تعدّل/تمسح أي صنف منها في نفس اليوم (لغاية آخره تبدأ فاتورة يوم جديد تلقائي)
+      document.getElementById('lockBadge').hidden = true;
+      document.getElementById('addBtn').disabled = false;
+      document.getElementById('finalizeBtn').hidden = true;
+      acSetDisabled(AC_CONFIGS.item, false);
+      document.getElementById('qtyInput').disabled = false;
+      document.getElementById('priceInput').disabled = false;
+      const hasItems = !!(state.todaySaleInvoice.items && state.todaySaleInvoice.items.length);
+      document.getElementById('downloadBtn').disabled = !hasItems;
+      document.getElementById('downloadBtn').textContent = '⬇ تحميل Excel';
+      document.getElementById('shareBtn').disabled = !hasItems;
+      renderTodaySaleItemsList();
+    }
 
     setView('viewInvoice');
+  }
+
+  // ============ فاتورة مبيعات اليوم التراكمية (فورية على السيرفر، قابلة للتعديل/الحذف) ============
+  function renderTodaySaleItemsList(){
+    const list = document.getElementById('itemsList');
+    const items = (state.todaySaleInvoice && state.todaySaleInvoice.items) || [];
+
+    if(!items.length){
+      list.innerHTML = '<div class="empty">لسه مفيش أصناف مضافة النهاردة</div>';
+    } else {
+      list.innerHTML = items.map(function(it){
+        const name = it['اسم الصنف'];
+        const qty = Number(it['الكمية']);
+        const price = Number(it['السعر']);
+        const total = Number(it['الاجمالي']);
+        const rid = String(it.rowId).replace(/'/g, "\\'");
+        return '<div class="itemRow">' +
+          '<div>' +
+            '<div class="name">' + escapeHtml(name) + '</div>' +
+            '<div class="meta">' + fmt(qty) + ' × ' + fmt(price) + '</div>' +
+          '</div>' +
+          '<div style="display:flex; align-items:center; gap:8px;">' +
+            '<div class="total">' + fmt(total) + '</div>' +
+            '<button class="delBtn" style="background:none;" onclick="handleEditSaleItem(\'' + rid + '\')">✎</button>' +
+            '<button class="delBtn" onclick="handleDeleteSaleItem(\'' + rid + '\')">✕</button>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    document.getElementById('grandTotal').textContent = fmt((state.todaySaleInvoice && state.todaySaleInvoice.total) || 0);
+  }
+
+  function handleEditSaleItem(rowId){
+    clearMsg();
+    const items = (state.todaySaleInvoice && state.todaySaleInvoice.items) || [];
+    const item = items.find(it => String(it.rowId) === String(rowId));
+    if(!item) return;
+
+    const qtyStr = window.prompt('الكمية الجديدة لـ "' + item['اسم الصنف'] + '"', String(item['الكمية']));
+    if(qtyStr === null) return;
+    const qty = Number(normalizeDigits(qtyStr));
+    if(!qty || qty <= 0){ showMsg('اكتب كمية صحيحة', 'error'); return; }
+
+    const priceStr = window.prompt('السعر الجديد لـ "' + item['اسم الصنف'] + '"', String(item['السعر']));
+    if(priceStr === null) return;
+    const price = Number(normalizeDigits(priceStr));
+    if(isNaN(price) || price < 0){ showMsg('اكتب سعر صحيح', 'error'); return; }
+
+    showLoading(true);
+    callApi('updateSaleItem', [state.auth, rowId, qty, price])
+      .then(function(data){
+        showLoading(false);
+        // السيرفر بيرجع بس الصنف اللي اتعدّل (مش الفاتورة كاملة) — أسرع بكتير، فبنحدّث نفس
+        // الصنف ده محليًا في القايمة اللي عندنا بدل ما نطلب كل حاجة تاني
+        const it = items.find(x => String(x.rowId) === String(data.rowId));
+        if(it){
+          it['الكمية'] = data.qty;
+          it['السعر'] = data.price;
+          it['الاجمالي'] = data.total;
+          recomputeTodaySaleTotal_();
+        }
+        renderInvoice(state.screen);
+        showMsg('اتعدّل الصنف ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  function handleDeleteSaleItem(rowId){
+    clearMsg();
+    if(!window.confirm('متأكد إنك عايز تمسح الصنف ده من فاتورة النهاردة؟')) return;
+    showLoading(true);
+    callApi('deleteSaleItem', [state.auth, rowId])
+      .then(function(data){
+        showLoading(false);
+        // السيرفر بيرجع بس تأكيد نجاح المسح — بنشيل الصنف محليًا من القايمة اللي عندنا
+        const items2 = (state.todaySaleInvoice && state.todaySaleInvoice.items) || [];
+        state.todaySaleInvoice.items = items2.filter(x => String(x.rowId) !== String(data.rowId));
+        recomputeTodaySaleTotal_();
+        renderInvoice(state.screen);
+        showMsg('اتمسح الصنف ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  // بيعيد حساب إجمالي فاتورة اليوم من نفس الأصناف الموجودة محليًا — مستخدمة بعد أي تعديل/مسح/
+  // إضافة صنف عشان منحتاجش نطلب الفاتورة كاملة من السيرفر تاني في كل مرة (أسرع بكتير خصوصًا
+  // كل ما تاب المبيعات يكبر).
+  function recomputeTodaySaleTotal_(){
+    const items = (state.todaySaleInvoice && state.todaySaleInvoice.items) || [];
+    state.todaySaleInvoice.total = items.reduce((s, it) => s + (Number(it['الاجمالي']) || 0), 0);
   }
 
   function renderItemsList(){
@@ -1780,15 +1729,47 @@
         return;
       }
       state.draftItems.push({ itemName: name, qty: qty, price: price, returnKind: kindSel });
-    } else {
-      state.draftItems.push({ itemName: name, qty: qty, price: price });
+      acReset(AC_CONFIGS.item);
+      document.getElementById('qtyInput').value = '';
+      document.getElementById('priceInput').value = '';
+      document.getElementById('returnKindInput').value = '';
+      renderItemsList();
+      return;
     }
 
-    acReset(AC_CONFIGS.item);
-    document.getElementById('qtyInput').value = '';
-    document.getElementById('priceInput').value = '';
-    document.getElementById('returnKindInput').value = '';
-    renderItemsList();
+    // مبيعات: إضافة فورية على السيرفر — مفيش تجميع محلي ولا زرار ترحيل، كل صنف بيتسجل لحظيًا.
+    // بنغيّر نص الزرار نفسه لحد ما الرد يوصل عشان يبقى واضح إن الضغطة اتسجلت وإن فيه حاجة
+    // شغالة فعلاً (مش بس تعطيل الزرار من غير أي رد فعل ظاهر).
+    showLoading(true);
+    const addBtnEl = document.getElementById('addBtn');
+    addBtnEl.disabled = true;
+    const addBtnOldText = addBtnEl.textContent;
+    addBtnEl.textContent = 'جارِ الإضافة...';
+    callApi('addSaleItem', [state.auth, { itemName: name, qty: qty, price: price }])
+      .then(function(data){
+        showLoading(false);
+        addBtnEl.disabled = false;
+        addBtnEl.textContent = addBtnOldText;
+        // السيرفر بيرجع بس الصنف الجديد (مش الفاتورة كاملة) — أسرع بكتير، فبنضيفه محليًا لنفس
+        // القايمة اللي عندنا بدل ما نطلب الفاتورة من الأول تاني في كل مرة
+        if(!state.todaySaleInvoice.sessionId){
+          state.todaySaleInvoice.sessionId = data.sessionId;
+          state.todaySaleInvoice.date = data.date;
+          state.todaySaleInvoice.repName = data.repName;
+        }
+        state.todaySaleInvoice.items.push(data.item);
+        recomputeTodaySaleTotal_();
+        acReset(AC_CONFIGS.item);
+        document.getElementById('qtyInput').value = '';
+        document.getElementById('priceInput').value = '';
+        renderInvoice(state.screen);
+        showMsg('اتضاف الصنف لفاتورة النهاردة ✔', 'success');
+      })
+      .catch(function(err){
+        addBtnEl.disabled = false;
+        addBtnEl.textContent = addBtnOldText;
+        onError(err);
+      });
   }
 
   function handleDeleteDraftItem(idx){
@@ -1877,8 +1858,8 @@
   }
 
   // دالة مشتركة لبناء خيارات ملف إكسل فاتورة (بيع/مرتجع) من أي نتيجة بنفس شكل نتيجة
-  // finalizeInvoice — بتُستخدم فور الترحيل في نفس الشاشة، وكمان من شاشة "سجل فواتيري"
-  // (كنسخة احتياطية تانية) عشان منكررش منطق البناء في مكانين
+  // finalizeInvoice — بتُستخدم فورًا بعد الترحيل (invoiceExcelOpts تحت) وكمان من شاشة
+  // "سجل فواتيري" لإعادة بناء نفس الملف من غير ما نكرر منطق البناء في مكانين
   function buildInvoiceExcelOpts(result, isReturns){
     const label = isReturns ? 'مرتجع' : 'مبيعات';
     const rows = result.items.map(it => {
@@ -1886,7 +1867,7 @@
       return [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
     });
     return {
-      fileName: label + ' - ' + safeDateForFile(result.date) + ' - ' + state.user.name,
+      fileName: label + '_' + state.user.name + '_' + safeDateForFile(result.date),
       reportTitle: 'تقرير ' + label,
       meta: [
         ['اسم المندوب', state.user.name],
@@ -1901,25 +1882,34 @@
     };
   }
 
-  function currentInvoiceExcelOpts_(){
+  function invoiceExcelOpts(){
     const isReturns = (state.screen === 'returns');
-    return buildInvoiceExcelOpts(state.finalResult, isReturns);
+    // مرتجع: بيرجع بس بعد الترحيل (finalResult) — مبيعات: مفيش ترحيل، فبيرجع فاتورة اليوم التراكمية
+    const result = isReturns ? state.finalResult : state.todaySaleInvoice;
+    return buildInvoiceExcelOpts(result, isReturns);
   }
 
-  function shareInvoiceExcel(){
-    clearMsg();
-    showLoading(true);
-    const opts = currentInvoiceExcelOpts_();
-    buildInvoiceImageBlob(opts)
-      .then(async function(r){
-        showLoading(false);
-        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
-        if(!shared){
-          triggerImageDownload(r.blob, r.fileName);
-          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-        }
-      })
-      .catch(onError);
+  function invoiceHasContent_(){
+    return (state.screen === 'returns')
+      ? state.finalized
+      : !!(state.todaySaleInvoice.items && state.todaySaleInvoice.items.length);
+  }
+
+  async function downloadInvoiceExcel(){
+    if(!invoiceHasContent_()) return;
+    const { blob, fileName } = await buildExcelBlob(invoiceExcelOpts());
+    triggerBlobDownload(blob, fileName);
+  }
+
+  async function shareInvoiceExcel(){
+    if(!invoiceHasContent_()) return;
+    const opts = invoiceExcelOpts();
+    const { blob, fileName } = await buildInvoicePdfBlob(opts);
+    const shared = await sharePdfFile(blob, fileName, opts.fileName);
+    if(!shared){
+      triggerPdfDownload(blob, fileName);
+      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+    }
   }
 
   // ============ التوريد ============
@@ -1951,7 +1941,11 @@
     document.getElementById('saveTawridBtn').disabled = state.tawridFinalized;
     acSetDisabled(AC_CONFIGS.tawridItem, state.tawridFinalized);
     document.getElementById('tawridQtyInput').disabled = state.tawridFinalized;
-    document.getElementById('tawridDownloadRow').hidden = !state.tawridFinalized;
+    document.getElementById('tawridDownloadBtn').disabled = !state.tawridFinalized;
+    document.getElementById('tawridDownloadBtn').textContent = state.tawridFinalized
+      ? '⬇ تحميل Excel'
+      : '⬇ تحميل Excel (متاح بعد التأكيد)';
+    document.getElementById('tawridShareBtn').disabled = !state.tawridFinalized;
 
     renderTawridList();
     setView('viewTawrid');
@@ -2017,44 +2011,41 @@
       });
   }
 
-  // بيبني خيارات ملف إكسل التوريد من أصناف الشاشة نفسها (لسه في الذاكرة عند العميل) — بنستخدمها
-  // بدل نتيجة saveTawrid لأنها مش راجعة فيها تفاصيل الأصناف، بس تأكيد الحفظ
-  function tawridExcelOptsFromState_(){
+  function tawridExcelOpts(){
     const rows = state.tawridItems.map(it => [it.itemName, it.qty]);
-    const total = state.tawridItems.reduce((s, it) => s + Number(it.qty), 0);
-    const date = (state.tawridResult && state.tawridResult.date) || '';
-    const repName = (state.tawridResult && state.tawridResult.repName) || state.user.name;
+    const totalQty = state.tawridItems.reduce((s, it) => s + (Number(it.qty) || 0), 0);
     return {
-      fileName: 'توريد - ' + safeDateForFile(date) + ' - ' + repName,
+      fileName: 'توريد_' + state.user.name + '_' + safeDateForFile(state.tawridResult.date),
       reportTitle: 'تقرير توريد',
       meta: [
-        ['اسم المندوب', repName],
+        ['اسم المندوب', state.user.name],
         ['الفرع', state.user.branch || '—'],
-        ['التاريخ', date],
+        ['التاريخ', state.tawridResult.date],
         ['عدد الأصناف', state.tawridItems.length],
       ],
       headers: ['اسم الصنف', 'الكمية'],
       rows: rows,
       totalsLabel: 'إجمالي الكمية',
-      totalsValue: total,
+      totalsValue: totalQty,
       totalsIsCurrency: false,
     };
   }
 
-  function shareTawridExcel(){
-    clearMsg();
-    showLoading(true);
-    const opts = tawridExcelOptsFromState_();
-    buildInvoiceImageBlob(opts)
-      .then(async function(r){
-        showLoading(false);
-        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
-        if(!shared){
-          triggerImageDownload(r.blob, r.fileName);
-          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-        }
-      })
-      .catch(onError);
+  async function downloadTawridExcel(){
+    if(!state.tawridFinalized) return;
+    const { blob, fileName } = await buildExcelBlob(tawridExcelOpts());
+    triggerBlobDownload(blob, fileName);
+  }
+
+  async function shareTawridExcel(){
+    if(!state.tawridFinalized) return;
+    const opts = tawridExcelOpts();
+    const { blob, fileName } = await buildInvoicePdfBlob(opts);
+    const shared = await sharePdfFile(blob, fileName, opts.fileName);
+    if(!shared){
+      triggerPdfDownload(blob, fileName);
+      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+    }
   }
 
   // ============ الجرد ============
@@ -2081,7 +2072,11 @@
     document.getElementById('jardLockBadge').hidden = !state.jardFinalized;
     document.getElementById('saveJardBtn').hidden = state.jardFinalized;
     document.getElementById('saveJardBtn').disabled = state.jardFinalized;
-    document.getElementById('jardDownloadRow').hidden = !state.jardFinalized;
+    document.getElementById('jardDownloadBtn').disabled = !state.jardFinalized;
+    document.getElementById('jardDownloadBtn').textContent = state.jardFinalized
+      ? '⬇ تحميل Excel'
+      : '⬇ تحميل Excel (متاح بعد الحفظ)';
+    document.getElementById('jardShareBtn').disabled = !state.jardFinalized;
 
     renderJardItemsList();
     setView('viewJard');
@@ -2109,20 +2104,19 @@
       list.innerHTML = rowsHtml || '<div class="empty">لسه مفيش أصناف متسجلة في الجرد ده</div>';
       return;
     }
-    // كل صنف بيتعرض ومعاه (لو معروف) "رصيدك المتوقع" — نفس الرقم المحسوب في شاشة "أرصدتي" —
-    // كـ badge دهبي واضح فوق خانة الإدخال مباشرة، وكمان كـ placeholder جوه الخانة نفسها،
-    // عشان يسهّل على المندوب يقارن بسرعة وهو بيعدّ فعليًا بدل ما يدوّر في شاشة تانية.
     list.innerHTML = state.asnaf.map(function(a){
+      // لو عندنا رصيد متوقع محسوب (من آخر جرد + توريد − صافي مبيعات)، بنعرضه كسطر صغير
+      // منفصل تحت اسم الصنف (مش جوه الـ input) عشان مايتلخبطش بقيمة متسجلة فعلًا.
+      // المندوب لازم يكتب العدد الحقيقي اللي قدامه بنفسه في الخانة الفاضية دايمًا.
       const hasExpected = typeof a.expectedBalance === 'number' && !isNaN(a.expectedBalance);
       const expectedHtml = hasExpected
-        ? '<div style="display:inline-flex; align-items:center; gap:6px; background:var(--gold-bg); border:1px solid var(--gold); color:var(--gold-d); font-weight:800; font-size:13.5px; padding:5px 12px; border-radius:20px; margin:4px 0 8px;">📦 رصيدك المتوقع: ' + fmt(a.expectedBalance) + '</div>'
+        ? '<div class="meta">الرصيد المتوقع: ' + fmt(a.expectedBalance) + '</div>'
         : '';
-      const placeholder = hasExpected ? ('تقريبًا ' + fmt(a.expectedBalance)) : 'العدد';
       return (
-        '<div style="margin-bottom:16px;">' +
+        '<div style="margin-bottom:14px;">' +
           '<label>' + escapeHtml(a.name) + '</label>' +
           expectedHtml +
-          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="' + escapeHtml(placeholder) + '">' +
+          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="العدد">' +
         '</div>'
       );
     }).join('');
@@ -2163,43 +2157,41 @@
       });
   }
 
-  // بيبني خيارات ملف إكسل الجرد من أصناف الشاشة نفسها (اللي اتحفظت فعلاً في state.jardItems)
-  function jardExcelOptsFromState_(){
+  function jardExcelOpts(){
     const rows = state.jardItems.map(it => [it.itemName, it.count]);
-    const total = state.jardItems.reduce((s, it) => s + Number(it.count), 0);
-    const date = (state.jardResult && state.jardResult.date) || '';
-    const repName = (state.jardResult && state.jardResult.repName) || state.user.name;
+    const totalCount = state.jardItems.reduce((s, it) => s + (Number(it.count) || 0), 0);
     return {
-      fileName: 'جرد - ' + safeDateForFile(date) + ' - ' + repName,
+      fileName: 'جرد_' + state.user.name + '_' + safeDateForFile(state.jardResult.date),
       reportTitle: 'تقرير جرد',
       meta: [
-        ['اسم المندوب', repName],
+        ['اسم المندوب', state.user.name],
         ['الفرع', state.user.branch || '—'],
-        ['التاريخ', date],
+        ['التاريخ', state.jardResult.date],
         ['عدد الأصناف', state.jardItems.length],
       ],
-      headers: ['اسم الصنف', 'العدد'],
+      headers: ['اسم الصنف', 'الجرد'],
       rows: rows,
-      totalsLabel: 'إجمالي العدد',
-      totalsValue: total,
+      totalsLabel: 'إجمالي الجرد',
+      totalsValue: totalCount,
       totalsIsCurrency: false,
     };
   }
 
-  function shareJardExcel(){
-    clearMsg();
-    showLoading(true);
-    const opts = jardExcelOptsFromState_();
-    buildInvoiceImageBlob(opts)
-      .then(async function(r){
-        showLoading(false);
-        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
-        if(!shared){
-          triggerImageDownload(r.blob, r.fileName);
-          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-        }
-      })
-      .catch(onError);
+  async function downloadJardExcel(){
+    if(!state.jardFinalized) return;
+    const { blob, fileName } = await buildExcelBlob(jardExcelOpts());
+    triggerBlobDownload(blob, fileName);
+  }
+
+  async function shareJardExcel(){
+    if(!state.jardFinalized) return;
+    const opts = jardExcelOpts();
+    const { blob, fileName } = await buildInvoicePdfBlob(opts);
+    const shared = await sharePdfFile(blob, fileName, opts.fileName);
+    if(!shared){
+      triggerPdfDownload(blob, fileName);
+      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+    }
   }
 
   // ============ إضافة مندوب (مشرفين فقط) ============
@@ -2348,308 +2340,6 @@
       .catch(onError);
   }
 
-  // ============ إعداداتي (بيانات المندوب: صورة، سن، خبرة، إجازة أسبوعية) ============
-  let selectedWeeklyOff_ = [];
-
-  function loadProfile(){
-    document.getElementById('pageTitle').textContent = 'إعداداتي';
-    document.getElementById('pageSub').textContent = state.user.name;
-    showLoading(true);
-    callApi('bootstrapProfile', [state.auth])
-      .then(function(data){
-        showLoading(false);
-        renderProfile(data);
-        setView('viewProfile');
-      })
-      .catch(onError);
-  }
-
-  function renderProfile(data){
-    const profile = data.profile || {};
-    const img = document.getElementById('profilePhotoImg');
-    const placeholder = document.getElementById('profilePhotoPlaceholder');
-    if(profile.photoUrl){
-      img.src = profile.photoUrl;
-      img.hidden = false;
-      placeholder.hidden = true;
-    } else {
-      img.hidden = true;
-      placeholder.hidden = false;
-    }
-    document.getElementById('profileAgeInput').value = profile.age != null ? profile.age : '';
-    document.getElementById('profileExperienceInput').value = profile.experienceYears != null ? profile.experienceYears : '';
-    selectedWeeklyOff_ = Array.isArray(profile.weeklyOff) ? profile.weeklyOff.slice() : [];
-
-    const options = data.weeklyOffOptions || [];
-    const wrap = document.getElementById('weeklyOffChipsWrap');
-    wrap.innerHTML = options.map(function(day){
-      const active = selectedWeeklyOff_.indexOf(day) !== -1;
-      return '<div class="dayChip' + (active ? ' active' : '') + '" data-day="' + escapeHtml(day) + '" onclick="toggleWeeklyOffDay(this)">' + escapeHtml(day) + '</div>';
-    }).join('');
-  }
-
-  function toggleWeeklyOffDay(el){
-    const day = el.dataset.day;
-    const idx = selectedWeeklyOff_.indexOf(day);
-    if(idx === -1){ selectedWeeklyOff_.push(day); el.classList.add('active'); }
-    else { selectedWeeklyOff_.splice(idx, 1); el.classList.remove('active'); }
-  }
-
-  function handleSaveProfile(){
-    clearMsg();
-    const ageRaw = document.getElementById('profileAgeInput').value;
-    const expRaw = document.getElementById('profileExperienceInput').value;
-    const profile = {
-      age: ageRaw === '' ? null : Number(ageRaw),
-      experienceYears: expRaw === '' ? null : Number(expRaw),
-      weeklyOff: selectedWeeklyOff_,
-    };
-    showLoading(true);
-    callApi('saveMyProfile', [state.auth, profile])
-      .then(function(){
-        showLoading(false);
-        showMsg('تم حفظ بياناتك بنجاح ✔', 'success');
-      })
-      .catch(onError);
-  }
-
-  // تصغير الصورة بـ Canvas قبل الرفع (أقصى بعد 500px، جودة JPEG 0.82) عشان الملف يفضل صغير
-  // ومناسب لحجم الطلب اللي Apps Script بيقبله
-  function handlePhotoSelected(e){
-    const file = e.target.files && e.target.files[0];
-    if(!file) return;
-    clearMsg();
-    const reader = new FileReader();
-    reader.onload = function(ev){
-      const img = new Image();
-      img.onload = function(){
-        let w = img.width, h = img.height;
-        const maxDim = 500;
-        if(w > maxDim || h > maxDim){
-          if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
-          else { w = Math.round(w * maxDim / h); h = maxDim; }
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
-        const base64Data = dataUrl.split(',')[1];
-        showLoading(true);
-        callApi('uploadMyPhoto', [state.auth, base64Data, 'image/jpeg'])
-          .then(function(result){
-            showLoading(false);
-            const imgEl = document.getElementById('profilePhotoImg');
-            imgEl.src = result.photoUrl;
-            imgEl.hidden = false;
-            document.getElementById('profilePhotoPlaceholder').hidden = true;
-            if(state.user){ state.user.photoUrl = result.photoUrl; }
-            renderHomeBadgeIcon(result.photoUrl);
-            showMsg('تم تحديث الصورة بنجاح ✔', 'success');
-          })
-          .catch(onError);
-      };
-      img.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-    e.target.value = '';
-  }
-
-  // ============ ابعت اقتراح ============
-  function loadSuggestionScreen(){
-    document.getElementById('pageTitle').textContent = 'ابعت اقتراح';
-    document.getElementById('pageSub').textContent = state.user.name;
-    document.getElementById('suggestionTextInput').value = '';
-    setView('viewSuggestion');
-  }
-
-  function handleSendSuggestion(){
-    clearMsg();
-    const text = document.getElementById('suggestionTextInput').value.trim();
-    if(!text){ showMsg('اكتب اقتراحك الأول', 'error'); return; }
-    showLoading(true);
-    callApi('addSuggestion', [state.auth, text])
-      .then(function(){
-        showLoading(false);
-        document.getElementById('suggestionTextInput').value = '';
-        showMsg('تم إرسال اقتراحك بنجاح، شكرًا ليك ✔', 'success');
-      })
-      .catch(onError);
-  }
-
-  // ============ وصف المنتجات ============
-  function loadProductsScreen(){
-    document.getElementById('pageTitle').textContent = 'وصف المنتجات';
-    document.getElementById('pageSub').textContent = state.user.name;
-    showLoading(true);
-    callApi('listProductDescriptions', [state.auth])
-      .then(function(products){
-        showLoading(false);
-        renderProductsList(products, 'productsList', false);
-        setView('viewProducts');
-      })
-      .catch(onError);
-  }
-
-  function renderProductsList(products, containerId, adminMode){
-    const el = document.getElementById(containerId);
-    if(!products || !products.length){
-      el.innerHTML = '<div class="empty">لسه مفيش منتجات متضافة</div>';
-      return;
-    }
-    el.innerHTML = products.map(function(p){
-      const delBtn = adminMode
-        ? '<button class="delBtn" style="margin-top:8px;" onclick="handleDeleteProduct(\'' + String(p.id).replace(/'/g, "\\'") + '\')">🗑 حذف</button>'
-        : '';
-      const photosHtml = (p.photos && p.photos.length)
-        ? '<div class="productPhotos">' + p.photos.map(function(url){
-            return '<img src="' + escapeHtml(url) + '" loading="lazy" onclick="window.open(\'' + escapeHtml(url).replace(/'/g, "\\'") + '\', \'_blank\')">';
-          }).join('') + '</div>'
-        : '';
-      const lines = String(p.specs || '').split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
-      const specsHtml = lines.length
-        ? '<ul class="pSpecsList">' + lines.map(function(l){ return '<li>' + escapeHtml(l) + '</li>'; }).join('') + '</ul>'
-        : '';
-      return (
-        '<div class="productCard">' +
-          '<div class="pTitle">' + escapeHtml(p.name) + '</div>' +
-          photosHtml +
-          specsHtml +
-          delBtn +
-        '</div>'
-      );
-    }).join('');
-  }
-
-  // ============ اختيار صور المنتج (قبل الإضافة) — بتتصغّر بالمتصفح زي صورة البروفايل بالظبط ============
-  let selectedProductPhotos_ = []; // [{dataUrl, base64Data, mimeType}]
-
-  function resizeImageFile_(file, maxDim, quality){
-    return new Promise(function(resolve, reject){
-      const reader = new FileReader();
-      reader.onerror = reject;
-      reader.onload = function(ev){
-        const img = new Image();
-        img.onerror = reject;
-        img.onload = function(){
-          let w = img.width, h = img.height;
-          if(w > maxDim || h > maxDim){
-            if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
-            else { w = Math.round(w * maxDim / h); h = maxDim; }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          resolve({ dataUrl: dataUrl, base64Data: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-  }
-
-  function renderProductPhotoPicker(){
-    const wrap = document.getElementById('productPhotoPicker');
-    const thumbsHtml = selectedProductPhotos_.map(function(p, idx){
-      return (
-        '<div class="thumb">' +
-          '<img src="' + p.dataUrl + '">' +
-          '<button type="button" class="rmBtn" onclick="removeSelectedProductPhoto(' + idx + ')">✕</button>' +
-        '</div>'
-      );
-    }).join('');
-    const addBtnHtml = selectedProductPhotos_.length < 5
-      ? '<button type="button" class="productPhotoAddBtn" onclick="document.getElementById(\'productPhotoInput\').click()">+</button>'
-      : '';
-    wrap.innerHTML = thumbsHtml + addBtnHtml;
-  }
-
-  function handleProductPhotosSelected(e){
-    clearMsg();
-    const files = Array.from(e.target.files || []);
-    e.target.value = '';
-    if(!files.length) return;
-    const remaining = 5 - selectedProductPhotos_.length;
-    if(remaining <= 0){ showMsg('أقصى عدد صور للمنتج الواحد هو 5 صور', 'error'); return; }
-    const toProcess = files.slice(0, remaining);
-    Promise.all(toProcess.map(function(f){ return resizeImageFile_(f, 900, 0.82); }))
-      .then(function(results){
-        selectedProductPhotos_ = selectedProductPhotos_.concat(results);
-        renderProductPhotoPicker();
-      })
-      .catch(function(){ showMsg('حصل خطأ في تحميل إحدى الصور، حاول تاني', 'error'); });
-  }
-
-  function removeSelectedProductPhoto(idx){
-    selectedProductPhotos_.splice(idx, 1);
-    renderProductPhotoPicker();
-  }
-
-  function refreshProductsAdmin(){
-    document.getElementById('productsAdminList').innerHTML = '<div class="empty">جاري التحميل...</div>';
-    callApi('listProductDescriptions', [state.auth])
-      .then(function(products){ renderProductsList(products, 'productsAdminList', true); })
-      .catch(onError);
-  }
-
-  function handleAddProduct(){
-    clearMsg();
-    const name = document.getElementById('productNameInput').value.trim();
-    const specs = document.getElementById('productSpecsInput').value.trim();
-    if(!name){ showMsg('اكتب اسم المنتج', 'error'); return; }
-    if(!specs){ showMsg('اكتب مواصفات المنتج', 'error'); return; }
-    const photos = selectedProductPhotos_.map(function(p){ return { base64Data: p.base64Data, mimeType: p.mimeType }; });
-    showLoading(true);
-    callApi('addProductDescription', [state.auth, name, specs, photos])
-      .then(function(){
-        showLoading(false);
-        document.getElementById('productNameInput').value = '';
-        document.getElementById('productSpecsInput').value = '';
-        selectedProductPhotos_ = [];
-        renderProductPhotoPicker();
-        showMsg('تم إضافة المنتج بنجاح ✔', 'success');
-        refreshProductsAdmin();
-      })
-      .catch(onError);
-  }
-
-  function handleDeleteProduct(productId){
-    clearMsg();
-    if(!confirm('متأكد إنك عاوز تحذف المنتج ده؟')) return;
-    showLoading(true);
-    callApi('deleteProductDescription', [state.auth, productId])
-      .then(function(){
-        showLoading(false);
-        showMsg('تم حذف المنتج ✔', 'success');
-        refreshProductsAdmin();
-      })
-      .catch(onError);
-  }
-
-  // ============ مقترحات المناديب (صاحب الحساب فقط) ============
-  function refreshSuggestionsAdmin(){
-    document.getElementById('suggestionsAdminList').innerHTML = '<div class="empty">جاري التحميل...</div>';
-    callApi('listSuggestions', [state.auth])
-      .then(renderSuggestionsAdminList)
-      .catch(onError);
-  }
-
-  function renderSuggestionsAdminList(suggestions){
-    const el = document.getElementById('suggestionsAdminList');
-    if(!suggestions || !suggestions.length){
-      el.innerHTML = '<div class="empty">لسه مفيش اقتراحات متبعتة</div>';
-      return;
-    }
-    el.innerHTML = suggestions.map(function(s){
-      return (
-        '<div class="suggRow">' +
-          '<div class="sMeta">' + escapeHtml(s.repName) + ' · ' + escapeHtml(s.date) + '</div>' +
-          '<div class="sText">' + escapeHtml(s.text) + '</div>' +
-        '</div>'
-      );
-    }).join('');
-  }
-
   // ============ مشاركة/تنزيل ملف Excel ============
   function triggerBlobDownload(blob, fileName){
     const url = URL.createObjectURL(blob);
@@ -2716,9 +2406,8 @@
   const BRAND_ZEBRA = 'FFEAF2FA';
   const BRAND_FRAME = 'FF1F4E79';
 
-  // ============ توليد ملف Excel منسّق (يُستخدم من شاشة "سجل فواتيري" بس) — بيرجع Blob بس من غير تنزيل ============
+  // ============ توليد ملف Excel منسّق (يُستخدم في كل الشاشات) — بيرجع Blob بس من غير تنزيل ============
   async function buildExcelBlob(opts){
-    await ensureExcelJsLoaded_();
     const headers = opts.headers;
     const rows = opts.rows;
     const meta = opts.meta || [];
@@ -2942,62 +2631,50 @@
     return { blob: blob, fileName: opts.fileName };
   }
 
-  // ============ توليد نفس التقرير كصورة PNG (يُستخدم في "مشاركة" فقط — التنزيل فاضل Excel) ============
+  // ============ توليد نفس التقرير كملف PDF (يُستخدم في "مشاركة" فقط — التنزيل فاضل Excel) ============
   // بنبني نفس بيانات التقرير كصفحة HTML عادية بخط عربي واضح وألوان هويّة الشركة، وبعدين بنصوّرها
-  // (html2canvas) ونطلعها كصورة PNG واحدة. الطريقة دي بتضمن إن العربي يتكتب صح 100% (زي ما
-  // المتصفح نفسه بيعرضه)، وأخف وأسرع بكتير من تجميعها في ملف PDF (مفيش تقسيم صفحات ولا مكتبة
-  // إضافية) — والصورة كمان بتتفتح مباشرة جوه واتساب من غير ما تحتاج فاتح PDF منفصل.
-  // ARGB (زي 'FF1F4E79') لـ CSS hex عادي ('#1F4E79') — عشان نستخدم نفس ألوان BRAND_* بتاعة
-  // ملف الإكسل هنا بالظبط، فتطلع الصورة بنفس هوية الشكل تمامًا
-  function argbToCss_(argb){ return '#' + argb.slice(2); }
-
-  async function buildInvoiceImageBlob(opts){
-    await ensureHtml2CanvasLoaded_();
+  // (html2canvas) ونحطها جوه ملف PDF (jsPDF). الطريقة دي بتضمن إن العربي يتكتب صح 100% (زي ما
+  // المتصفح نفسه بيعرضه) من غير مشاكل الخطوط المعروفة مع مكتبات PDF اللي بتكتب نص عربي مباشرة.
+  async function buildInvoicePdfBlob(opts){
     const headers = opts.headers;
     const rows = opts.rows;
     const meta = opts.meta || [];
-    // نفس ألوان "الأزرق الكوربوريتي" المستخدمة في ملف الإكسل بالظبط (BRAND_* فوق)
-    const C_BANNER = argbToCss_(BRAND_BANNER);
-    const C_SUBTITLE = argbToCss_(BRAND_SUBTITLE_BG);
-    const C_META_BG = argbToCss_(BRAND_META_BG);
-    const C_META_BORDER = argbToCss_(BRAND_META_BORDER);
-    const C_GRID = argbToCss_(BRAND_GRID);
-    const C_ZEBRA = argbToCss_(BRAND_ZEBRA);
-    const C_FRAME = argbToCss_(BRAND_FRAME);
-    const C_ACCENT = argbToCss_(BRAND_ACCENT);
+    const PDF_NAVY = '#0c1730';
+    const PDF_GOLD = '#b6862f';
+    const PDF_GOLD_BG = '#faf3e1';
+    const PDF_BORDER = '#e4dfd1';
+    const PDF_ZEBRA = '#f7f6f2';
 
     const isNumericCol = headers.map(function(_, i){ return isNumericCol_(rows.map(function(r){ return r[i]; })); });
     const isCurrencyCol = headers.map(function(h, i){ return isNumericCol[i] && isCurrencyHeader_(h); });
 
-    const metaHtml = meta.map(function(pair, i){
-      const isLast = i === meta.length - 1;
-      return '<div style="padding:10px 14px; ' + (isLast ? '' : 'border-bottom:1px solid ' + C_META_BORDER + '; ') +
-        'font-size:16.5px; font-weight:700; color:#1a1a1a; background:' + C_META_BG + ';">' +
-        '<span style="color:' + C_BANNER + ';">' + escapeHtml_(pair[0]) + ':</span>&nbsp;&nbsp;' + escapeHtml_(String(pair[1])) +
+    const metaHtml = meta.map(function(pair){
+      return '<div style="padding:9px 14px; border-bottom:1px solid ' + PDF_BORDER + '; font-size:15px; font-weight:700; color:#1a1a1a;">' +
+        '<span style="color:' + PDF_NAVY + ';">' + escapeHtml_(pair[0]) + ':</span>&nbsp;&nbsp;' + escapeHtml_(String(pair[1])) +
         '</div>';
     }).join('');
 
     const headHtml = headers.map(function(h){
-      return '<th style="padding:13px 10px; font-size:18px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_ACCENT + ';">' + escapeHtml_(h) + '</th>';
+      return '<th style="padding:10px 8px; font-size:14.5px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + ';">' + escapeHtml_(h) + '</th>';
     }).join('');
 
     const rowsHtml = rows.map(function(row, ri){
-      const bg = (ri % 2 === 1) ? C_ZEBRA : '#ffffff';
+      const bg = (ri % 2 === 1) ? PDF_ZEBRA : '#ffffff';
       const cells = row.map(function(val, i){
         const align = isNumericCol[i] ? 'center' : 'right';
         let display = val === null || val === undefined ? '' : val;
         if(typeof display === 'number'){
           display = isCurrencyCol[i] ? (display.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م') : display.toLocaleString('en-US');
         }
-        return '<td style="padding:12px 10px; font-size:19px; font-weight:800; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + C_GRID + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
+        return '<td style="padding:8px; font-size:14px; font-weight:700; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + PDF_BORDER + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
       }).join('');
       return '<tr>' + cells + '</tr>';
     }).join('');
 
     const totalsHtml = opts.totalsLabel ? (
       '<tr>' +
-        '<td colspan="' + (headers.length - 1) + '" style="padding:13px 10px; font-size:19px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
-        '<td style="padding:13px 10px; font-size:20px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:center;">' +
+        '<td colspan="' + (headers.length - 1) + '" style="padding:10px 8px; font-size:15px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
+        '<td style="padding:10px 8px; font-size:16px; font-weight:800; color:#fff; background:' + PDF_NAVY + '; border:1px solid ' + PDF_NAVY + '; text-align:center;">' +
           (typeof opts.totalsValue === 'number'
             ? (opts.totalsIsCurrency === false ? opts.totalsValue.toLocaleString('en-US') : opts.totalsValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م')
             : escapeHtml_(String(opts.totalsValue))) +
@@ -3013,10 +2690,10 @@
     container.style.cssText = 'position:fixed; top:0; left:-99999px; width:794px; background:#ffffff; direction:rtl; font-family:"Cairo","Tajawal",Arial,sans-serif;';
     container.innerHTML =
       '<div style="padding:24px;">' +
-        '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; font-size:20px; font-weight:900; padding:16px;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
-        '<div style="background:' + C_SUBTITLE + '; color:#fff; text-align:center; font-size:14.5px; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + '</div>' +
-        '<div style="border:2px solid ' + C_ACCENT + '; border-top:none; margin-bottom:14px;">' + metaHtml + '</div>' +
-        '<table style="width:100%; border-collapse:collapse; border:2px solid ' + C_FRAME + ';"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
+        '<div style="background:' + PDF_NAVY + '; color:#fff; text-align:center; font-size:22px; font-weight:900; padding:16px; border-radius:10px 10px 0 0;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
+        '<div style="background:' + PDF_GOLD + '; color:#fff; text-align:center; font-size:15px; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + '</div>' +
+        '<div style="background:' + PDF_GOLD_BG + '; border:1px solid ' + PDF_BORDER + '; border-top:none;">' + metaHtml + '</div>' +
+        '<table style="width:100%; border-collapse:collapse; margin-top:14px;"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
         '<div style="text-align:center; font-size:11px; color:#9a9a9a; font-style:italic; margin-top:14px;">تم إنشاء الملف تلقائيًا بتاريخ ' + stamp + '</div>' +
       '</div>';
     document.body.appendChild(container);
@@ -3024,7 +2701,38 @@
     let blob;
     try{
       const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
-      blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
+      const imgData = canvas.toDataURL('image/png');
+      const { jsPDF } = window.jspdf;
+      const pageWidthMm = 210, pageHeightMm = 297, marginMm = 8;
+      const usableWidthMm = pageWidthMm - marginMm * 2;
+      const imgHeightMm = (canvas.height * usableWidthMm) / canvas.width;
+      const doc = new jsPDF('p', 'mm', 'a4');
+      const usableHeightMm = pageHeightMm - marginMm * 2;
+
+      if(imgHeightMm <= usableHeightMm){
+        doc.addImage(imgData, 'PNG', marginMm, marginMm, usableWidthMm, imgHeightMm);
+      } else {
+        // التقرير أطول من صفحة A4 واحدة — نقسّم الصورة على شرائح ونحط كل شريحة في صفحة
+        const pxPerMm = canvas.width / usableWidthMm;
+        const pageHeightPx = usableHeightMm * pxPerMm;
+        let renderedPx = 0;
+        let pageIdx = 0;
+        while(renderedPx < canvas.height){
+          const sliceHeightPx = Math.min(pageHeightPx, canvas.height - renderedPx);
+          const sliceCanvas = document.createElement('canvas');
+          sliceCanvas.width = canvas.width;
+          sliceCanvas.height = sliceHeightPx;
+          const ctx = sliceCanvas.getContext('2d');
+          ctx.drawImage(canvas, 0, renderedPx, canvas.width, sliceHeightPx, 0, 0, canvas.width, sliceHeightPx);
+          const sliceData = sliceCanvas.toDataURL('image/png');
+          const sliceHeightMm = (sliceHeightPx * usableWidthMm) / canvas.width;
+          if(pageIdx > 0) doc.addPage();
+          doc.addImage(sliceData, 'PNG', marginMm, marginMm, usableWidthMm, sliceHeightMm);
+          renderedPx += sliceHeightPx;
+          pageIdx++;
+        }
+      }
+      blob = doc.output('blob');
     } finally {
       document.body.removeChild(container);
     }
@@ -3037,21 +2745,21 @@
     });
   }
 
-  function triggerImageDownload(blob, fileName){
+  function triggerPdfDownload(blob, fileName){
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = fileName + '.png';
+    a.download = fileName + '.pdf';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
 
-  // زي shareExcelFile بالظبط بس لصورة PNG بدل Excel — بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
-  async function shareImageFile(blob, fileName, shareText){
+  // زي shareExcelFile بالظبط بس لملف PDF بدل Excel — بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
+  async function sharePdfFile(blob, fileName, shareText){
     try{
-      const file = new File([blob], fileName + '.png', { type: 'image/png' });
+      const file = new File([blob], fileName + '.pdf', { type: 'application/pdf' });
       if(navigator.canShare && navigator.canShare({ files: [file] })){
         await navigator.share({ files: [file], title: fileName, text: shareText || '' });
         return true;
