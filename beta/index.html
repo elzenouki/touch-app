@@ -144,6 +144,19 @@
   .welcomeCard .wText{text-align:right;}
   .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
   .welcomeCard .name{font-size:24px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;}
+  .targetProgressWrap{position:relative; margin-top:18px;}
+  .targetProgressLabel{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:12px; color:#c7cfe6; font-weight:700; margin-bottom:7px; letter-spacing:.2px;
+  }
+  .targetProgressLabel span:last-child{color:var(--gold-light); font-weight:900;}
+  .targetProgressTrack{
+    width:100%; height:9px; border-radius:6px; background:rgba(255,255,255,.12); overflow:hidden;
+  }
+  .targetProgressFill{
+    height:100%; border-radius:6px; background:linear-gradient(90deg, var(--gold-light), var(--gold));
+    transition:width .5s ease; width:0%;
+  }
   .sectionLabel{
     font-size:13px; color:var(--muted2); text-transform:uppercase; letter-spacing:1px;
     margin-bottom:14px; font-weight:800;
@@ -530,6 +543,15 @@
         <div class="wText">
           <div class="hi">أهلاً بيك</div>
           <div class="name" id="homeUserName"></div>
+        </div>
+      </div>
+      <div class="targetProgressWrap" id="targetProgressWrap" hidden>
+        <div class="targetProgressLabel">
+          <span>هدف الشهر</span>
+          <span id="targetProgressPct"></span>
+        </div>
+        <div class="targetProgressTrack">
+          <div class="targetProgressFill" id="targetProgressFill"></div>
         </div>
       </div>
     </div>
@@ -1093,13 +1115,14 @@
   // (لازم تتطابق مع PROTECTED_OWNER_EMAIL_ في Code.gs بالظبط)
   const OWNER_EMAIL_ = 'm.s.e.m.eyg@gmail.com';
 
-  function applyLoggedInUser(user, isAdmin){
+  function applyLoggedInUser(user, isAdmin, targetProgress){
     state.user = user;
     state.isAdmin = !!isAdmin;
     state.isOwner = !!(user && String(user.email || '').trim().toLowerCase() === OWNER_EMAIL_);
     document.getElementById('homeUserName').textContent = user.name;
     document.getElementById('adminLink').hidden = !state.isOwner;
     renderHomeBadgeIcon(user.photoUrl);
+    renderTargetProgress_(targetProgress);
 
     // المشرف مش مندوب بيسجّل مبيعات — شغله إنه يتابع ويشرف بس، فبنخفي عنه شاشات الإدخال دي
     // (بيع/مرتجع/توريد/جرد/أسعاري). إدارة المناديب والمشرفين بقت مقصورة على صاحب الحساب
@@ -1115,6 +1138,20 @@
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
+  }
+
+  // بيعرض شريط تقدّم الهدف الشهري جنب اسم المندوب — بيتخفي تلقائي لو مفيش هدف متحدد للشهر ده
+  // (مش كل المناديب لازم يكون عندهم تارجت)، عشان الشاشة تفضل نضيفة من غير حتة فاضية
+  function renderTargetProgress_(targetProgress){
+    const wrap = document.getElementById('targetProgressWrap');
+    if(!targetProgress || !targetProgress.target){
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    const pct = targetProgress.pct;
+    document.getElementById('targetProgressPct').textContent = pct + '%';
+    document.getElementById('targetProgressFill').style.width = Math.max(0, Math.min(100, pct)) + '%';
   }
 
   // بيعرض صورة البروفايل (لو موجودة) بدل الأيقونة الافتراضية "✦" في كارت الترحيب بالشاشة الرئيسية
@@ -1168,7 +1205,7 @@
           // الجهاز ده موثوق بالفعل لنفس المندوب — ادخله على طول من غير كود تأكيد
           state.auth = data.auth;
           saveAuth(data.auth);
-          applyLoggedInUser(data.user, data.isAdmin);
+          applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
           goHome();
           return;
         }
@@ -1191,7 +1228,7 @@
         state.auth = data.auth;
         saveAuth(data.auth);
         saveDeviceToken(data.deviceToken);
-        applyLoggedInUser(data.user, data.isAdmin);
+        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
         state.pendingOtpEmail = null;
         showLoading(false);
         goHome();
@@ -1270,7 +1307,7 @@
     state.auth = saved;
     callApi('bootstrapHome', [state.auth])
       .then(function(data){
-        applyLoggedInUser(data.user, data.isAdmin);
+        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
         showLoading(false);
         goHome();
       })
