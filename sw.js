@@ -15,7 +15,10 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
   );
-  self.skipWaiting();
+  // ملحوظة: متعمدين مش بننادي self.skipWaiting() هنا — النسخة الجديدة بتفضل "مستنية" لحد ما
+  // المندوب نفسه يدوس على زرار "تحديث الآن" في التطبيق (شريط التحديث)، عشان منعملوش reload
+  // فجأة وهو لسه في نص إدخال فاتورة ويضيع عليه اللي داخله. القفزة للتفعيل بتحصل بس لما نستقبل
+  // رسالة SKIP_WAITING تحت من صفحة التطبيق.
 });
 
 self.addEventListener('activate', (event) => {
@@ -25,6 +28,14 @@ self.addEventListener('activate', (event) => {
     )
   );
   self.clients.claim();
+});
+
+// بتستقبل أمر التفعيل الفوري من صفحة التطبيق لما المندوب يدوس "تحديث الآن" في شريط التحديث —
+// من غير الرسالة دي، النسخة الجديدة هتفضل مستنية لحد ما التطبيق يتقفل ويتفتح تاني لوحده
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('fetch', (event) => {
