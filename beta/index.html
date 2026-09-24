@@ -415,12 +415,34 @@
   [hidden]{display:none !important;}
   .reviewOverlay{
     position:fixed; inset:0; background:rgba(10,15,30,.55); z-index:50;
-    display:flex; align-items:flex-end; justify-content:center;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:18px 12px; overflow-y:auto;
   }
   .reviewModal{
-    background:#ffffff; width:100%; max-width:640px; border-radius:22px 22px 0 0;
-    max-height:88vh; display:flex; flex-direction:column; overflow:hidden;
-    box-shadow:0 -10px 40px rgba(0,0,0,.28);
+    background:#ffffff; width:100%; max-width:640px; border-radius:20px;
+    max-height:calc(100vh - 36px); display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 10px 40px rgba(0,0,0,.35);
+  }
+  .alertOverlay{
+    position:fixed; inset:0; background:rgba(10,15,30,.65); z-index:600;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .alertModal{
+    background:#fff; width:100%; max-width:380px; border-radius:18px;
+    padding:26px 22px 22px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.35);
+    animation: alertPop .18s ease;
+  }
+  @keyframes alertPop{ from{ transform:scale(.92); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .alertIcon{
+    width:56px; height:56px; border-radius:50%; background:var(--red-bg); color:#c73e3e;
+    display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:900;
+    margin:0 auto 14px;
+  }
+  .alertIcon.success{ background:var(--green-bg); color:#1f6b45; }
+  .alertText{ font-size:15.5px; font-weight:700; color:var(--navy); line-height:1.7; margin-bottom:18px; white-space:pre-wrap; }
+  .alertOkBtn{
+    width:100%; background:linear-gradient(135deg, var(--gold-light), var(--gold)); color:var(--navy);
+    border:none; border-radius:12px; padding:13px; font-weight:800; font-size:15px; cursor:pointer;
   }
   .reviewHeader{
     padding:20px 22px 16px;
@@ -836,6 +858,7 @@
     <div class="card">
       <div class="cardTitle">رصيد الأصناف الحالي</div>
       <div id="balancesList"></div>
+      <button class="whatsapp" id="balancesExportBtn" style="margin-top:12px; width:100%;" onclick="exportBalancesExcel()">📤 تصدير إكسل</button>
     </div>
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
       الرصيد = آخر جرد مسجّل + التوريد بعده − صافي المبيعات بعده (المرتجع بيتحسب لصالح الرصيد) — شاشة مشاهدة فقط
@@ -992,6 +1015,14 @@
     </div>
   </div>
 
+  <div id="alertOverlay" class="alertOverlay" hidden>
+    <div class="alertModal">
+      <div class="alertIcon" id="alertIcon">!</div>
+      <div class="alertText" id="alertText"></div>
+      <button class="alertOkBtn" onclick="closeAlertModal_()">تمام</button>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1087,6 +1118,18 @@
     if(type === 'success'){ setTimeout(()=>{ el.innerHTML=''; }, 2500); }
   }
   function clearMsg(){ document.getElementById('globalMsg').innerHTML = ''; }
+  // نافذة تنبيه منبثقة واضحة (z-index أعلى من أي مودال تاني في الصفحة، حتى مودال مراجعة الفاتورة)
+  // — بتتأكد إن أي رسالة خطأ هتظهر فوق أي حاجة تانية على الشاشة، ومش هتضيع تحت مودال التأكيد
+  function showAlertModal_(text, kind){
+    const icon = document.getElementById('alertIcon');
+    icon.textContent = kind === 'success' ? '✔' : '!';
+    icon.className = 'alertIcon' + (kind === 'success' ? ' success' : '');
+    document.getElementById('alertText').textContent = text;
+    document.getElementById('alertOverlay').hidden = false;
+  }
+  function closeAlertModal_(){
+    document.getElementById('alertOverlay').hidden = true;
+  }
   function escapeHtml(s){
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
       {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
@@ -1421,7 +1464,10 @@
 
   function onError(err){
     showLoading(false);
-    showMsg(err.message || String(err), 'error');
+    const msg = err.message || String(err);
+    showMsg(msg, 'error');
+    // بوب-أب واضح فوق أي حاجة تانية (زي مودال مراجعة الفاتورة) عشان الخطأ ميضيعش من غير ما حد يشوفه
+    showAlertModal_(msg, 'error');
   }
 
   // ============ توزيع الشاشات ============
@@ -1493,7 +1539,7 @@
 
   function handleSubmitStaleReason_(code, row, textareaEl){
     const reason = (textareaEl.value || '').trim();
-    if(!reason){ showMsg('من فضلك اكتب السبب الأول', true); return; }
+    if(!reason){ showMsg('من فضلك اكتب السبب الأول', 'error'); return; }
     showLoading(true);
     callApi('saveStaleReason', [state.auth, code, reason])
       .then(function(){
@@ -1744,6 +1790,8 @@
         }
 
         var items = data.balances || [];
+        // بنحتفظ بالبيانات اللي وصلت فعلاً عشان زرار "تصدير إكسل" يستخدمها على طول من غير أي طلب جديد للسيرفر
+        state.balancesExportData_ = { items: items, repName: data.repName || state.user.name };
         var list = document.getElementById('balancesList');
         if(!items.length){
           list.innerHTML = '<div class="empty">مفيش أصناف مسجلة حاليًا</div>';
@@ -1766,6 +1814,41 @@
         }
 
         setView('viewBalances');
+      })
+      .catch(onError);
+  }
+
+  // بيصدّر شاشة "أرصدتي" لملف إكسل من غير ما يعمل أي طلب جديد للسيرفر — بيستخدم نفس البيانات
+  // اللي وصلت لما الشاشة اتفتحت (state.balancesExportData_)، عشان يفضل سريع زي ما هو
+  function exportBalancesExcel(){
+    clearMsg();
+    var data = state.balancesExportData_;
+    if(!data || !data.items || !data.items.length){
+      showMsg('مفيش أرصدة لتصديرها دلوقتي', 'error');
+      return;
+    }
+    showLoading(true);
+    var rows = data.items.map(function(it){
+      return [it.name, Number(it.balance), it.hasBaseline ? 'بجرد رسمي' : 'من غير جرد رسمي'];
+    });
+    var opts = {
+      fileName: 'أرصدة - ' + data.repName,
+      reportTitle: 'تقرير الأرصدة',
+      meta: [
+        ['اسم المندوب', data.repName],
+        ['الفرع', state.user.branch || '—'],
+        ['التاريخ', new Date().toLocaleDateString('ar-EG')],
+      ],
+      headers: ['اسم الصنف', 'الرصيد', 'ملاحظة'],
+      rows: rows,
+      totalsLabel: 'إجمالي عدد الأصناف',
+      totalsValue: rows.length,
+      totalsIsCurrency: false,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){
+        showLoading(false);
+        triggerBlobDownload(r.blob, r.fileName);
       })
       .catch(onError);
   }
