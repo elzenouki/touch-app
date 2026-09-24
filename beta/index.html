@@ -140,28 +140,30 @@
     content:''; position:absolute; inset-inline-start:0; bottom:0; height:3px; width:100%;
     background:linear-gradient(90deg, var(--gold) 0%, transparent 60%);
   }
-  .welcomeRow{display:flex; flex-direction:row-reverse; align-items:center; gap:16px; position:relative;}
+  /* الصف: direction:ltr عشان الصورة+الاسم يترسموا فعليًا على الشمال، وشريط الهدف على اليمين —
+     ثابت كده بغض النظر عن اتجاه الصفحة (rtl)؛ كل بلوك جواه بيظبط اتجاه نصه العربي لوحده */
+  .welcomeRow{display:flex; direction:ltr; align-items:center; justify-content:space-between; gap:14px; position:relative;}
+  .welcomeLeftGroup{display:flex; direction:ltr; align-items:center; gap:14px; min-width:0;}
   .welcomeCard .badgeIcon{
-    position:relative; width:78px; height:78px; border-radius:18px; flex-shrink:0;
-    background:linear-gradient(135deg, var(--gold-light), var(--gold));
+    position:relative; width:82px; height:82px; border-radius:20px; flex-shrink:0;
+    background:#fff; padding:5px;
     display:flex; align-items:center; justify-content:center;
-    font-size:30px; box-shadow:0 4px 14px rgba(182,134,47,.35);
+    font-size:28px; color:var(--gold-d);
+    box-shadow:0 8px 18px rgba(0,0,0,.28), inset 0 0 0 1px rgba(212,169,74,.5);
     overflow:hidden;
   }
-  .welcomeCard .badgeIcon.hasPhoto{ background:#fff; padding:0; }
-  .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:18px; }
-  .welcomeCard .wText{text-align:right; flex:1; min-width:0;}
+  .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:15px; }
+  .welcomeCard .wText{direction:rtl; text-align:right; min-width:0;}
   .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
   .welcomeCard .name{
-    font-size:24px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    font-size:22px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px;
   }
-  /* شريط الهدف — جنب الاسم مباشرة، لكن مدفوع لأقصى ناحية اليمين في الصف (margin-inline-start:auto
-     بتاخد كل المسافة الفاضية وتسيب الاسم والصورة زي ما هما من غير ما تتلزق بيهم) */
+  /* شريط الهدف — دلوقتي ثابت على اليمين (طرف الصف التاني)، مش محتاج margin دفع بقى لأن الصف بقى
+     justify-content:space-between */
   .targetProgressWrap{
-    position:relative; flex:none; width:92px;
+    position:relative; direction:rtl; flex:none; width:92px;
     display:flex; flex-direction:column; align-items:flex-end; gap:5px;
-    margin-inline-start:auto;
   }
   .targetProgressPct{font-size:15px; font-weight:900; color:var(--gold-light); line-height:1;}
   .targetProgressTrack{
@@ -584,10 +586,12 @@
   <div id="viewHome" hidden>
     <div class="welcomeCard">
       <div class="welcomeRow">
-        <div class="badgeIcon" id="homeBadgeIcon">✦</div>
-        <div class="wText">
-          <div class="hi">أهلاً بيك</div>
-          <div class="name" id="homeUserName"></div>
+        <div class="welcomeLeftGroup">
+          <div class="badgeIcon" id="homeBadgeIcon">✦</div>
+          <div class="wText">
+            <div class="hi">أهلاً بيك</div>
+            <div class="name" id="homeUserName"></div>
+          </div>
         </div>
         <div class="targetProgressWrap" id="targetProgressWrap" hidden>
           <div class="targetProgressPct" id="targetProgressPct"></div>
