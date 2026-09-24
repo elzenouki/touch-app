@@ -87,20 +87,29 @@
   .hadithBox{
     flex:1; min-width:0; align-self:center; order:2;
     background:rgba(255,255,255,.06); border:1px solid rgba(214,164,40,.35);
-    border-radius:14px; padding:10px 16px; margin:0 4px;
-    text-align:center; transition:opacity .45s ease; opacity:1;
+    border-radius:14px; padding:12px 18px; margin:0 4px;
+    text-align:center;
   }
   .backBtn{order:3;}
   .headerLeft{order:1;}
-  .hadithBox.fading{opacity:0;}
   .hadithBox .hadithText{
-    display:block; color:#efe6c8; font-size:12.5px; font-weight:700; line-height:1.7;
+    display:block; color:#efe6c8; font-size:15.5px; font-weight:700; line-height:1.85;
     overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3;
   }
-  .hadithBox .hadithRef{display:block; margin-top:6px; font-size:10.5px; color:var(--gold-light); font-weight:800;}
+  /* ظهور تدريجي كلمة كلمة — كل كلمة بتظهر بعد اللي قبلها بلحظة بسيطة (تأثير موجة) */
+  .hadithBox .hadithText .word{
+    display:inline-block; opacity:0; transform:translateY(6px);
+    animation:hadithWordIn .45s ease forwards;
+  }
+  @keyframes hadithWordIn{ to{ opacity:1; transform:translateY(0); } }
+  .hadithBox .hadithRef{
+    display:block; margin-top:8px; font-size:11.5px; color:var(--gold-light); font-weight:800;
+    transition:opacity .5s ease;
+  }
+  .hadithBox .hadithRef.hiddenRef{ opacity:0; }
   @media (max-width:700px){
     .hadithBox{ order:3; flex-basis:100%; max-width:100%; margin:14px 0 0; }
-    .hadithBox .hadithText{ -webkit-line-clamp:2; }
+    .hadithBox .hadithText{ -webkit-line-clamp:3; font-size:15px; }
   }
   .wrap{max-width:640px; margin:0 auto; padding:26px 20px 44px;}
   .card{
@@ -141,22 +150,35 @@
   }
   .welcomeCard .badgeIcon.hasPhoto{ background:#fff; padding:0; }
   .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:18px; }
-  .welcomeCard .wText{text-align:right;}
+  .welcomeCard .wText{text-align:right; flex:1; min-width:0;}
   .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
-  .welcomeCard .name{font-size:24px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;}
-  .targetProgressWrap{position:relative; margin-top:18px;}
-  .targetProgressLabel{
-    display:flex; justify-content:space-between; align-items:center;
-    font-size:12px; color:#c7cfe6; font-weight:700; margin-bottom:7px; letter-spacing:.2px;
+  .welcomeCard .name{
+    font-size:24px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
   }
-  .targetProgressLabel span:last-child{color:var(--gold-light); font-weight:900;}
+  /* شريط الهدف — جنب الاسم مباشرة، لكن مدفوع لأقصى ناحية اليمين في الصف (margin-inline-start:auto
+     بتاخد كل المسافة الفاضية وتسيب الاسم والصورة زي ما هما من غير ما تتلزق بيهم) */
+  .targetProgressWrap{
+    position:relative; flex:none; width:92px;
+    display:flex; flex-direction:column; align-items:flex-end; gap:5px;
+    margin-inline-start:auto;
+  }
+  .targetProgressPct{font-size:15px; font-weight:900; color:var(--gold-light); line-height:1;}
   .targetProgressTrack{
-    width:100%; height:9px; border-radius:6px; background:rgba(255,255,255,.12); overflow:hidden;
+    width:100%; height:7px; border-radius:5px; background:rgba(255,255,255,.14); overflow:hidden;
   }
   .targetProgressFill{
-    height:100%; border-radius:6px; background:linear-gradient(90deg, var(--gold-light), var(--gold));
-    transition:width .5s ease; width:0%;
+    height:100%; border-radius:5px; background:linear-gradient(90deg, var(--gold-light), var(--gold));
+    transition:width .5s ease, background .3s ease; width:0%;
   }
+  .targetProgressCaption{font-size:9.5px; color:#a9b4d0; font-weight:700;}
+  .targetMoodRow{
+    margin-top:16px; padding-top:14px; border-top:1px dashed rgba(255,255,255,.14);
+    display:flex; align-items:center; gap:10px; position:relative;
+  }
+  .targetMoodEmoji{font-size:24px; flex:none; line-height:1;}
+  .targetMoodText{font-size:12.5px; font-weight:700; color:#c7cfe6; line-height:1.55;}
+  .targetMoodText b{color:var(--gold-light);}
   .sectionLabel{
     font-size:13px; color:var(--muted2); text-transform:uppercase; letter-spacing:1px;
     margin-bottom:14px; font-weight:800;
@@ -222,6 +244,7 @@
   .adminLink.ic-itemsales .icon{background:var(--blue-bg); color:var(--blue);}
   .adminLink.ic-balances .icon{background:var(--gold-bg); color:var(--gold-d);}
   .adminLink.ic-stale .icon{background:var(--red-bg); color:#c73e3e;}
+  .adminLink.ic-stalereasons .icon{background:var(--red-bg); color:#c73e3e;}
   .adminLink.ic-history .icon{background:#eef1f7; color:var(--navy);}
   .adminLink.ic-prices .icon{background:var(--blue-bg); color:var(--blue);}
   .adminLink.ic-admin .icon{background:var(--gold-bg); color:var(--gold-d);}
@@ -544,15 +567,17 @@
           <div class="hi">أهلاً بيك</div>
           <div class="name" id="homeUserName"></div>
         </div>
+        <div class="targetProgressWrap" id="targetProgressWrap" hidden>
+          <div class="targetProgressPct" id="targetProgressPct"></div>
+          <div class="targetProgressTrack">
+            <div class="targetProgressFill" id="targetProgressFill"></div>
+          </div>
+          <div class="targetProgressCaption">هدف الشهر</div>
+        </div>
       </div>
-      <div class="targetProgressWrap" id="targetProgressWrap" hidden>
-        <div class="targetProgressLabel">
-          <span>هدف الشهر</span>
-          <span id="targetProgressPct"></span>
-        </div>
-        <div class="targetProgressTrack">
-          <div class="targetProgressFill" id="targetProgressFill"></div>
-        </div>
+      <div class="targetMoodRow" id="targetMoodRow" hidden>
+        <div class="targetMoodEmoji" id="targetMoodEmoji"></div>
+        <div class="targetMoodText" id="targetMoodText"></div>
       </div>
     </div>
     <div class="sectionLabel">الإجراءات المتاحة</div>
@@ -609,6 +634,7 @@
         <button class="adminLink ic-itemsales" id="itemSalesLink" onclick="openScreen('itemsales')"><div class="icon">📈</div><div class="title">مبيعات الأصناف</div></button>
         <button class="adminLink ic-balances" id="balancesLink" onclick="openScreen('balances')"><div class="icon">📦</div><div class="title">أرصدتي</div></button>
         <button class="adminLink ic-stale" id="staleLink" onclick="openScreen('stale')"><div class="icon">📦</div><div class="title">الرواكد</div></button>
+        <button class="adminLink ic-stalereasons" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><div class="icon">📝</div><div class="title">تقرير أسباب الركود</div></button>
         <button class="adminLink ic-history" id="invoiceHistoryLink" onclick="openScreen('history')"><div class="icon">📋</div><div class="title">سجل فواتيري</div></button>
         <button class="adminLink ic-prices" id="pricesLink" onclick="openScreen('prices')"><div class="icon">💰</div><div class="title">أسعاري</div></button>
         <button class="adminLink wide ic-admin" id="adminLink" onclick="openScreen('admin')" hidden><div class="icon">⚙</div><div class="title">إدارة المناديب والمشرفين</div></button>
@@ -813,6 +839,30 @@
     </div>
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
       الرصيد = آخر جرد مسجّل + التوريد بعده − صافي المبيعات بعده (المرتجع بيتحسب لصالح الرصيد) — شاشة مشاهدة فقط
+    </div>
+  </div>
+
+  <!-- ============ شاشة بلوك الأصناف الراكدة (لازم سبب قبل ما تفتح مبيعاتي/أرصدتي) ============ -->
+  <div id="viewStaleBlock" hidden>
+    <div class="card">
+      <div class="cardTitle">في أصناف راكدة محتاجة سبب الأول</div>
+      <div style="color:var(--muted); font-size:13px; margin-bottom:14px; line-height:1.7;">
+        الشاشة اللي كنت هتفتحها اتقفلت مؤقتًا لحد ما تكتب سبب ركود كل صنف من الأصناف اللي فاتت عليها
+        <b id="staleBlockWindowLabel">30</b> يوم من غير بيع في فرعك. اكتب السبب مرة واحدة بس لكل صنف
+        وهيترفع القفل عنه على طول.
+      </div>
+      <div id="staleBlockList"></div>
+    </div>
+  </div>
+
+  <!-- ============ شاشة تقرير أسباب الركود (للمشرفين فقط) ============ -->
+  <div id="viewStaleReasons" hidden>
+    <div class="card">
+      <div class="cardTitle">الأسباب اللي اتكتبت لحد دلوقتي</div>
+      <div id="staleReasonsList"></div>
+      <div style="color:var(--muted); font-size:13px; text-align:center; padding:6px 4px;" id="staleReasonsEmptyMsg" hidden>
+        لسه محدش كتب أي سبب ركود
+      </div>
     </div>
   </div>
 
@@ -1073,7 +1123,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewInvoiceHistory','viewItemSales','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -1135,23 +1185,46 @@
     document.getElementById('invoiceHistoryLink').hidden = state.isAdmin;
     document.getElementById('profileLink').hidden = state.isAdmin;
     document.getElementById('suggestionLink').hidden = state.isAdmin;
+    document.getElementById('staleReasonsLink').hidden = !state.isAdmin;
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
   }
 
-  // بيعرض شريط تقدّم الهدف الشهري جنب اسم المندوب — بيتخفي تلقائي لو مفيش هدف متحدد للشهر ده
-  // (مش كل المناديب لازم يكون عندهم تارجت)، عشان الشاشة تفضل نضيفة من غير حتة فاضية
+  // درجات "الحالة المزاجية" لنسبة تحقيق الهدف — كل مرحلة ليها إيموجي ولون وجملة تحفيزية بالعامية،
+  // خصوصًا لما التحقيق يكون ضعيف، عشان الرسالة تبقى حافز مش مجرد رقم جامد
+  const TARGET_MOODS_ = [
+    { max: 15,  emoji: '🐢', color: '#e05555', text: 'لسه أول الطريق يا بطل، <b>شد حيلك من دلوقتي!</b>' },
+    { max: 35,  emoji: '😬', color: '#e07a3f', text: 'الوقت بيجري وانت لسه في الأول شوية — <b>يلا شد حيلك!</b>' },
+    { max: 60,  emoji: '😐', color: '#e0b23f', text: 'شغل يوم بيوم وهتوصل، <b>بس محتاج تزود الإيقاع</b>' },
+    { max: 85,  emoji: '🙂', color: '#c9d452', text: 'ماشي كويس، <b>كمّل بنفس الوتيرة</b>' },
+    { max: 100, emoji: '💪', color: '#8bd450', text: 'قربت جدًا من الهدف، <b>آخر شوية وتوصل!</b>' },
+    { max: Infinity, emoji: '🔥', color: '#4ade80', text: '<b>تمام كده يا نجم!</b> خطيت الهدف فعلاً' },
+  ];
+
+  // بيعرض شريط تقدّم الهدف الشهري جنب اسم المندوب (ناحية اليمين) + رسالة تحفيزية تحته —
+  // بيتخفي تلقائي لو مفيش هدف متحدد للشهر ده (مش كل المناديب لازم يكون عندهم تارجت)، عشان
+  // الشاشة تفضل نضيفة من غير حتة فاضية
   function renderTargetProgress_(targetProgress){
     const wrap = document.getElementById('targetProgressWrap');
+    const moodRow = document.getElementById('targetMoodRow');
     if(!targetProgress || !targetProgress.target){
       wrap.hidden = true;
+      moodRow.hidden = true;
       return;
     }
     wrap.hidden = false;
+    moodRow.hidden = false;
     const pct = targetProgress.pct;
+    const mood = TARGET_MOODS_.find((m) => pct <= m.max) || TARGET_MOODS_[TARGET_MOODS_.length - 1];
+
     document.getElementById('targetProgressPct').textContent = pct + '%';
-    document.getElementById('targetProgressFill').style.width = Math.max(0, Math.min(100, pct)) + '%';
+    const fill = document.getElementById('targetProgressFill');
+    fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    fill.style.background = mood.color;
+
+    document.getElementById('targetMoodEmoji').textContent = mood.emoji;
+    document.getElementById('targetMoodText').innerHTML = mood.text;
   }
 
   // بيعرض صورة البروفايل (لو موجودة) بدل الأيقونة الافتراضية "✦" في كارت الترحيب بالشاشة الرئيسية
@@ -1274,21 +1347,47 @@
     { text: 'المُؤْمِنُ القَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ المُؤْمِنِ الضَّعِيفِ', ref: 'رواه مسلم' },
     { text: 'مَنْ نَفَّسَ عَنْ مُؤْمِنٍ كُرْبَةً مِنْ كُرَبِ الدُّنْيَا نَفَّسَ اللَّهُ عَنْهُ كُرْبَةً مِنْ كُرَبِ يَوْمِ القِيَامَةِ', ref: 'رواه مسلم' },
     { text: 'لَيْسَ الشَّدِيدُ بِالصُّرَعَةِ، إِنَّمَا الشَّدِيدُ الَّذِي يَمْلِكُ نَفْسَهُ عِنْدَ الغَضَبِ', ref: 'متفق عليه' },
+    { text: 'الصِّدْقُ يَهْدِي إِلَى البِرِّ، وَإِنَّ البِرَّ يَهْدِي إِلَى الجَنَّةِ', ref: 'متفق عليه' },
+    { text: 'التَّاجِرُ الصَّدُوقُ الأَمِينُ مَعَ النَّبِيِّينَ وَالصِّدِّيقِينَ وَالشُّهَدَاءِ', ref: 'رواه الترمذي' },
+    { text: 'الرَّاحِمُونَ يَرْحَمُهُمُ الرَّحْمَٰنُ', ref: 'رواه أبو داود والترمذي' },
+    { text: 'مَنْ لَمْ يَشْكُرِ النَّاسَ لَمْ يَشْكُرِ اللَّهَ', ref: 'رواه أبو داود والترمذي' },
+    { text: 'اتَّقِ اللَّهَ حَيْثُمَا كُنْتَ، وَأَتْبِعِ السَّيِّئَةَ الحَسَنَةَ تَمْحُهَا، وَخَالِقِ النَّاسَ بِخُلُقٍ حَسَنٍ', ref: 'رواه الترمذي' },
+    { text: 'خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ', ref: 'حديث حسن' },
+    { text: 'المُؤْمِنُ يَأْلَفُ وَيُؤْلَفُ، وَلَا خَيْرَ فِيمَنْ لَا يَأْلَفُ وَلَا يُؤْلَفُ', ref: 'رواه أحمد' },
+    { text: 'لَا تَحَاسَدُوا، وَلَا تَنَاجَشُوا، وَلَا تَبَاغَضُوا، وَكُونُوا عِبَادَ اللَّهِ إِخْوَانًا', ref: 'رواه مسلم' },
+    { text: 'أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ', ref: 'متفق عليه' },
+    { text: 'إِنَّ اللَّهَ رَفِيقٌ يُحِبُّ الرِّفْقَ فِي الأَمْرِ كُلِّهِ', ref: 'متفق عليه' },
+    { text: 'مَنْ حَسُنَ إِسْلَامُ المَرْءِ تَرْكُهُ مَا لَا يَعْنِيهِ', ref: 'رواه الترمذي' },
+    { text: 'كُلُّ مَعْرُوفٍ صَدَقَةٌ', ref: 'رواه البخاري' },
+    { text: 'أَكْمَلُ المُؤْمِنِينَ إِيمَانًا أَحْسَنُهُمْ خُلُقًا', ref: 'رواه الترمذي' },
+    { text: 'إِنَّ مِنْ أَحَبِّكُمْ إِلَيَّ وَأَقْرَبِكُمْ مِنِّي مَجْلِسًا يَوْمَ القِيَامَةِ أَحَاسِنَكُمْ أَخْلَاقًا', ref: 'رواه الترمذي' },
   ];
   let hadithLastIndex_ = -1;
+
+  // بيعرض الحديث كلمة كلمة (كل كلمة بتظهر بعد اللي قبلها بلحظة بسيطة) بدل التبديل المفاجئ —
+  // "المرجع" بيبان بعد ما كل الكلمات تخلص ظهورها
   function showRandomHadith_(){
     const box = document.getElementById('hadithBox');
-    if(!box) return;
+    const textEl = document.getElementById('hadithText');
+    const refEl = document.getElementById('hadithRef');
+    if(!box || !textEl || !refEl) return;
     let idx;
     do { idx = Math.floor(Math.random() * HADITH_LIST_.length); } while(idx === hadithLastIndex_ && HADITH_LIST_.length > 1);
     hadithLastIndex_ = idx;
-    box.classList.add('fading');
-    setTimeout(function(){
-      const h = HADITH_LIST_[idx];
-      document.getElementById('hadithText').textContent = h.text;
-      document.getElementById('hadithRef').textContent = h.ref;
-      box.classList.remove('fading');
-    }, 260);
+    const h = HADITH_LIST_[idx];
+
+    refEl.classList.add('hiddenRef');
+    const words = h.text.split(' ');
+    textEl.innerHTML = words
+      .map(function (w, i) {
+        return '<span class="word" style="animation-delay:' + (i * 70) + 'ms">' + escapeHtml(w) + '</span>';
+      })
+      .join(' ');
+
+    setTimeout(function () {
+      refEl.textContent = h.ref;
+      refEl.classList.remove('hiddenRef');
+    }, words.length * 70 + 300);
   }
   function startHadithRotation_(){
     showRandomHadith_();
@@ -1336,12 +1435,113 @@
     if(name === 'mystats'){ loadMyStats(); return; }
     if(name === 'itemsales'){ loadItemSalesReport(); return; }
     if(name === 'stale'){ loadStale(''); return; }
+    if(name === 'stalereasons'){ loadStaleReasons(); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
     if(name === 'profile'){ loadProfile(); return; }
     if(name === 'suggestion'){ loadSuggestionScreen(); return; }
     if(name === 'products'){ loadProductsScreen(); return; }
     loadInvoice(name);
+  }
+
+  // ============ بلوك الأصناف الراكدة (شاشة "مبيعاتي"/"أرصدتي" بترجع البلوك ده بدل بياناتها
+  // العادية لو المندوب عنده صنف راكد أكتر من 30 يوم من غير سبب مكتوب) ============
+  let state_staleBlockReturn_ = null; // بيحفظ أنهي شاشة نرجعلها بعد ما كل الأسباب تتكتب
+  function renderStaleBlockScreen_(data, returnScreen, returnRepName){
+    state_staleBlockReturn_ = { screen: returnScreen, repName: returnRepName };
+    document.getElementById('pageTitle').textContent = 'أصناف راكدة محتاجة سبب';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('staleBlockWindowLabel').textContent = data.blockWindowDays || 30;
+
+    const list = document.getElementById('staleBlockList');
+    list.innerHTML = '';
+    (data.blockItems || []).forEach(function(it){
+      const row = document.createElement('div');
+      row.className = 'itemRow';
+      row.style.cssText = 'flex-direction:column; align-items:stretch; gap:8px;';
+      row.id = 'staleBlockRow_' + btoa(unescape(encodeURIComponent(it.code)));
+
+      const top = document.createElement('div');
+      top.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = it.name;
+      const daysEl = document.createElement('div');
+      daysEl.className = 'total';
+      daysEl.style.color = '#c73e3e';
+      daysEl.textContent = it.days >= 0 ? ('واقف من ' + it.days + ' يوم') : 'مبيعش خالص لحد دلوقتي';
+      top.appendChild(nameEl);
+      top.appendChild(daysEl);
+
+      const ta = document.createElement('textarea');
+      ta.placeholder = 'اكتب سبب ركود الصنف ده...';
+      ta.style.minHeight = '60px';
+
+      const btn = document.createElement('button');
+      btn.className = 'finalize';
+      btn.textContent = '✔ إرسال السبب';
+      btn.onclick = function(){ handleSubmitStaleReason_(it.code, row, ta); };
+
+      row.appendChild(top);
+      row.appendChild(ta);
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+
+    setView('viewStaleBlock');
+  }
+
+  function handleSubmitStaleReason_(code, row, textareaEl){
+    const reason = (textareaEl.value || '').trim();
+    if(!reason){ showMsg('من فضلك اكتب السبب الأول', true); return; }
+    showLoading(true);
+    callApi('saveStaleReason', [state.auth, code, reason])
+      .then(function(){
+        showLoading(false);
+        row.remove();
+        const remaining = document.getElementById('staleBlockList').children.length;
+        if(remaining === 0){
+          const ret = state_staleBlockReturn_;
+          if(ret && ret.screen === 'mystats') loadMyStats(ret.repName);
+          else if(ret && ret.screen === 'balances') loadBalances(ret.repName);
+          else openScreen('home');
+        }
+      })
+      .catch(onError);
+  }
+
+  // ============ تقرير أسباب الركود (للمشرفين فقط) ============
+  function loadStaleReasons(){
+    document.getElementById('pageTitle').textContent = 'تقرير أسباب الركود';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('getStaleReasonsReport', [state.auth])
+      .then(function(data){
+        showLoading(false);
+        const items = data.reasons || [];
+        const list = document.getElementById('staleReasonsList');
+        const emptyMsg = document.getElementById('staleReasonsEmptyMsg');
+        if(!items.length){
+          list.innerHTML = '';
+          emptyMsg.hidden = false;
+        } else {
+          emptyMsg.hidden = true;
+          list.innerHTML = items.map(function(it){
+            return (
+              '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:4px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                  '<div class="name">' + escapeHtml(it.name) + '</div>' +
+                  '<div class="meta">' + escapeHtml(it.date) + '</div>' +
+                '</div>' +
+                '<div class="meta">' + escapeHtml(it.branch) + ' • ' + escapeHtml(it.rep) + '</div>' +
+                '<div style="font-size:14px; color:var(--text); margin-top:4px;">' + escapeHtml(it.reason) + '</div>' +
+              '</div>'
+            );
+          }).join('');
+        }
+        setView('viewStaleReasons');
+      })
+      .catch(onError);
   }
 
   // ============ صفحة مبيعاتي (مشاهدة فقط) ============
@@ -1355,6 +1555,7 @@
     callApi('bootstrapMyStats', [state.auth, repName || ''])
       .then(function(data){
         showLoading(false);
+        if(data.blocked){ renderStaleBlockScreen_(data, 'mystats', repName || ''); return; }
         document.getElementById('pageSub').textContent = data.repName || state.user.name;
         document.getElementById('statsTodayDate').textContent = data.today.date;
         document.getElementById('statsTodayTotal').textContent = fmt(data.today.total);
@@ -1527,6 +1728,7 @@
     callApi('bootstrapBalances', [state.auth, repName || ''])
       .then(function(data){
         showLoading(false);
+        if(data.blocked){ renderStaleBlockScreen_(data, 'balances', repName || ''); return; }
         document.getElementById('pageSub').textContent = data.repName || state.user.name;
 
         var pickerCard = document.getElementById('balancesRepPickerCard');
