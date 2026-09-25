@@ -20,8 +20,14 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<!-- الخط بيتحمّل من غير ما يوقف رسم الصفحة (media=print ثم all) — التطبيق بيظهر فورًا بخط النظام
+     وبعدين يتبدل لـ Cairo أول ما يوصل. Tajawal اتشال من الطلب لأن Cairo مغطي كل الحروف المستخدمة. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+<!-- ExcelJS و html2canvas اتشالوا من هنا عشان يتحمّلوا بس وقت الحاجة الفعلية ليهم (تحميل/مشاركة
+     من شاشة "سجل فواتيري")، مش مع كل فتح للتطبيق — ده بيسرّع فتح التطبيق بشكل ملحوظ، خصوصًا على
+     نت ضعيف. شوف loadScriptOnce_ تحت. -->
 <style>
   :root{
     --bg:#f7f6f2; --card:#ffffff; --card2:#faf8f3; --border:#e4dfd1;
@@ -46,8 +52,8 @@
   }
   .header{
     background:linear-gradient(155deg, var(--navy) 0%, var(--navy2) 55%, var(--navy3) 100%);
-    padding:26px 22px 30px; display:flex; align-items:flex-start; gap:12px;
-    justify-content:space-between;
+    padding:calc(20px + env(safe-area-inset-top)) 22px 30px; display:flex; align-items:center; gap:12px;
+    justify-content:space-between; flex-wrap:wrap;
     position:sticky; top:0; z-index:10;
     box-shadow:0 10px 28px rgba(6,12,28,.32);
     border-radius:0 0 26px 26px;
@@ -78,9 +84,37 @@
   .backBtn{
     background:rgba(255,255,255,.05); color:var(--gold-light); border:1px solid rgba(214,164,40,.55);
     border-radius:10px; padding:9px 17px; font-size:14.5px; cursor:pointer; font-weight:700;
-    letter-spacing:.2px; flex-shrink:0;
+    letter-spacing:.2px; flex-shrink:0; position:relative; z-index:2; min-height:40px;
+    pointer-events:auto; align-self:center;
   }
   .backBtn:active{background:rgba(214,164,40,.14);}
+  .hadithBox{
+    flex:1; min-width:0; align-self:center; order:2;
+    background:rgba(255,255,255,.06); border:1px solid rgba(214,164,40,.35);
+    border-radius:14px; padding:12px 18px; margin:0 4px;
+    text-align:center;
+  }
+  .backBtn{order:3;}
+  .headerLeft{order:1;}
+  .hadithBox .hadithText{
+    display:block; color:#efe6c8; font-size:15.5px; font-weight:700; line-height:1.85;
+    overflow:hidden; display:-webkit-box; -webkit-box-orient:vertical; -webkit-line-clamp:3;
+  }
+  /* ظهور تدريجي كلمة كلمة — كل كلمة بتظهر بعد اللي قبلها بلحظة بسيطة (تأثير موجة) */
+  .hadithBox .hadithText .word{
+    display:inline-block; opacity:0; transform:translateY(6px);
+    animation:hadithWordIn .45s ease forwards;
+  }
+  @keyframes hadithWordIn{ to{ opacity:1; transform:translateY(0); } }
+  .hadithBox .hadithRef{
+    display:block; margin-top:8px; font-size:11.5px; color:var(--gold-light); font-weight:800;
+    transition:opacity .5s ease;
+  }
+  .hadithBox .hadithRef.hiddenRef{ opacity:0; }
+  @media (max-width:700px){
+    .hadithBox{ order:3; flex-basis:100%; max-width:100%; margin:14px 0 0; }
+    .hadithBox .hadithText{ -webkit-line-clamp:3; font-size:15px; }
+  }
   .wrap{max-width:640px; margin:0 auto; padding:26px 20px 44px;}
   .card{
     background:var(--card); border:1px solid var(--border); border-radius:16px;
@@ -110,15 +144,57 @@
     content:''; position:absolute; inset-inline-start:0; bottom:0; height:3px; width:100%;
     background:linear-gradient(90deg, var(--gold) 0%, transparent 60%);
   }
+  /* الصف: direction:ltr عشان الصورة+الاسم يترسموا فعليًا على الشمال، وشريط الهدف على اليمين —
+     ثابت كده بغض النظر عن اتجاه الصفحة (rtl)؛ كل بلوك جواه بيظبط اتجاه نصه العربي لوحده */
+  .welcomeRow{display:flex; direction:ltr; align-items:center; justify-content:space-between; gap:14px; position:relative;}
+  .welcomeLeftGroup{display:flex; direction:ltr; align-items:center; gap:14px; min-width:0;}
   .welcomeCard .badgeIcon{
-    position:relative; width:46px; height:46px; border-radius:50%;
-    background:linear-gradient(135deg, var(--gold-light), var(--gold));
+    position:relative; width:132px; height:132px; border-radius:28px; flex-shrink:0;
+    background:#fff; padding:7px;
     display:flex; align-items:center; justify-content:center;
-    font-size:20px; margin-bottom:14px;
-    box-shadow:0 4px 14px rgba(182,134,47,.35);
+    font-size:40px; color:var(--gold-d);
+    box-shadow:0 8px 18px rgba(0,0,0,.28), inset 0 0 0 1px rgba(212,169,74,.5);
+    overflow:hidden;
   }
+  .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:21px; }
+  .welcomeCard .wText{direction:rtl; text-align:right; min-width:0;}
   .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
-  .welcomeCard .name{font-size:26px; font-weight:900; color:#ffffff; margin-top:6px; position:relative; letter-spacing:.2px;}
+  /* الاسم بيظهر كامل دايمًا — لو طويل بيلف على سطر تاني بدل ما يتقص بـ "..." */
+  .welcomeCard .name{
+    font-size:22px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;
+    white-space:normal; overflow-wrap:anywhere; line-height:1.35;
+  }
+  .welcomeLeftGroup{flex:1;}
+  /* على الموبايل: الصورة وشريط الهدف في سطر، والترحيب + الاسم في سطر لوحده تحتهم بعرض الكارت كله */
+  @media (max-width:520px){
+    .welcomeRow{flex-wrap:wrap; row-gap:14px;}
+    .welcomeLeftGroup{display:contents;}
+    .welcomeCard .badgeIcon{order:1;}
+    .targetProgressWrap{order:2;}
+    .welcomeCard .wText{order:3; flex-basis:100%;}
+  }
+  /* شريط الهدف — دلوقتي ثابت على اليمين (طرف الصف التاني)، مش محتاج margin دفع بقى لأن الصف بقى
+     justify-content:space-between */
+  .targetProgressWrap{
+    position:relative; direction:rtl; flex:none; width:92px;
+    display:flex; flex-direction:column; align-items:flex-end; gap:5px;
+  }
+  .targetProgressPct{font-size:15px; font-weight:900; color:var(--gold-light); line-height:1;}
+  .targetProgressTrack{
+    width:100%; height:7px; border-radius:5px; background:rgba(255,255,255,.14); overflow:hidden;
+  }
+  .targetProgressFill{
+    height:100%; border-radius:5px; background:linear-gradient(90deg, var(--gold-light), var(--gold));
+    transition:width .5s ease, background .3s ease; width:0%;
+  }
+  .targetProgressCaption{font-size:9.5px; color:#a9b4d0; font-weight:700;}
+  .targetMoodRow{
+    margin-top:16px; padding-top:14px; border-top:1px dashed rgba(255,255,255,.14);
+    display:flex; align-items:center; gap:10px; position:relative;
+  }
+  .targetMoodEmoji{font-size:24px; flex:none; line-height:1;}
+  .targetMoodText{font-size:12.5px; font-weight:700; color:#c7cfe6; line-height:1.55;}
+  .targetMoodText b{color:var(--gold-light);}
   .sectionLabel{
     font-size:13px; color:var(--muted2); text-transform:uppercase; letter-spacing:1px;
     margin-bottom:14px; font-weight:800;
@@ -128,17 +204,23 @@
     content:''; width:7px; height:7px; background:var(--gold);
     transform:rotate(45deg); flex-shrink:0; border-radius:1px;
   }
-  .homeGrid{display:flex; flex-direction:column; gap:13px;}
+  .homeGrid{display:grid; grid-template-columns:1fr 1fr; gap:13px; margin-bottom:26px;}
   .homeBtn{
-    display:flex; align-items:center; gap:16px;
+    position:relative; overflow:hidden;
+    display:flex; flex-direction:column; align-items:center; text-align:center; gap:0;
     background:var(--card); border:1px solid var(--border); border-radius:18px;
-    padding:17px 20px; cursor:pointer; text-align:right; width:100%;
-    box-shadow:0 3px 12px rgba(15,28,61,.06);
+    padding:20px 12px 18px; cursor:pointer; width:100%;
+    box-shadow:0 6px 18px rgba(15,28,61,.09);
     transition:box-shadow .15s ease, transform .15s ease;
   }
+  .homeBtn::before{content:''; position:absolute; inset-inline:0; top:0; height:3.5px;}
+  .homeBtn.sales::before{background:linear-gradient(90deg,#2f8f5b,#59c98a);}
+  .homeBtn.returns::before{background:linear-gradient(90deg,#c73e3e,#e07a7a);}
+  .homeBtn.tawrid::before{background:linear-gradient(90deg,#2f5fa8,#6f9bd8);}
+  .homeBtn.jard::before{background:linear-gradient(90deg,#a9781f,#d9ac52);}
   .homeBtn:active{background:#faf9f6; box-shadow:0 1px 4px rgba(15,28,61,.08); transform:scale(.99);}
   .homeBtn .icon{
-    width:54px; height:54px; border-radius:50%;
+    width:52px; height:52px; border-radius:15px; margin-bottom:11px;
     display:flex; align-items:center; justify-content:center; flex-shrink:0;
     box-shadow:inset 0 0 0 1px rgba(0,0,0,.03);
   }
@@ -146,15 +228,48 @@
   .homeBtn.returns .icon{background:linear-gradient(135deg, var(--red-bg), #f8d9d9);}
   .homeBtn.tawrid .icon{background:linear-gradient(135deg, var(--blue-bg), #d9e4f5);}
   .homeBtn.jard .icon{background:linear-gradient(135deg, var(--gold-bg), #f3e3bd);}
-  .homeBtn .title{font-size:17.5px; font-weight:800; color:var(--navy);}
-  .homeBtn .desc{font-size:13.5px; color:var(--muted); margin-top:3px;}
-  .homeBtn .chev{color:#c3bfae; font-size:19px; margin-inline-start:auto;}
-  .adminLink{
-    display:flex; align-items:center; justify-content:center; gap:8px;
-    width:100%; padding:16px; border-radius:14px; border:1px solid var(--gold);
-    background:var(--gold-bg); color:var(--gold-d); font-weight:800; font-size:15.5px;
-    cursor:pointer; margin-top:18px; letter-spacing:.2px;
+  .homeBtn .title{font-size:15px; font-weight:800; color:var(--navy);}
+  .homeBtn .desc{font-size:11.5px; color:var(--muted); margin-top:4px; line-height:1.4;}
+  .homeBtn .chev{display:none;}
+
+  /* ============ لوحة "خدمات إضافية" — تجميع باقي الأزرار في شبكة مربعة مصغّرة ============ */
+  .subHeader{display:flex; align-items:center; gap:10px; margin:0 0 12px;}
+  .subHeader .line{flex:1; height:1px; background:var(--border);}
+  .subHeader .lbl{font-size:12px; font-weight:800; color:var(--muted2); white-space:nowrap; text-transform:uppercase; letter-spacing:.5px;}
+  .subPanel{
+    background:linear-gradient(180deg, #fdfcf9, #f6f4ee);
+    border:1px solid var(--border); border-radius:20px; padding:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.6), 0 3px 10px rgba(15,28,61,.04);
   }
+  .gridSub{display:grid; grid-template-columns:1fr 1fr 1fr; gap:9px;}
+  .adminLink{
+    background:var(--card); border:1px solid var(--border); border-radius:14px;
+    padding:12px 6px 10px; text-align:center; cursor:pointer;
+    box-shadow:0 2px 7px rgba(15,28,61,.05);
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;
+  }
+  .adminLink .icon{
+    width:38px; height:38px; border-radius:50%; margin-bottom:8px;
+    display:flex; align-items:center; justify-content:center; font-size:16px; flex-shrink:0;
+  }
+  .adminLink .title{font-size:11.5px; font-weight:700; color:var(--navy); line-height:1.3; min-height:28px; display:flex; align-items:center; justify-content:center;}
+  .adminLink.ic-settings .icon{background:#eef1f7; color:var(--navy);}
+  .adminLink.ic-products .icon{background:var(--blue-bg); color:var(--blue);}
+  .adminLink.ic-suggest .icon{background:var(--gold-bg); color:var(--gold-d);}
+  .adminLink.ic-mystats .icon{background:var(--green-bg); color:#2f8f5b;}
+  .adminLink.ic-itemsales .icon{background:var(--blue-bg); color:var(--blue);}
+  .adminLink.ic-balances .icon{background:var(--gold-bg); color:var(--gold-d);}
+  .adminLink.ic-stale .icon{background:var(--red-bg); color:#c73e3e;}
+  .adminLink.ic-stalereasons .icon{background:var(--red-bg); color:#c73e3e;}
+  .adminLink.ic-history .icon{background:#eef1f7; color:var(--navy);}
+  .adminLink.ic-prices .icon{background:var(--blue-bg); color:var(--blue);}
+  .adminLink.ic-admin .icon{background:var(--gold-bg); color:var(--gold-d);}
+  .adminLink.ic-logout .icon{background:var(--red-bg); color:#c73e3e;}
+  .adminLink.wide{
+    grid-column:1 / -1; flex-direction:row; padding:11px; gap:8px;
+  }
+  .adminLink.wide .icon{margin-bottom:0; width:30px; height:30px;}
+  .adminLink.wide .title{min-height:0;}
   label{display:block; font-size:14.5px; color:var(--muted2); margin-bottom:7px; font-weight:700;}
   select, input{
     width:100%; padding:14px 15px; border-radius:11px; border:1px solid var(--border);
@@ -169,6 +284,18 @@
   .ltrNum{ direction:ltr; text-align:left; }
   .row2{display:flex; gap:10px;}
   .row2 > div{flex:1;}
+  /* إحساس بالضغط على أي زرار في التطبيق — من غير كده الزرار مكنش بيدي أي رد فعل بصري لحظة
+     الضغط عليه، فالمستخدم مكنش حاسس إنه دوس فعلاً (خصوصًا مع تأخير طبيعي في رد السيرفر) وكان
+     بيدوس تاني، أو يفتكر إن التطبيق واقف. */
+  button, .homeBtn, .adminLink, .delBtn, .adminToggleBtn, .backBtn{
+    transition: transform .08s ease, opacity .08s ease, background-color .12s ease, box-shadow .12s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  button:not(:disabled):active, .homeBtn:active, .adminLink:active,
+  .delBtn:active, .adminToggleBtn:not(:disabled):active, .backBtn:active{
+    transform: scale(.96);
+    opacity: .85;
+  }
   button.primary{
     width:100%; padding:15px; border:none; border-radius:12px;
     background:var(--navy); color:#ffffff; font-weight:800; font-size:16.5px; cursor:pointer;
@@ -262,21 +389,76 @@
   .msg.error{background:var(--red-bg); color:#9c2f2f; border:1px solid #f0c9c9;}
   .msg.success{background:var(--green-bg); color:#1f6b45; border:1px solid #bfe3cf;}
   .empty{text-align:center; color:var(--muted); font-size:14.5px; padding:26px 0;}
-  .spinner{
-    width:34px; height:34px; border:3px solid var(--border); border-top-color:var(--gold);
-    border-radius:50%; animation:spin .8s linear infinite; margin:70px auto;
+  .spinnerOverlay{
+    position:fixed; inset:0; z-index:300;
+    background:rgba(12,23,48,.28); backdrop-filter:blur(1.5px);
+    display:flex; align-items:center; justify-content:center;
   }
+  .spinnerOverlay .spinnerBox{
+    background:#fff; border-radius:18px; padding:22px 26px;
+    box-shadow:0 12px 34px rgba(12,23,48,.28); display:flex; flex-direction:column;
+    align-items:center; gap:12px;
+  }
+  .spinner{
+    width:38px; height:38px; border:4px solid var(--border); border-top-color:var(--gold);
+    border-radius:50%; animation:spin .8s linear infinite;
+  }
+  .spinnerOverlay .spinnerLabel{font-size:13px; color:var(--muted2); font-weight:700;}
   @keyframes spin{to{transform:rotate(360deg);}}
+  .offlineBanner{
+    position:fixed; top:0; inset-inline:0; z-index:400;
+    background:#3a2a10; color:#ffe9b3; text-align:center;
+    font-size:13px; font-weight:700; padding:10px 16px;
+    padding-top:calc(10px + env(safe-area-inset-top));
+    box-shadow:0 4px 14px rgba(0,0,0,.25);
+  }
+  .updateBanner{
+    position:fixed; bottom:0; inset-inline:0; z-index:400;
+    background:var(--navy); color:#fff; display:flex; align-items:center;
+    justify-content:space-between; gap:12px; font-size:13.5px; font-weight:700;
+    padding:12px 18px; padding-bottom:calc(12px + env(safe-area-inset-bottom));
+    box-shadow:0 -4px 14px rgba(0,0,0,.25);
+  }
+  .updateBanner button{
+    width:auto; flex-shrink:0; background:linear-gradient(135deg, var(--gold-light), var(--gold));
+    color:var(--navy); border:none; border-radius:10px; padding:9px 16px; font-weight:800;
+    font-size:13px; cursor:pointer;
+  }
+  .appVersionNote{
+    text-align:center; color:var(--muted); font-size:11.5px; margin-top:16px; letter-spacing:.3px;
+  }
   .center{text-align:center;}
   [hidden]{display:none !important;}
   .reviewOverlay{
     position:fixed; inset:0; background:rgba(10,15,30,.55); z-index:50;
-    display:flex; align-items:flex-end; justify-content:center;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding:18px 12px; overflow-y:auto;
   }
   .reviewModal{
-    background:#ffffff; width:100%; max-width:640px; border-radius:22px 22px 0 0;
-    max-height:88vh; display:flex; flex-direction:column; overflow:hidden;
-    box-shadow:0 -10px 40px rgba(0,0,0,.28);
+    background:#ffffff; width:100%; max-width:640px; border-radius:20px;
+    max-height:calc(100vh - 36px); display:flex; flex-direction:column; overflow:hidden;
+    box-shadow:0 10px 40px rgba(0,0,0,.35);
+  }
+  .alertOverlay{
+    position:fixed; inset:0; background:rgba(10,15,30,.65); z-index:600;
+    display:flex; align-items:center; justify-content:center; padding:20px;
+  }
+  .alertModal{
+    background:#fff; width:100%; max-width:380px; border-radius:18px;
+    padding:26px 22px 22px; text-align:center; box-shadow:0 20px 50px rgba(0,0,0,.35);
+    animation: alertPop .18s ease;
+  }
+  @keyframes alertPop{ from{ transform:scale(.92); opacity:0; } to{ transform:scale(1); opacity:1; } }
+  .alertIcon{
+    width:56px; height:56px; border-radius:50%; background:var(--red-bg); color:#c73e3e;
+    display:flex; align-items:center; justify-content:center; font-size:28px; font-weight:900;
+    margin:0 auto 14px;
+  }
+  .alertIcon.success{ background:var(--green-bg); color:#1f6b45; }
+  .alertText{ font-size:15.5px; font-weight:700; color:var(--navy); line-height:1.7; margin-bottom:18px; white-space:pre-wrap; }
+  .alertOkBtn{
+    width:100%; background:linear-gradient(135deg, var(--gold-light), var(--gold)); color:var(--navy);
+    border:none; border-radius:12px; padding:13px; font-weight:800; font-size:15px; cursor:pointer;
   }
   .reviewHeader{
     padding:20px 22px 16px;
@@ -303,6 +485,75 @@
     display:flex; justify-content:space-between; align-items:center;
     padding-top:16px; margin-top:6px; font-weight:900; font-size:18px; color:var(--gold-d);
   }
+  .dayChipsWrap{display:flex; flex-wrap:wrap; margin-bottom:14px;}
+  .dayChip{
+    display:inline-flex; align-items:center; justify-content:center;
+    padding:9px 14px; border-radius:20px; border:1px solid var(--border);
+    background:var(--card2); color:var(--muted2); font-weight:700; font-size:13.5px;
+    cursor:pointer; margin:4px; user-select:none;
+  }
+  .dayChip.active{background:var(--gold-bg); border-color:var(--gold); color:var(--gold-d);}
+  .profilePhotoWrap{display:flex; flex-direction:column; align-items:center; margin-bottom:18px; gap:10px;}
+  .profilePhotoImg{
+    width:110px; height:110px; border-radius:50%; object-fit:cover;
+    border:3px solid var(--gold); background:var(--card2);
+  }
+  .profilePhotoPlaceholder{
+    width:110px; height:110px; border-radius:50%; background:var(--card2); border:2px dashed var(--border);
+    display:flex; align-items:center; justify-content:center; font-size:34px; color:var(--muted);
+  }
+  .productCard{
+    background:var(--card2); border:1px solid var(--border); border-radius:13px;
+    padding:14px 16px; margin-bottom:12px;
+  }
+  .productCard .pTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:10px;}
+  .productPhotos{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
+  .productPhotos img{
+    width:84px; height:84px; object-fit:cover; border-radius:10px;
+    border:1px solid var(--border); cursor:pointer; background:#fff;
+  }
+  .pSpecsList{margin:0; padding-inline-start:20px; font-size:14.5px; color:var(--text); font-weight:600; line-height:1.8;}
+  .pSpecsList li{margin-bottom:4px;}
+  .productPhotoPicker{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .productPhotoPicker .thumb{position:relative; width:76px; height:76px;}
+  .productPhotoPicker .thumb img{width:100%; height:100%; object-fit:cover; border-radius:10px; border:1px solid var(--border);}
+  .productPhotoPicker .rmBtn{
+    position:absolute; top:-7px; left:-7px; width:22px; height:22px; border-radius:50%;
+    background:var(--red); color:#fff; border:2px solid #fff; font-size:13px; line-height:1;
+    cursor:pointer; padding:0;
+  }
+  .productPhotoAddBtn{
+    width:76px; height:76px; border-radius:10px; border:2px dashed var(--border);
+    background:var(--card2); color:var(--muted); font-size:24px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center; font-family:inherit;
+  }
+  .suggRow{
+    background:var(--card2); border:1px solid var(--border); border-radius:13px;
+    padding:14px 16px; margin-bottom:9px;
+  }
+  .suggRow .sMeta{font-size:12.5px; color:var(--muted); margin-bottom:6px; font-weight:700;}
+  .suggRow .sText{font-size:14.5px; color:var(--text); font-weight:600; white-space:pre-wrap;}
+  textarea{
+    width:100%; padding:14px 15px; border-radius:11px; border:1px solid var(--border);
+    background:var(--card2); color:var(--text); font-size:16px; margin-bottom:14px;
+    font-family:inherit; resize:vertical; min-height:110px;
+  }
+  textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
+  .inAppBanner{
+    background:#fff6e0; border:1px solid var(--gold); color:#6b4a10; border-radius:13px;
+    padding:12px 14px; margin-bottom:14px; font-size:13.5px; font-weight:700; line-height:1.7;
+  }
+  .inAppBanner .inAppBtns{display:flex; gap:8px; margin-top:10px;}
+  .inAppBanner button{
+    flex:1; border:1px solid var(--gold); background:#fff; color:var(--gold-d); border-radius:10px;
+    padding:9px 8px; font-weight:800; font-size:13px; font-family:inherit; cursor:pointer;
+  }
+  .inAppBanner button.inAppClose{flex:0 0 42px; color:var(--muted2); border-color:var(--border);}
+  /* الأجهزة اللي صاحبها مفعّل "تقليل الحركة" من إعدادات الموبايل: من غير أنيميشن الحديث/البلور */
+  @media (prefers-reduced-motion: reduce){
+    .hadithBox .hadithText .word{ animation:none; opacity:1; transform:none; }
+    .spinnerOverlay{ backdrop-filter:none; }
+  }
 </style>
 </head>
 <body>
@@ -316,12 +567,29 @@
       <div class="sub" id="pageSub">جاري التحميل...</div>
     </div>
   </div>
+  <div class="hadithBox" id="hadithBox">
+    <span class="hadithText" id="hadithText"></span>
+    <span class="hadithRef" id="hadithRef"></span>
+  </div>
   <button class="backBtn" id="backBtn" hidden onclick="goHome()">⟵ الرئيسية</button>
 </div>
 
 <div class="wrap">
 
-  <div id="loading" class="spinner"></div>
+  <div id="loading" class="spinnerOverlay" hidden>
+    <div class="spinnerBox">
+      <div class="spinner"></div>
+      <span class="spinnerLabel">جاري التحميل...</span>
+    </div>
+  </div>
+  <div id="inAppBanner" class="inAppBanner" hidden>
+    <div class="inAppText">⚠️ انت فاتح التطبيق من جوه تطبيق تاني (واتساب/فيسبوك) — ده بيخليه يطلب كود الإيميل كل شوية. افتحه من <b>Chrome</b> أو من <b>أيقونة التطبيق</b> على الشاشة.</div>
+    <div class="inAppBtns">
+      <button type="button" id="inAppOpenChromeBtn" hidden onclick="openInChrome_()">فتح في Chrome</button>
+      <button type="button" onclick="copyAppLink_()">نسخ اللينك</button>
+      <button type="button" class="inAppClose" onclick="dismissInAppBanner_()">✕</button>
+    </div>
+  </div>
   <div id="globalMsg"></div>
 
   <!-- ============ شاشة تسجيل الدخول (اسم + كود) ============ -->
@@ -344,7 +612,7 @@
       <div class="cardTitle">تأكيد الدخول</div>
       <div id="otpHint" style="margin-bottom:10px; color:#666; font-size:14px;">بعتنالك كود تأكيد على إيميلك</div>
       <label>الكود اللي وصلك على الإيميل</label>
-      <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" dir="ltr" maxlength="6" placeholder="مثال: 123456">
+      <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="6" placeholder="مثال: 123456">
       <button class="primary" id="otpBtn" onclick="handleVerifyOtp()">تأكيد ودخول</button>
       <button class="ghost" id="otpResendBtn" onclick="handleResendOtp()" style="margin-top:8px;">إعادة إرسال الكود</button>
       <button class="ghost" onclick="handleOtpBack()" style="margin-top:8px;">رجوع لتسجيل الدخول</button>
@@ -353,10 +621,27 @@
 
   <!-- ============ شاشة رئيسية ============ -->
   <div id="viewHome" hidden>
-    <div class="welcomeCard center">
-      <div class="badgeIcon" style="margin-inline:auto;">✦</div>
-      <div class="hi">أهلاً بيك</div>
-      <div class="name" id="homeUserName"></div>
+    <div class="welcomeCard">
+      <div class="welcomeRow">
+        <div class="welcomeLeftGroup">
+          <div class="badgeIcon" id="homeBadgeIcon">✦</div>
+          <div class="wText">
+            <div class="hi">أهلاً بيك</div>
+            <div class="name" id="homeUserName"></div>
+          </div>
+        </div>
+        <div class="targetProgressWrap" id="targetProgressWrap" hidden>
+          <div class="targetProgressPct" id="targetProgressPct"></div>
+          <div class="targetProgressTrack">
+            <div class="targetProgressFill" id="targetProgressFill"></div>
+          </div>
+          <div class="targetProgressCaption">هدف الشهر</div>
+        </div>
+      </div>
+      <div class="targetMoodRow" id="targetMoodRow" hidden>
+        <div class="targetMoodEmoji" id="targetMoodEmoji"></div>
+        <div class="targetMoodText" id="targetMoodText"></div>
+      </div>
     </div>
     <div class="sectionLabel">الإجراءات المتاحة</div>
     <div class="homeGrid">
@@ -366,7 +651,7 @@
         </div>
         <div>
           <div class="title">تسجيل مبيعات</div>
-          <div class="desc">إضافة فاتورة مبيعات جديدة</div>
+          <div class="desc">إضافة أصناف لفاتورة مبيعات جديدة</div>
         </div>
         <div class="chev">‹</div>
       </button>
@@ -402,11 +687,23 @@
       </button>
     </div>
 
-    <button class="adminLink" id="myStatsLink" onclick="openScreen('mystats')" style="border-color:var(--green); background:var(--green-bg); color:var(--green);">📊 مبيعاتي (النهاردة ومن أول الشهر)</button>
-    <button class="adminLink" id="staleLink" onclick="openScreen('stale')" style="border-color:var(--red); background:var(--red-bg); color:var(--red);">📦 الرواكد</button>
-    <button class="adminLink" id="pricesLink" onclick="openScreen('prices')" style="border-color:var(--blue); background:var(--blue-bg); color:var(--blue);">💰 أسعاري (تحديد وتعديل أسعار الأصناف)</button>
-    <button class="adminLink" id="adminLink" onclick="openScreen('admin')" hidden>⚙ إدارة المناديب والمشرفين</button>
-    <button class="adminLink" onclick="handleLogout()" style="border-color:var(--red); background:var(--red-bg); color:var(--red); margin-top:10px;">⎋ تسجيل خروج</button>
+    <div class="subHeader"><span class="lbl">خدمات إضافية</span><span class="line"></span></div>
+    <div class="subPanel">
+      <div class="gridSub">
+        <button class="adminLink ic-settings" id="profileLink" onclick="openScreen('profile')"><div class="icon">⚙</div><div class="title">إعداداتي</div></button>
+        <button class="adminLink ic-products" id="productsLink" onclick="openScreen('products')"><div class="icon">📄</div><div class="title">وصف المنتجات</div></button>
+        <button class="adminLink ic-suggest" id="suggestionLink" onclick="openScreen('suggestion')"><div class="icon">💡</div><div class="title">ابعت اقتراح</div></button>
+        <button class="adminLink ic-mystats" id="myStatsLink" onclick="openScreen('mystats')"><div class="icon">📊</div><div class="title">مبيعاتي</div></button>
+        <button class="adminLink ic-itemsales" id="itemSalesLink" onclick="openScreen('itemsales')"><div class="icon">📈</div><div class="title">مبيعات الأصناف</div></button>
+        <button class="adminLink ic-balances" id="balancesLink" onclick="openScreen('balances')"><div class="icon">📦</div><div class="title">أرصدتي</div></button>
+        <button class="adminLink ic-stale" id="staleLink" onclick="openScreen('stale')"><div class="icon">📦</div><div class="title">الرواكد</div></button>
+        <button class="adminLink ic-stalereasons" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><div class="icon">📝</div><div class="title">تقرير أسباب الركود</div></button>
+        <button class="adminLink ic-history" id="invoiceHistoryLink" onclick="openScreen('history')"><div class="icon">📋</div><div class="title">سجل فواتيري</div></button>
+        <button class="adminLink ic-prices" id="pricesLink" onclick="openScreen('prices')"><div class="icon">💰</div><div class="title">أسعاري</div></button>
+        <button class="adminLink wide ic-admin" id="adminLink" onclick="openScreen('admin')" hidden><div class="icon">⚙</div><div class="title">إدارة المناديب والمشرفين</div></button>
+        <button class="adminLink wide ic-logout" onclick="handleLogout()"><div class="icon">⎋</div><div class="title">تسجيل خروج</div></button>
+      </div>
+    </div>
   </div>
 
   <!-- ============ شاشة فاتورة (مبيعات / مرتجع) ============ -->
@@ -432,6 +729,14 @@
           <input type="text" id="priceInput" class="ltrNum" inputmode="decimal" dir="ltr" placeholder="0.00">
         </div>
       </div>
+      <div id="returnKindWrap" hidden>
+        <label>حالة الصنف المرتجع</label>
+        <select id="returnKindInput">
+          <option value="" disabled selected>اختر نوع المرتجع</option>
+          <option value="سليم">سليم (قابل للبيع تاني)</option>
+          <option value="تالف">تالف (مرتجع للشركة)</option>
+        </select>
+      </div>
       <button class="primary" id="addBtn" onclick="handleAddItem()">إضافة الصنف</button>
     </div>
 
@@ -443,8 +748,10 @@
         <span class="val" id="grandTotal">0</span>
       </div>
       <button class="finalize" id="finalizeBtn" onclick="handleFinalize()">✔ موافق وترحيل</button>
-      <button class="ghost" id="downloadBtn" onclick="downloadInvoiceExcel()" disabled>⬇ تحميل Excel (متاح بعد الترحيل)</button>
-      <button class="whatsapp" id="shareBtn" onclick="shareInvoiceExcel()" disabled>📤 مشاركة عبر واتساب</button>
+      <div id="invoiceDownloadRow" hidden style="margin-top:10px;">
+        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareInvoiceExcel()">📤 مشاركة صورة الفاتورة</button>
+        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
+      </div>
     </div>
   </div>
 
@@ -469,8 +776,10 @@
       <div class="cardTitle">أصناف التوريد</div>
       <div id="tawridList"></div>
       <button class="finalize" id="saveTawridBtn" onclick="handleSaveTawrid()">✔ تأكيد التوريد</button>
-      <button class="ghost" id="tawridDownloadBtn" onclick="downloadTawridExcel()" disabled>⬇ تحميل Excel (متاح بعد التأكيد)</button>
-      <button class="whatsapp" id="tawridShareBtn" onclick="shareTawridExcel()" disabled>📤 مشاركة عبر واتساب</button>
+      <div id="tawridDownloadRow" hidden style="margin-top:10px;">
+        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareTawridExcel()">📤 مشاركة صورة التوريد</button>
+        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
+      </div>
     </div>
   </div>
 
@@ -484,8 +793,10 @@
       <div class="cardTitle">اكتب العدد الموجود عندك لكل صنف — سيب أي صنف فاضي لو مش موجود عندك خالص</div>
       <div id="jardItemsList"></div>
       <button class="finalize" id="saveJardBtn" onclick="handleSaveJard()">✔ حفظ الجرد</button>
-      <button class="ghost" id="jardDownloadBtn" onclick="downloadJardExcel()" disabled>⬇ تحميل Excel (متاح بعد الحفظ)</button>
-      <button class="whatsapp" id="jardShareBtn" onclick="shareJardExcel()" disabled>📤 مشاركة عبر واتساب</button>
+      <div id="jardDownloadRow" hidden style="margin-top:10px;">
+        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareJardExcel()">📤 مشاركة صورة الجرد</button>
+        <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
+      </div>
     </div>
   </div>
 
@@ -534,6 +845,33 @@
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">الأرقام دي صافي بعد خصم أي مرتجعات — شاشة مشاهدة فقط، مفيش أي تعديل من هنا</div>
   </div>
 
+  <!-- ============ شاشة مبيعات الأصناف الشهرية (تجميع لكل صنف بفلتر شهر) ============ -->
+  <div id="viewItemSales" hidden>
+    <div class="card" id="itemSalesRepPickerCard" hidden>
+      <div class="cardTitle">اختار المندوب</div>
+      <select id="itemSalesRepSelect" onchange="loadItemSalesReport(this.value, document.getElementById('itemSalesMonthSelect').value)"></select>
+    </div>
+    <div class="card">
+      <div class="cardTitle">اختار الشهر</div>
+      <select id="itemSalesMonthSelect" onchange="loadItemSalesReport(currentItemSalesRep_(), this.value)"></select>
+    </div>
+    <div class="card">
+      <div class="cardTitle">إجمالي الشهر</div>
+      <div class="totalBar">
+        <span>صافي الكمية المباعة</span>
+        <span class="val" id="itemSalesTotalQty">0</span>
+      </div>
+      <div class="totalBar" style="margin-top:6px;">
+        <span>إجمالي القيمة</span>
+        <span class="val" id="itemSalesTotalValue">0</span>
+      </div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">مبيعات الأصناف (الأكتر مبيعًا فوق)</div>
+      <div id="itemSalesList"></div>
+    </div>
+  </div>
+
   <!-- ============ شاشة الرواكد (مستقلة) ============ -->
   <div id="viewStale" hidden>
     <div class="card" id="staleBranchPickerCard" hidden>
@@ -549,6 +887,57 @@
     </div>
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
       "راكد" يعني الصنف مبيعش عند الفرع ده من <span id="staleWindowLabel">21</span> يوم على الأقل (أو ما اتباعش خالص) — شاشة مشاهدة فقط
+    </div>
+  </div>
+
+  <!-- ============ شاشة أرصدتي (رصيد كل صنف لحظيًا) ============ -->
+  <div id="viewBalances" hidden>
+    <div class="card" id="balancesRepPickerCard" hidden>
+      <div class="cardTitle">اختار المندوب</div>
+      <select id="balancesRepSelect" onchange="loadBalances(this.value)"></select>
+    </div>
+    <div class="card">
+      <div class="cardTitle">رصيد الأصناف الحالي</div>
+      <div id="balancesList"></div>
+      <button class="whatsapp" id="balancesExportBtn" style="margin-top:12px; width:100%;" onclick="exportBalancesExcel()">📤 تصدير إكسل</button>
+    </div>
+    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
+      الرصيد = آخر جرد مسجّل + التوريد بعده − صافي المبيعات بعده (المرتجع بيتحسب لصالح الرصيد) — شاشة مشاهدة فقط
+    </div>
+  </div>
+
+  <!-- ============ شاشة بلوك الأصناف الراكدة (لازم سبب قبل ما تفتح مبيعاتي/أرصدتي) ============ -->
+  <div id="viewStaleBlock" hidden>
+    <div class="card">
+      <div class="cardTitle">في أصناف راكدة محتاجة سبب الأول</div>
+      <div style="color:var(--muted); font-size:13px; margin-bottom:14px; line-height:1.7;">
+        الشاشة اللي كنت هتفتحها اتقفلت مؤقتًا لحد ما تكتب سبب ركود كل صنف من الأصناف اللي فاتت عليها
+        <b id="staleBlockWindowLabel">30</b> يوم من غير بيع في فرعك. اكتب السبب مرة واحدة بس لكل صنف
+        وهيترفع القفل عنه على طول.
+      </div>
+      <div id="staleBlockList"></div>
+    </div>
+  </div>
+
+  <!-- ============ شاشة تقرير أسباب الركود (للمشرفين فقط) ============ -->
+  <div id="viewStaleReasons" hidden>
+    <div class="card">
+      <div class="cardTitle">الأسباب اللي اتكتبت لحد دلوقتي</div>
+      <div id="staleReasonsList"></div>
+      <div style="color:var(--muted); font-size:13px; text-align:center; padding:6px 4px;" id="staleReasonsEmptyMsg" hidden>
+        لسه محدش كتب أي سبب ركود
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ شاشة سجل فواتيري (مشاهدة + إعادة تنزيل/مشاركة) ============ -->
+  <div id="viewInvoiceHistory" hidden>
+    <div class="card">
+      <div class="cardTitle">سجلك السابق (مبيعات، مرتجع، جرد، وتوريد)</div>
+      <div id="invoiceHistoryList"></div>
+    </div>
+    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
+      لو فقدت ملف إكسل فاتورة/جرد/توريد سبق سجّلته، تقدر تعيد تنزيله أو مشاركته من هنا من غير ما تسجّله تاني
     </div>
   </div>
 
@@ -581,9 +970,78 @@
       <div class="cardTitle">كل الأصناف الحالية</div>
       <div id="asnafList"><div class="empty">جاري التحميل...</div></div>
     </div>
+
+    <div class="card">
+      <div class="cardTitle">مقترحات المناديب</div>
+      <div id="suggestionsAdminList"><div class="empty">جاري التحميل...</div></div>
+    </div>
+
+    <div class="card">
+      <div class="cardTitle">إضافة وصف منتج</div>
+      <label>اسم المنتج</label>
+      <input type="text" id="productNameInput" placeholder="مثال: خلاط انسباير 600">
+      <label>المواصفات (اكتب كل ميزة في سطر لوحدها)</label>
+      <textarea id="productSpecsInput" placeholder="مثال:&#10;3000 وات&#10;قاعدة من السيراميك&#10;خاصية الاغلاق الذاتي"></textarea>
+      <label>صور المنتج (اختياري، حد أقصى 5 صور)</label>
+      <div class="productPhotoPicker" id="productPhotoPicker">
+        <button type="button" class="productPhotoAddBtn" onclick="document.getElementById('productPhotoInput').click()">+</button>
+      </div>
+      <input type="file" id="productPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleProductPhotosSelected(event)">
+      <button class="primary" onclick="handleAddProduct()">إضافة المنتج</button>
+    </div>
+    <div class="card">
+      <div class="cardTitle">المنتجات الحالية</div>
+      <div id="productsAdminList"><div class="empty">جاري التحميل...</div></div>
+    </div>
+  </div>
+
+  <!-- ============ شاشة إعداداتي (بيانات المندوب) ============ -->
+  <div id="viewProfile" hidden>
+    <div class="card">
+      <div class="cardTitle">بياناتي</div>
+      <div class="profilePhotoWrap">
+        <img id="profilePhotoImg" class="profilePhotoImg" hidden>
+        <div id="profilePhotoPlaceholder" class="profilePhotoPlaceholder">👤</div>
+        <input type="file" id="profilePhotoInput" accept="image/*" style="display:none;" onchange="handlePhotoSelected(event)">
+        <button class="ghost" style="margin-top:0; width:auto; padding:10px 20px;" onclick="document.getElementById('profilePhotoInput').click()">📷 تغيير الصورة</button>
+      </div>
+      <label>السن</label>
+      <input type="number" id="profileAgeInput" min="16" max="75" inputmode="numeric" placeholder="مثال: 28">
+      <label>عدد سنوات الخبرة في الشغل</label>
+      <input type="number" id="profileExperienceInput" min="0" max="60" inputmode="numeric" placeholder="مثال: 3">
+      <label>الإجازة الأسبوعية (تقدر تختار أكتر من يوم)</label>
+      <div class="dayChipsWrap" id="weeklyOffChipsWrap"></div>
+      <button class="finalize" id="saveProfileBtn" onclick="handleSaveProfile()">✔ حفظ بياناتي</button>
+      <div class="appVersionNote" id="appVersionNote"></div>
+    </div>
+  </div>
+
+  <!-- ============ شاشة ابعت اقتراح ============ -->
+  <div id="viewSuggestion" hidden>
+    <div class="card">
+      <div class="cardTitle">ابعتلنا اقتراحك أو ملاحظتك</div>
+      <label>اكتب اقتراحك هنا</label>
+      <textarea id="suggestionTextInput" placeholder="اكتب اقتراحك أو ملاحظتك..."></textarea>
+      <button class="finalize" onclick="handleSendSuggestion()">✔ إرسال الاقتراح</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة وصف المنتجات ============ -->
+  <div id="viewProducts" hidden>
+    <div class="card">
+      <div class="cardTitle">وصف المنتجات</div>
+      <div id="productsList"><div class="empty">جاري التحميل...</div></div>
+    </div>
   </div>
 
   <!-- ============ مراجعة الفاتورة قبل الترحيل ============ -->
+  <div id="offlineBanner" class="offlineBanner" hidden>📶 مفيش اتصال بالإنترنت دلوقتي — البيانات هترجع تتحدّث أول ما النت يرجع</div>
+
+  <div id="updateBanner" class="updateBanner" hidden>
+    <span>🔄 فيه تحديث جديد للتطبيق</span>
+    <button onclick="applyAppUpdate_()">تحديث الآن</button>
+  </div>
+
   <div id="reviewOverlay" class="reviewOverlay" hidden>
     <div class="reviewModal">
       <div class="reviewHeader">
@@ -598,6 +1056,25 @@
     </div>
   </div>
 
+  <div id="alertOverlay" class="alertOverlay" hidden>
+    <div class="alertModal">
+      <div class="alertIcon" id="alertIcon">!</div>
+      <div class="alertText" id="alertText"></div>
+      <button class="alertOkBtn" onclick="closeAlertModal_()">تمام</button>
+    </div>
+  </div>
+
+  <div id="dupConfirmOverlay" class="alertOverlay" hidden>
+    <div class="alertModal">
+      <div class="alertIcon">!</div>
+      <div class="alertText">لاحظنا إنك سجّلت فاتورة بنفس الأصناف والكميات والأسعار النهارده أصلاً — متأكد إن دي مش نفس الفاتورة اتسجلت مرتين؟</div>
+      <div style="display:flex; gap:10px;">
+        <button class="ghost" style="margin-top:0; flex:1;" onclick="cancelDuplicateFinalize_()">رجّعني اراجع</button>
+        <button class="finalize" style="margin-top:0; flex:1;" onclick="confirmDuplicateFinalize_()">أيوه اتأكدت</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -607,7 +1084,7 @@
     user: null,
     isAdmin: false,
     asnaf: [],
-    draftItems: [],         // فاتورة: {itemName, qty, price}
+    draftItems: [],         // أصناف الفاتورة (بيع أو مرتجع) قبل الترحيل — بتتجمع في المتصفح بس
     finalized: false,
     finalResult: null,      // نتيجة finalizeInvoice
     pendingFinalizeId: null, // رقم مرجعي فريد لعملية الترحيل الحالية — بيمنع تسجيل نفس الفاتورة مرتين لو حصل دبل كليك
@@ -630,6 +1107,10 @@
   // وهتحتاج تحدّث القيمة دي بس.
   const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwCd28GkMFnonxGWs4TfX2Kuszj5KUYn2i5HRj1WDZVfiesp47OaDk-e6ehV_Csl9JI/exec';
 
+  // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
+  // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
+  const APP_VERSION_ = 'v1.6.1';
+
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
       method: 'POST',
@@ -648,10 +1129,35 @@
       .catch(function(err){
         if(err instanceof TypeError){
           // الغالب مشكلة إنترنت أو الرابط اتغيّر
-          throw new Error('تعذر الاتصال بالسيرفر — تأكد إنك متصل بالإنترنت وحاول تاني');
+          const netErr = new Error('تعذر الاتصال بالسيرفر — تأكد إنك متصل بالإنترنت وحاول تاني');
+          netErr.isNetwork = true; // عشان نفرّق بين "النت فاصل" و"الدخول مرفوض"
+          throw netErr;
         }
         throw err;
       });
+  }
+
+  // ============ تحميل مكتبات خارجية (ExcelJS / html2canvas) عند الحاجة الفعلية بس ============
+  // بدل ما نحملهم مع كل فتح للتطبيق (كانوا بيتحملوا في <head> قبل كده)، بنحملهم أول مرة يحتاجهم
+  // فيها المستخدم فعلاً — تنزيل أو مشاركة ملف من شاشة "سجل فواتيري" — وبعدين بيفضلوا محفوظين في
+  // المتصفح (Promise واحد لكل رابط) فمش بيتحمّلوا تاني في نفس الجلسة.
+  const _loadedScripts_ = {};
+  function loadScriptOnce_(src){
+    if(_loadedScripts_[src]) return _loadedScripts_[src];
+    _loadedScripts_[src] = new Promise(function(resolve, reject){
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = function(){ resolve(); };
+      s.onerror = function(){ delete _loadedScripts_[src]; reject(new Error('تعذر تحميل مكتبة مطلوبة — تأكد إنك متصل بالإنترنت وحاول تاني')); };
+      document.head.appendChild(s);
+    });
+    return _loadedScripts_[src];
+  }
+  function ensureExcelJsLoaded_(){
+    return loadScriptOnce_('https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js');
+  }
+  function ensureHtml2CanvasLoaded_(){
+    return loadScriptOnce_('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
   }
 
   // رقم مرجعي فريد (مش لازم يبقى UUID رسمي، بس محتاج يبقى مختلف كل مرة) — بيتبعت مع طلبات
@@ -666,10 +1172,21 @@
     if(type === 'success'){ setTimeout(()=>{ el.innerHTML=''; }, 2500); }
   }
   function clearMsg(){ document.getElementById('globalMsg').innerHTML = ''; }
+  // نافذة تنبيه منبثقة واضحة (z-index أعلى من أي مودال تاني في الصفحة، حتى مودال مراجعة الفاتورة)
+  // — بتتأكد إن أي رسالة خطأ هتظهر فوق أي حاجة تانية على الشاشة، ومش هتضيع تحت مودال التأكيد
+  function showAlertModal_(text, kind){
+    const icon = document.getElementById('alertIcon');
+    icon.textContent = kind === 'success' ? '✔' : '!';
+    icon.className = 'alertIcon' + (kind === 'success' ? ' success' : '');
+    document.getElementById('alertText').textContent = text;
+    document.getElementById('alertOverlay').hidden = false;
+  }
+  function closeAlertModal_(){
+    document.getElementById('alertOverlay').hidden = true;
+  }
+  const ESC_MAP_ = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
   function escapeHtml(s){
-    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
-      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
-    ));
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ESC_MAP_[c]);
   }
   function fmt(n){
     n = Number(n) || 0;
@@ -702,10 +1219,92 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
+  }
+
+  // ============ ذاكرة محلية على الموبايل (عرض فوري + تحديث في الخلفية) ============
+  // الشاشات بتفتح على طول بآخر بيانات اتحفظت على الجهاز، وفي نفس اللحظة بنجيب الجديد من السيرفر
+  // ونحدّث بيه. كل حاجة بتتخزن باسم إيميل المندوب، وبتتمسح كلها عند تسجيل الخروج.
+  // ملحوظة: الترحيل والتحقق من الرصيد بيفضلوا من السيرفر 100% — الذاكرة دي للعرض بس.
+  const LOCAL_CACHE_PREFIX_ = 'tz_cache_v1:';
+  function localCacheKey_(name){
+    return LOCAL_CACHE_PREFIX_ + String((state.auth && state.auth.email) || '').toLowerCase() + ':' + name;
+  }
+  function localCacheGet_(name){
+    try{ const raw = localStorage.getItem(localCacheKey_(name)); return raw ? JSON.parse(raw) : null; }
+    catch(e){ return null; }
+  }
+  function localCacheSet_(name, value){
+    try{ localStorage.setItem(localCacheKey_(name), JSON.stringify({ t: Date.now(), v: value })); }catch(e){}
+  }
+  function localCacheClearAll_(){
+    try{
+      Object.keys(localStorage).forEach(function(k){ if(k.indexOf(LOCAL_CACHE_PREFIX_) === 0) localStorage.removeItem(k); });
+    }catch(e){}
+  }
+
+  // "الكتالوج" = قايمة الأصناف + أسعار المندوب — نفس البيانات اللي شاشات البيع/المرتجع/التوريد/أسعاري
+  // بتحتاجها. لو في طلب شغال أصلاً (مثلاً التجهيز المسبق من الرئيسية) بنستنى نفس الطلب بدل ما نبعت تاني.
+  let catalogInFlight_ = null;
+  function fetchCatalog_(){
+    if(catalogInFlight_) return catalogInFlight_;
+    catalogInFlight_ = callApi('bootstrapInvoice', [state.auth, 'بيع'])
+      .then(function(data){
+        const c = { asnaf: data.asnaf || [], prices: data.prices || {} };
+        localCacheSet_('catalog', c);
+        return c;
+      })
+      .finally(function(){ catalogInFlight_ = null; });
+    return catalogInFlight_;
+  }
+
+  // تجهيز مسبق: بعد ما الرئيسية تفتح بثانية ونص، بنجيب الكتالوج في الخلفية (للمندوب بس، ومرة كل
+  // 10 دقايق بالكتير) عشان لما يدوس "تسجيل مبيعات" أو "توريد" الشاشة تفتح فورًا
+  const CATALOG_PREFETCH_EVERY_MS_ = 10 * 60 * 1000;
+  function prefetchCatalogSoon_(){
+    setTimeout(function(){
+      if(!state.auth || state.isAdmin) return;
+      const c = localCacheGet_('catalog');
+      if(c && Date.now() - c.t < CATALOG_PREFETCH_EVERY_MS_) return;
+      fetchCatalog_().catch(function(){});
+    }, 1500);
+  }
+
+  // بيفتح شاشة معتمدة على الكتالوج: فورًا من الذاكرة لو موجودة (وبيحدّث في الخلفية)، وإلا بالطريقة العادية
+  // onFresh(c, cached) بتتنادى لما البيانات الجديدة توصل والمندوب لسه على نفس الشاشة
+  function openWithCatalog_(screenName, render, onFresh){
+    const cached = localCacheGet_('catalog');
+    if(cached && cached.v){
+      state.asnaf = cached.v.asnaf || [];
+      state.myPrices = cached.v.prices || {};
+      render();
+      fetchCatalog_()
+        .then(function(c){
+          if(state.screen !== screenName) return;
+          state.asnaf = c.asnaf;
+          state.myPrices = c.prices;
+          if(onFresh) onFresh(c, cached.v);
+        })
+        .catch(function(){}); // النت فاصل؟ نكمّل بالبيانات المحفوظة
+      return;
+    }
+    showLoading(true);
+    fetchCatalog_()
+      .then(function(c){
+        state.asnaf = c.asnaf;
+        state.myPrices = c.prices;
+        showLoading(false);
+        render();
+      })
+      .catch(onError);
+  }
+
+  function saveHomeCache_(){
+    if(!state.user) return;
+    localCacheSet_('home', { user: state.user, isAdmin: state.isAdmin, targetProgress: state.targetProgress_ || null });
   }
 
   function goHome(){
@@ -714,6 +1313,7 @@
     document.getElementById('pageTitle').textContent = 'تاتش الزنوكي';
     document.getElementById('pageSub').textContent = state.user ? state.user.name : '';
     setView('viewHome');
+    prefetchCatalogSoon_();
   }
 
   // ============ تخزين بيانات الدخول محليًا في المتصفح عشان المندوب ميدخلش كل مرة ============
@@ -732,24 +1332,148 @@
   }
 
   // كود التأكيد (OTP) ميتطلبش غير مرة واحدة بس لكل جهاز — نفس منطق نسخة Apps Script بالظبط
+  // علامة الجهاز بتتحفظ في 3 أماكن على الموبايل (localStorage + كوكي + IndexedDB) — لو المتصفح مسح
+  // مكان منهم (زي ما Chrome بيعمل لما مساحة الموبايل تقل، أو سفاري بعد أسبوع من غير استخدام)،
+  // بترجع من مكان تاني فالجهاز يفضل "متذكر" ومش بيطلب كود الإيميل تاني.
   const DEVICE_TOKEN_KEY = 'tatsh_zenouki_device';
-  function saveDeviceToken(token){
-    try{ if(token) localStorage.setItem(DEVICE_TOKEN_KEY, token); }catch(e){}
+  const DEVICE_COOKIE_ = 'tz_dev';
+  const DEVICE_IDB_TIMEOUT_MS_ = 700; // بعض المتصفحات الداخلية بتعلّق في IndexedDB — منستناش أكتر من كده
+
+  function cookieGet_(name){
+    try{
+      const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    }catch(e){ return ''; }
   }
+  function cookieSet_(name, val){
+    try{
+      document.cookie = name + '=' + encodeURIComponent(val) + '; max-age=' + (400 * 86400) +
+        '; path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+    }catch(e){}
+  }
+  function idbRun_(mode, fn){
+    return new Promise(function(resolve){
+      let done = false;
+      const finish = function(v){ if(!done){ done = true; resolve(v); } };
+      setTimeout(function(){ finish(''); }, DEVICE_IDB_TIMEOUT_MS_);
+      try{
+        if(!window.indexedDB) return finish('');
+        const req = indexedDB.open('tz_device', 1);
+        req.onupgradeneeded = function(){ req.result.createObjectStore('kv'); };
+        req.onerror = function(){ finish(''); };
+        req.onsuccess = function(){
+          const db = req.result;
+          try{
+            const tx = db.transaction('kv', mode);
+            fn(tx.objectStore('kv'), function(v){ finish(v); });
+            tx.oncomplete = function(){ db.close(); finish(''); };
+            tx.onerror = function(){ db.close(); finish(''); };
+          }catch(e){ db.close(); finish(''); }
+        };
+      }catch(e){ finish(''); }
+    });
+  }
+  function idbGetToken_(){
+    return idbRun_('readonly', function(store, done){
+      const q = store.get(DEVICE_TOKEN_KEY);
+      q.onsuccess = function(){ done(q.result || ''); };
+    });
+  }
+  function idbSetToken_(token){
+    return idbRun_('readwrite', function(store){ store.put(token, DEVICE_TOKEN_KEY); });
+  }
+
+  function saveDeviceToken(token){
+    if(!token) return;
+    try{ localStorage.setItem(DEVICE_TOKEN_KEY, token); }catch(e){}
+    cookieSet_(DEVICE_COOKIE_, token);
+    idbSetToken_(token);
+  }
+  // سريع (من غير انتظار): localStorage ثم الكوكي
   function loadDeviceToken(){
-    try{ return localStorage.getItem(DEVICE_TOKEN_KEY) || ''; }catch(e){ return ''; }
+    let t = '';
+    try{ t = localStorage.getItem(DEVICE_TOKEN_KEY) || ''; }catch(e){}
+    return t || cookieGet_(DEVICE_COOKIE_);
+  }
+  // لو المكانين السريعين فاضيين بس، بنسأل IndexedDB (بحد أقصى 700ms)
+  function loadDeviceTokenAsync_(){
+    const quick = loadDeviceToken();
+    if(quick) return Promise.resolve(quick);
+    return idbGetToken_();
+  }
+  // مع كل فتح للتطبيق: لو العلامة موجودة في أي مكان، نرجّعها في الأماكن التانية ونجدد مدة الكوكي
+  function syncDeviceToken_(){
+    loadDeviceTokenAsync_().then(function(token){
+      if(!token) return;
+      let ls = '';
+      try{ ls = localStorage.getItem(DEVICE_TOKEN_KEY) || ''; }catch(e){}
+      if(ls !== token){ try{ localStorage.setItem(DEVICE_TOKEN_KEY, token); }catch(e){} }
+      cookieSet_(DEVICE_COOKIE_, token);
+      idbGetToken_().then(function(v){ if(v !== token) idbSetToken_(token); });
+    });
+  }
+
+  // بنطلب من المتصفح يعتبر بيانات التطبيق "دائمة" ومايمسحهاش لوحده — Chrome بيوافق من غير أي
+  // سؤال للمستخدم. بيتطلب مرة واحدة بس بعد أول دخول ناجح.
+  function requestPersistentStorage_(){
+    try{
+      if(localStorage.getItem('tz_persist_asked')) return;
+      localStorage.setItem('tz_persist_asked', '1');
+    }catch(e){ return; }
+    try{
+      if(navigator.storage && navigator.storage.persist){
+        navigator.storage.persisted().then(function(p){ if(!p) navigator.storage.persist(); }).catch(function(){});
+      }
+    }catch(e){}
+  }
+
+  // ============ تنبيه "انت فاتح التطبيق من جوه واتساب/فيسبوك" ============
+  function isStandaloneApp_(){
+    try{ return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+    catch(e){ return false; }
+  }
+  function isInAppBrowser_(){
+    const ua = navigator.userAgent || '';
+    return /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Messenger|WhatsApp|Snapchat|Line\/|MicroMessenger|TikTok|musical_ly|Telegram/i.test(ua) ||
+      /; wv\)/.test(ua); // WebView عام جوه أي تطبيق أندرويد
+  }
+  function initInAppBanner_(){
+    try{ if(sessionStorage.getItem('tz_inapp_dismissed')) return; }catch(e){}
+    if(isStandaloneApp_() || !isInAppBrowser_()) return;
+    document.getElementById('inAppBanner').hidden = false;
+    document.getElementById('inAppOpenChromeBtn').hidden = !/Android/i.test(navigator.userAgent || '');
+  }
+  function dismissInAppBanner_(){
+    document.getElementById('inAppBanner').hidden = true;
+    try{ sessionStorage.setItem('tz_inapp_dismissed', '1'); }catch(e){}
+  }
+  function openInChrome_(){
+    const u = location.href.replace(/^https?:\/\//, '');
+    location.href = 'intent://' + u + '#Intent;scheme=https;package=com.android.chrome;end';
+  }
+  function copyAppLink_(){
+    const url = location.href;
+    const ok = function(){ showMsg('اتنسخ اللينك ✔ — افتح Chrome والصقه فوق', 'success'); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(ok).catch(function(){ prompt('انسخ اللينك ده:', url); });
+    } else {
+      prompt('انسخ اللينك ده:', url);
+    }
   }
 
   // شاشة "إدارة المناديب والمشرفين" بقت مقصورة على صاحب الحساب المحمي بس، مش كل المشرفين
   // (لازم تتطابق مع PROTECTED_OWNER_EMAIL_ في Code.gs بالظبط)
   const OWNER_EMAIL_ = 'm.s.e.m.eyg@gmail.com';
 
-  function applyLoggedInUser(user, isAdmin){
+  function applyLoggedInUser(user, isAdmin, targetProgress){
     state.user = user;
     state.isAdmin = !!isAdmin;
+    state.targetProgress_ = targetProgress || null;
     state.isOwner = !!(user && String(user.email || '').trim().toLowerCase() === OWNER_EMAIL_);
     document.getElementById('homeUserName').textContent = user.name;
     document.getElementById('adminLink').hidden = !state.isOwner;
+    renderHomeBadgeIcon(user.photoUrl);
+    renderTargetProgress_(targetProgress);
 
     // المشرف مش مندوب بيسجّل مبيعات — شغله إنه يتابع ويشرف بس، فبنخفي عنه شاشات الإدخال دي
     // (بيع/مرتجع/توريد/جرد/أسعاري). إدارة المناديب والمشرفين بقت مقصورة على صاحب الحساب
@@ -759,13 +1483,67 @@
     document.getElementById('tawridHomeBtn').hidden = state.isAdmin;
     document.getElementById('jardHomeBtn').hidden = state.isAdmin;
     document.getElementById('pricesLink').hidden = state.isAdmin;
-    document.getElementById('myStatsLink').textContent = state.isAdmin
-      ? '📊 مبيعات المندوبين وتارجتهم'
-      : '📊 مبيعاتي (النهاردة ومن أول الشهر)';
+    document.getElementById('invoiceHistoryLink').hidden = state.isAdmin;
+    document.getElementById('profileLink').hidden = false; // إعداداتي متاحة للكل (مندوب ومشرف وصاحب الحساب)
+    document.getElementById('suggestionLink').hidden = state.isAdmin;
+    document.getElementById('staleReasonsLink').hidden = !state.isAdmin;
+    document.querySelector('#myStatsLink .title').textContent = state.isAdmin
+      ? 'مبيعات المندوبين'
+      : 'مبيعاتي';
+    saveHomeCache_();
+  }
+
+  // درجات "الحالة المزاجية" لنسبة تحقيق الهدف — كل مرحلة ليها إيموجي ولون وجملة تحفيزية بالعامية،
+  // خصوصًا لما التحقيق يكون ضعيف، عشان الرسالة تبقى حافز مش مجرد رقم جامد
+  const TARGET_MOODS_ = [
+    { max: 15,  emoji: '🐢', color: '#e05555', text: 'لسه أول الطريق يا بطل، <b>شد حيلك من دلوقتي!</b>' },
+    { max: 35,  emoji: '😬', color: '#e07a3f', text: 'الوقت بيجري وانت لسه في الأول شوية — <b>يلا شد حيلك!</b>' },
+    { max: 60,  emoji: '😐', color: '#e0b23f', text: 'شغل يوم بيوم وهتوصل، <b>بس محتاج تزود الإيقاع</b>' },
+    { max: 85,  emoji: '🙂', color: '#c9d452', text: 'ماشي كويس، <b>كمّل بنفس الوتيرة</b>' },
+    { max: 100, emoji: '💪', color: '#8bd450', text: 'قربت جدًا من الهدف، <b>آخر شوية وتوصل!</b>' },
+    { max: Infinity, emoji: '🔥', color: '#4ade80', text: '<b>تمام كده يا نجم!</b> خطيت الهدف فعلاً' },
+  ];
+
+  // بيعرض شريط تقدّم الهدف الشهري جنب اسم المندوب (ناحية اليمين) + رسالة تحفيزية تحته —
+  // بيتخفي تلقائي لو مفيش هدف متحدد للشهر ده (مش كل المناديب لازم يكون عندهم تارجت)، عشان
+  // الشاشة تفضل نضيفة من غير حتة فاضية
+  function renderTargetProgress_(targetProgress){
+    const wrap = document.getElementById('targetProgressWrap');
+    const moodRow = document.getElementById('targetMoodRow');
+    if(!targetProgress || !targetProgress.target){
+      wrap.hidden = true;
+      moodRow.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    moodRow.hidden = false;
+    const pct = targetProgress.pct;
+    const mood = TARGET_MOODS_.find((m) => pct <= m.max) || TARGET_MOODS_[TARGET_MOODS_.length - 1];
+
+    document.getElementById('targetProgressPct').textContent = pct + '%';
+    const fill = document.getElementById('targetProgressFill');
+    fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
+    fill.style.background = mood.color;
+
+    document.getElementById('targetMoodEmoji').textContent = mood.emoji;
+    document.getElementById('targetMoodText').innerHTML = mood.text;
+  }
+
+  // بيعرض صورة البروفايل (لو موجودة) بدل الأيقونة الافتراضية "✦" في كارت الترحيب بالشاشة الرئيسية
+  function renderHomeBadgeIcon(photoUrl){
+    const el = document.getElementById('homeBadgeIcon');
+    if(photoUrl){
+      el.classList.add('hasPhoto');
+      el.innerHTML = '<img src="' + escapeHtml(photoUrl) + '">';
+    } else {
+      el.classList.remove('hasPhoto');
+      el.innerHTML = '✦';
+    }
   }
 
   function handleLogout(){
     if(!confirm('متأكد إنك عاوز تسجل خروج؟')) return;
+    localCacheClearAll_();
     clearAuth();
     state.auth = null;
     state.user = null;
@@ -796,14 +1574,16 @@
     if(!name){ showMsg('اختر اسمك الأول', 'error'); return; }
     if(!pin){ showMsg('اكتب كود الدخول', 'error'); return; }
     showLoading(true);
-    callApi('login', [name, pin, loadDeviceToken()])
+    loadDeviceTokenAsync_()
+      .then(function(deviceToken){ return callApi('login', [name, pin, deviceToken]); })
       .then(function(data){
         showLoading(false);
         if(data.auth){
+          requestPersistentStorage_();
           // الجهاز ده موثوق بالفعل لنفس المندوب — ادخله على طول من غير كود تأكيد
           state.auth = data.auth;
           saveAuth(data.auth);
-          applyLoggedInUser(data.user, data.isAdmin);
+          applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
           goHome();
           return;
         }
@@ -826,7 +1606,8 @@
         state.auth = data.auth;
         saveAuth(data.auth);
         saveDeviceToken(data.deviceToken);
-        applyLoggedInUser(data.user, data.isAdmin);
+        requestPersistentStorage_();
+        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
         state.pendingOtpEmail = null;
         showLoading(false);
         goHome();
@@ -853,7 +1634,86 @@
     setView('viewLogin');
   }
 
+  const HADITH_LIST_ = [
+    { text: 'إنَّما الأعمالُ بالنِّيَّاتِ', ref: 'متفق عليه (البخاري ومسلم)' },
+    { text: 'لا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ', ref: 'متفق عليه' },
+    { text: 'مَنْ كَانَ يُؤْمِنُ بِاللَّهِ وَالْيَوْمِ الآخِرِ فَلْيَقُلْ خَيْرًا أَوْ لِيَصْمُتْ', ref: 'متفق عليه' },
+    { text: 'الْمُسْلِمُ مَنْ سَلِمَ الْمُسْلِمُونَ مِنْ لِسَانِهِ وَيَدِهِ', ref: 'رواه البخاري' },
+    { text: 'مَنْ غَشَّنَا فَلَيْسَ مِنَّا', ref: 'رواه مسلم' },
+    { text: 'البَيِّعَانِ بِالخِيَارِ مَا لَمْ يَتَفَرَّقَا', ref: 'متفق عليه' },
+    { text: 'الكَلِمَةُ الطَّيِّبَةُ صَدَقَةٌ', ref: 'متفق عليه' },
+    { text: 'مَنْ يَسَّرَ عَلَى مُعْسِرٍ يَسَّرَ اللَّهُ عَلَيْهِ فِي الدُّنْيَا وَالآخِرَةِ', ref: 'رواه مسلم' },
+    { text: 'لَا يَرْحَمُ اللَّهُ مَنْ لَا يَرْحَمُ النَّاسَ', ref: 'متفق عليه' },
+    { text: 'الْمُؤْمِنُ لِلْمُؤْمِنِ كَالْبُنْيَانِ يَشُدُّ بَعْضُهُ بَعْضًا', ref: 'متفق عليه' },
+    { text: 'لَا يَحِلُّ لِمُسْلِمٍ أَنْ يَهْجُرَ أَخَاهُ فَوْقَ ثَلَاثِ لَيَالٍ', ref: 'متفق عليه' },
+    { text: 'إِنَّ اللَّهَ لَا يَنْظُرُ إِلَى صُوَرِكُمْ وَأَمْوَالِكُمْ وَلَكِنْ يَنْظُرُ إِلَى قُلُوبِكُمْ وَأَعْمَالِكُمْ', ref: 'رواه مسلم' },
+    { text: 'مَنْ سَتَرَ مُسْلِمًا سَتَرَهُ اللَّهُ فِي الدُّنْيَا وَالآخِرَةِ', ref: 'رواه مسلم' },
+    { text: 'اليَدُ العُلْيَا خَيْرٌ مِنَ اليَدِ السُّفْلَى', ref: 'رواه البخاري' },
+    { text: 'خَيْرُكُمْ مَنْ تَعَلَّمَ القُرْآنَ وَعَلَّمَهُ', ref: 'رواه البخاري' },
+    { text: 'المُؤْمِنُ القَوِيُّ خَيْرٌ وَأَحَبُّ إِلَى اللَّهِ مِنَ المُؤْمِنِ الضَّعِيفِ', ref: 'رواه مسلم' },
+    { text: 'مَنْ نَفَّسَ عَنْ مُؤْمِنٍ كُرْبَةً مِنْ كُرَبِ الدُّنْيَا نَفَّسَ اللَّهُ عَنْهُ كُرْبَةً مِنْ كُرَبِ يَوْمِ القِيَامَةِ', ref: 'رواه مسلم' },
+    { text: 'لَيْسَ الشَّدِيدُ بِالصُّرَعَةِ، إِنَّمَا الشَّدِيدُ الَّذِي يَمْلِكُ نَفْسَهُ عِنْدَ الغَضَبِ', ref: 'متفق عليه' },
+    { text: 'الصِّدْقُ يَهْدِي إِلَى البِرِّ، وَإِنَّ البِرَّ يَهْدِي إِلَى الجَنَّةِ', ref: 'متفق عليه' },
+    { text: 'التَّاجِرُ الصَّدُوقُ الأَمِينُ مَعَ النَّبِيِّينَ وَالصِّدِّيقِينَ وَالشُّهَدَاءِ', ref: 'رواه الترمذي' },
+    { text: 'الرَّاحِمُونَ يَرْحَمُهُمُ الرَّحْمَٰنُ', ref: 'رواه أبو داود والترمذي' },
+    { text: 'مَنْ لَمْ يَشْكُرِ النَّاسَ لَمْ يَشْكُرِ اللَّهَ', ref: 'رواه أبو داود والترمذي' },
+    { text: 'اتَّقِ اللَّهَ حَيْثُمَا كُنْتَ، وَأَتْبِعِ السَّيِّئَةَ الحَسَنَةَ تَمْحُهَا، وَخَالِقِ النَّاسَ بِخُلُقٍ حَسَنٍ', ref: 'رواه الترمذي' },
+    { text: 'خَيْرُ النَّاسِ أَنْفَعُهُمْ لِلنَّاسِ', ref: 'حديث حسن' },
+    { text: 'المُؤْمِنُ يَأْلَفُ وَيُؤْلَفُ، وَلَا خَيْرَ فِيمَنْ لَا يَأْلَفُ وَلَا يُؤْلَفُ', ref: 'رواه أحمد' },
+    { text: 'لَا تَحَاسَدُوا، وَلَا تَنَاجَشُوا، وَلَا تَبَاغَضُوا، وَكُونُوا عِبَادَ اللَّهِ إِخْوَانًا', ref: 'رواه مسلم' },
+    { text: 'أَحَبُّ الأَعْمَالِ إِلَى اللَّهِ أَدْوَمُهَا وَإِنْ قَلَّ', ref: 'متفق عليه' },
+    { text: 'إِنَّ اللَّهَ رَفِيقٌ يُحِبُّ الرِّفْقَ فِي الأَمْرِ كُلِّهِ', ref: 'متفق عليه' },
+    { text: 'مَنْ حَسُنَ إِسْلَامُ المَرْءِ تَرْكُهُ مَا لَا يَعْنِيهِ', ref: 'رواه الترمذي' },
+    { text: 'كُلُّ مَعْرُوفٍ صَدَقَةٌ', ref: 'رواه البخاري' },
+    { text: 'أَكْمَلُ المُؤْمِنِينَ إِيمَانًا أَحْسَنُهُمْ خُلُقًا', ref: 'رواه الترمذي' },
+    { text: 'إِنَّ مِنْ أَحَبِّكُمْ إِلَيَّ وَأَقْرَبِكُمْ مِنِّي مَجْلِسًا يَوْمَ القِيَامَةِ أَحَاسِنَكُمْ أَخْلَاقًا', ref: 'رواه الترمذي' },
+  ];
+  let hadithLastIndex_ = -1;
+
+  // بيعرض الحديث كلمة كلمة (كل كلمة بتظهر بعد اللي قبلها بلحظة بسيطة) بدل التبديل المفاجئ —
+  // "المرجع" بيبان بعد ما كل الكلمات تخلص ظهورها
+  function showRandomHadith_(){
+    const box = document.getElementById('hadithBox');
+    const textEl = document.getElementById('hadithText');
+    const refEl = document.getElementById('hadithRef');
+    if(!box || !textEl || !refEl) return;
+    let idx;
+    do { idx = Math.floor(Math.random() * HADITH_LIST_.length); } while(idx === hadithLastIndex_ && HADITH_LIST_.length > 1);
+    hadithLastIndex_ = idx;
+    const h = HADITH_LIST_[idx];
+
+    refEl.classList.add('hiddenRef');
+    const words = h.text.split(' ');
+    textEl.innerHTML = words
+      .map(function (w, i) {
+        return '<span class="word" style="animation-delay:' + (i * 70) + 'ms">' + escapeHtml(w) + '</span>';
+      })
+      .join(' ');
+
+    setTimeout(function () {
+      refEl.textContent = h.ref;
+      refEl.classList.remove('hiddenRef');
+    }, words.length * 70 + 300);
+  }
+  // التبديل بيقف لما التطبيق يبقى في الخلفية (الشاشة مقفولة أو فاتح تطبيق تاني) عشان ميصرفش
+  // بطارية ومعالج على حاجة محدش شايفها، ويرجع يشتغل أول ما المندوب يرجع للتطبيق
+  let hadithTimer_ = null;
+  function startHadithRotation_(){
+    showRandomHadith_();
+    hadithTimer_ = setInterval(showRandomHadith_, 15000);
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden){
+        if(hadithTimer_){ clearInterval(hadithTimer_); hadithTimer_ = null; }
+      } else if(!hadithTimer_){
+        hadithTimer_ = setInterval(showRandomHadith_, 15000);
+      }
+    });
+  }
+
   function init(){
+    startHadithRotation_();
+    initInAppBanner_();
+    syncDeviceToken_();
     showLoading(true);
     const saved = loadAuth();
     if(!saved){
@@ -862,16 +1722,31 @@
       return;
     }
     state.auth = saved;
+    // الرئيسية بتظهر فورًا من آخر بيانات محفوظة على الجهاز، والتحقق من السيرفر شغال في الخلفية
+    const cachedHome = localCacheGet_('home');
+    if(cachedHome && cachedHome.v && cachedHome.v.user){
+      applyLoggedInUser(cachedHome.v.user, cachedHome.v.isAdmin, cachedHome.v.targetProgress);
+      showLoading(false);
+      goHome();
+    }
     callApi('bootstrapHome', [state.auth])
       .then(function(data){
-        applyLoggedInUser(data.user, data.isAdmin);
-        showLoading(false);
-        goHome();
+        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
+        if(!cachedHome){
+          showLoading(false);
+          goHome();
+        } else if(state.screen === null){
+          document.getElementById('pageSub').textContent = state.user.name;
+        }
       })
-      .catch(function(){
+      .catch(function(err){
+        // النت فاصل بس والبيانات المحفوظة موجودة — نسيبه يكمّل (شريط "مفيش اتصال" بيظهر لوحده)
+        if(cachedHome && err && err.isNetwork) return;
         // الكود اتغيّر أو الحساب اتحذف — امسح البيانات القديمة وارجعه لشاشة الدخول من غير رسالة خطأ مزعجة
+        localCacheClearAll_();
         clearAuth();
         state.auth = null;
+        state.user = null;
         showLoading(false);
         loadLoginScreen();
       });
@@ -879,7 +1754,10 @@
 
   function onError(err){
     showLoading(false);
-    showMsg(err.message || String(err), 'error');
+    const msg = err.message || String(err);
+    showMsg(msg, 'error');
+    // بوب-أب واضح فوق أي حاجة تانية (زي مودال مراجعة الفاتورة) عشان الخطأ ميضيعش من غير ما حد يشوفه
+    showAlertModal_(msg, 'error');
   }
 
   // ============ توزيع الشاشات ============
@@ -891,8 +1769,115 @@
     if(name === 'admin'){ loadAdmin(); return; }
     if(name === 'prices'){ loadPrices(); return; }
     if(name === 'mystats'){ loadMyStats(); return; }
+    if(name === 'itemsales'){ loadItemSalesReport(); return; }
     if(name === 'stale'){ loadStale(''); return; }
+    if(name === 'stalereasons'){ loadStaleReasons(); return; }
+    if(name === 'balances'){ loadBalances(); return; }
+    if(name === 'history'){ loadInvoiceHistory(); return; }
+    if(name === 'profile'){ loadProfile(); return; }
+    if(name === 'suggestion'){ loadSuggestionScreen(); return; }
+    if(name === 'products'){ loadProductsScreen(); return; }
     loadInvoice(name);
+  }
+
+  // ============ بلوك الأصناف الراكدة (شاشة "مبيعاتي"/"أرصدتي" بترجع البلوك ده بدل بياناتها
+  // العادية لو المندوب عنده صنف راكد أكتر من 30 يوم من غير سبب مكتوب) ============
+  let state_staleBlockReturn_ = null; // بيحفظ أنهي شاشة نرجعلها بعد ما كل الأسباب تتكتب
+  function renderStaleBlockScreen_(data, returnScreen, returnRepName){
+    state_staleBlockReturn_ = { screen: returnScreen, repName: returnRepName };
+    document.getElementById('pageTitle').textContent = 'أصناف راكدة محتاجة سبب';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('staleBlockWindowLabel').textContent = data.blockWindowDays || 30;
+
+    const list = document.getElementById('staleBlockList');
+    list.innerHTML = '';
+    (data.blockItems || []).forEach(function(it){
+      const row = document.createElement('div');
+      row.className = 'itemRow';
+      row.style.cssText = 'flex-direction:column; align-items:stretch; gap:8px;';
+      row.id = 'staleBlockRow_' + btoa(unescape(encodeURIComponent(it.code)));
+
+      const top = document.createElement('div');
+      top.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
+      const nameEl = document.createElement('div');
+      nameEl.className = 'name';
+      nameEl.textContent = it.name;
+      const daysEl = document.createElement('div');
+      daysEl.className = 'total';
+      daysEl.style.color = '#c73e3e';
+      daysEl.textContent = it.days >= 0 ? ('واقف من ' + it.days + ' يوم') : 'مبيعش خالص لحد دلوقتي';
+      top.appendChild(nameEl);
+      top.appendChild(daysEl);
+
+      const ta = document.createElement('textarea');
+      ta.placeholder = 'اكتب سبب ركود الصنف ده...';
+      ta.style.minHeight = '60px';
+
+      const btn = document.createElement('button');
+      btn.className = 'finalize';
+      btn.textContent = '✔ إرسال السبب';
+      btn.onclick = function(){ handleSubmitStaleReason_(it.code, row, ta); };
+
+      row.appendChild(top);
+      row.appendChild(ta);
+      row.appendChild(btn);
+      list.appendChild(row);
+    });
+
+    setView('viewStaleBlock');
+  }
+
+  function handleSubmitStaleReason_(code, row, textareaEl){
+    const reason = (textareaEl.value || '').trim();
+    if(!reason){ showMsg('من فضلك اكتب السبب الأول', 'error'); return; }
+    showLoading(true);
+    callApi('saveStaleReason', [state.auth, code, reason])
+      .then(function(){
+        showLoading(false);
+        row.remove();
+        const remaining = document.getElementById('staleBlockList').children.length;
+        if(remaining === 0){
+          const ret = state_staleBlockReturn_;
+          if(ret && ret.screen === 'mystats') loadMyStats(ret.repName);
+          else if(ret && ret.screen === 'balances') loadBalances(ret.repName);
+          else openScreen('home');
+        }
+      })
+      .catch(onError);
+  }
+
+  // ============ تقرير أسباب الركود (للمشرفين فقط) ============
+  function loadStaleReasons(){
+    document.getElementById('pageTitle').textContent = 'تقرير أسباب الركود';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('getStaleReasonsReport', [state.auth])
+      .then(function(data){
+        showLoading(false);
+        const items = data.reasons || [];
+        const list = document.getElementById('staleReasonsList');
+        const emptyMsg = document.getElementById('staleReasonsEmptyMsg');
+        if(!items.length){
+          list.innerHTML = '';
+          emptyMsg.hidden = false;
+        } else {
+          emptyMsg.hidden = true;
+          list.innerHTML = items.map(function(it){
+            return (
+              '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:4px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                  '<div class="name">' + escapeHtml(it.name) + '</div>' +
+                  '<div class="meta">' + escapeHtml(it.date) + '</div>' +
+                '</div>' +
+                '<div class="meta">' + escapeHtml(it.branch) + ' • ' + escapeHtml(it.rep) + '</div>' +
+                '<div style="font-size:14px; color:var(--text); margin-top:4px;">' + escapeHtml(it.reason) + '</div>' +
+              '</div>'
+            );
+          }).join('');
+        }
+        setView('viewStaleReasons');
+      })
+      .catch(onError);
   }
 
   // ============ صفحة مبيعاتي (مشاهدة فقط) ============
@@ -906,6 +1891,7 @@
     callApi('bootstrapMyStats', [state.auth, repName || ''])
       .then(function(data){
         showLoading(false);
+        if(data.blocked){ renderStaleBlockScreen_(data, 'mystats', repName || ''); return; }
         document.getElementById('pageSub').textContent = data.repName || state.user.name;
         document.getElementById('statsTodayDate').textContent = data.today.date;
         document.getElementById('statsTodayTotal').textContent = fmt(data.today.total);
@@ -941,6 +1927,73 @@
         setView('viewMyStats');
       })
       .catch(onError);
+  }
+
+  // ============ مبيعات الأصناف الشهرية (تجميع لكل صنف بفلتر شهر) ============
+  // نفس منطق "مبيعاتي": للمندوب العادي بتوري مبيعاته هو بس، وللمشرف بتوري قايمة اختيار مندوب
+  // فوق (المناديب اللي هو مشرف عليهم فقط). فوقها فلتر شهر (افتراضيًا الشهر الحالي).
+  let state_itemSalesRepName_ = ''; // آخر مندوب متعروض حاليًا في الشاشة دي — يستخدم لما يتغيّر الشهر بس
+  function currentItemSalesRep_(){ return state_itemSalesRepName_; }
+
+  function loadItemSalesReport(repName, monthKey){
+    document.getElementById('pageTitle').textContent = state.isAdmin ? 'مبيعات الأصناف الشهرية للمناديب' : 'مبيعات الأصناف الشهرية';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('bootstrapItemSalesReport', [state.auth, repName || '', monthKey || ''])
+      .then(function(data){
+        showLoading(false);
+        state_itemSalesRepName_ = data.repName;
+        document.getElementById('pageSub').textContent = data.repName || state.user.name;
+
+        var pickerCard = document.getElementById('itemSalesRepPickerCard');
+        if(data.reps && data.reps.length){
+          pickerCard.hidden = false;
+          var sel = document.getElementById('itemSalesRepSelect');
+          sel.innerHTML = data.reps.map(function(r){
+            var sel2 = (r === data.repName) ? ' selected' : '';
+            return '<option value="' + escapeHtml(r) + '"' + sel2 + '>' + escapeHtml(r) + '</option>';
+          }).join('');
+        } else {
+          pickerCard.hidden = true;
+        }
+
+        var monthSel = document.getElementById('itemSalesMonthSelect');
+        monthSel.innerHTML = data.months.map(function(mk){
+          var parts = mk.split('-');
+          var label = parts[1] + '/' + parts[0];
+          var sel2 = (mk === data.monthKey) ? ' selected' : '';
+          return '<option value="' + mk + '"' + sel2 + '>' + label + '</option>';
+        }).join('');
+
+        document.getElementById('itemSalesTotalQty').textContent = fmt(data.totals.netQty);
+        document.getElementById('itemSalesTotalValue').textContent = fmt(data.totals.value);
+
+        renderItemSalesList(data.items);
+        setView('viewItemSales');
+      })
+      .catch(onError);
+  }
+
+  function renderItemSalesList(items){
+    const list = document.getElementById('itemSalesList');
+    if(!items.length){
+      list.innerHTML = '<div class="empty">مفيش مبيعات متسجلة في الشهر ده</div>';
+      return;
+    }
+    list.innerHTML = items.map(function(it){
+      const returnedNote = it.returnedQty > 0 ? (' <span style="color:var(--red);">(مرتجع ' + fmt(it.returnedQty) + ')</span>') : '';
+      const lastSaleNote = it.lastSaleDate ? (' · آخر بيع ' + escapeHtml(it.lastSaleDate)) : '';
+      return '<div class="itemRow">' +
+        '<div>' +
+          '<div class="name">' + escapeHtml(it.name) + '</div>' +
+          '<div class="meta">' + it.salesCount + ' عملية بيع' + lastSaleNote + '</div>' +
+        '</div>' +
+        '<div style="text-align:left;">' +
+          '<div class="total">' + fmt(it.netQty) + ' قطعة</div>' +
+          '<div class="meta">' + fmt(it.value) + returnedNote + '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
   }
 
   // ============ صفحة الرواكد (مستقلة) ============
@@ -1001,6 +2054,206 @@
       .catch(onError);
   }
 
+  // ============ صفحة أرصدتي (رصيد كل صنف لحظيًا) ============
+  // لأي مندوب: بتوري رصيده هو بس من غير اختيار. للمشرف: بتوري قايمة اختيار مندوب فوق (نفس منطق
+  // تقييد الفروع بتاع مبيعاتي/الرواكد بالظبط)، وأي اختيار جديد بيعمل تحميل تاني لنفس الشاشة.
+  function loadBalances(repName){
+    document.getElementById('pageTitle').textContent = state.isAdmin ? 'أرصدة المندوبين' : 'أرصدتي';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('bootstrapBalances', [state.auth, repName || ''])
+      .then(function(data){
+        showLoading(false);
+        if(data.blocked){ renderStaleBlockScreen_(data, 'balances', repName || ''); return; }
+        document.getElementById('pageSub').textContent = data.repName || state.user.name;
+
+        var pickerCard = document.getElementById('balancesRepPickerCard');
+        if (data.reps && data.reps.length){
+          pickerCard.hidden = false;
+          var sel = document.getElementById('balancesRepSelect');
+          sel.innerHTML = data.reps.map(function(r){
+            var sel2 = (r === data.repName) ? ' selected' : '';
+            return '<option value="' + escapeHtml(r) + '"' + sel2 + '>' + escapeHtml(r) + '</option>';
+          }).join('');
+        } else {
+          pickerCard.hidden = true;
+        }
+
+        var items = data.balances || [];
+        // بنحتفظ بالبيانات اللي وصلت فعلاً عشان زرار "تصدير إكسل" يستخدمها على طول من غير أي طلب جديد للسيرفر
+        state.balancesExportData_ = { items: items, repName: data.repName || state.user.name };
+        var list = document.getElementById('balancesList');
+        if(!items.length){
+          list.innerHTML = '<div class="empty">مفيش أصناف مسجلة حاليًا</div>';
+        } else {
+          list.innerHTML = items.map(function(it){
+            var neg = Number(it.balance) < 0;
+            // لو مفيش جرد رسمي متسجل لهذا الصنف لسه، الرقم ده معتمد بس على توريد/مبيعات
+            // التطبيق (مش مؤكد بجرد فعلي) — بنوضح كده تحته من غير ما نخفيه كـ"غير محدد"
+            var note = !it.hasBaseline ? '<div class="meta">من غير جرد رسمي (اعتمادًا على التوريد/المبيعات)</div>' : '';
+            return (
+              '<div class="itemRow' + (neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:2px;">' +
+                '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+                  '<div class="name">' + escapeHtml(it.name) + '</div>' +
+                  '<div class="total">' + fmt(it.balance) + '</div>' +
+                '</div>' +
+                note +
+              '</div>'
+            );
+          }).join('');
+        }
+
+        setView('viewBalances');
+      })
+      .catch(onError);
+  }
+
+  // بيصدّر شاشة "أرصدتي" لملف إكسل من غير ما يعمل أي طلب جديد للسيرفر — بيستخدم نفس البيانات
+  // اللي وصلت لما الشاشة اتفتحت (state.balancesExportData_)، عشان يفضل سريع زي ما هو
+  function exportBalancesExcel(){
+    clearMsg();
+    var data = state.balancesExportData_;
+    if(!data || !data.items || !data.items.length){
+      showMsg('مفيش أرصدة لتصديرها دلوقتي', 'error');
+      return;
+    }
+    showLoading(true);
+    var rows = data.items.map(function(it){
+      return [it.name, Number(it.balance), it.hasBaseline ? 'بجرد رسمي' : 'من غير جرد رسمي'];
+    });
+    var opts = {
+      fileName: 'أرصدة - ' + data.repName,
+      reportTitle: 'تقرير الأرصدة',
+      meta: [
+        ['اسم المندوب', data.repName],
+        ['الفرع', state.user.branch || '—'],
+        ['التاريخ', new Date().toLocaleDateString('ar-EG')],
+      ],
+      headers: ['اسم الصنف', 'الرصيد', 'ملاحظة'],
+      rows: rows,
+      totalsLabel: 'إجمالي عدد الأصناف',
+      totalsValue: rows.length,
+      totalsIsCurrency: false,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){
+        showLoading(false);
+        triggerBlobDownload(r.blob, r.fileName);
+      })
+      .catch(onError);
+  }
+
+  // ============ صفحة سجل فواتيري (مشاهدة + إعادة تنزيل/مشاركة) ============
+  // بتوري فواتير المندوب الحالي هو بس (بيع ومرتجع)، الأحدث الأول. لكل فاتورة زرار "تنزيل"
+  // و"مشاركة" بيعيدوا جلب بنود نفس الفاتورة من السيرفر (getInvoiceDetails) ويستخدموا نفس دالة
+  // بناء ملف الإكسل المستخدمة فورًا بعد الترحيل (buildInvoiceExcelOpts + buildExcelBlob).
+  function loadInvoiceHistory(){
+    document.getElementById('pageTitle').textContent = 'سجل فواتيري';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('listMyInvoices', [state.auth, {}])
+      .then(function(data){
+        showLoading(false);
+        renderInvoiceHistory(data.invoices || []);
+        setView('viewInvoiceHistory');
+      })
+      .catch(onError);
+  }
+
+  // تسمية وشكل كل نوع في سجل فواتيري — نفس الأربع تابات اللي المندوب بيسجّل فيها
+  const HISTORY_TYPE_META = {
+    'بيع': { label: 'مبيعات', neg: false },
+    'مرتجع': { label: 'مرتجع', neg: true },
+    'جرد': { label: 'جرد', neg: false },
+    'توريد': { label: 'توريد', neg: false },
+  };
+
+  function renderInvoiceHistory(invoices){
+    const list = document.getElementById('invoiceHistoryList');
+    if(!invoices.length){
+      list.innerHTML = '<div class="empty">لسه مفيش حاجة متسجلة</div>';
+      return;
+    }
+    list.innerHTML = invoices.map(function(inv){
+      const meta = HISTORY_TYPE_META[inv.type] || { label: inv.type, neg: false };
+      const sidAttr = escapeHtml(inv.sessionId).replace(/'/g, "\\'");
+      // بيع/مرتجع بيعرضوا إجمالي مبلغ، جرد/توريد بيعرضوا إجمالي كمية — حسب النوع
+      const isMoneyType = (inv.type === 'بيع' || inv.type === 'مرتجع');
+      const valueLabel = isMoneyType ? fmt(inv.total) : (fmt(inv.totalQty) + ' قطعة');
+      return (
+        '<div class="itemRow' + (meta.neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:8px;">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+            '<div class="name">' + escapeHtml(meta.label) + ' · ' + escapeHtml(inv.date) + '</div>' +
+            '<div class="total">' + valueLabel + '</div>' +
+          '</div>' +
+          '<div class="meta">' + inv.itemCount + ' صنف/بند</div>' +
+          '<div style="display:flex; gap:8px;">' +
+            '<button class="ghost" style="margin-top:0; flex:1;" onclick="downloadHistoryInvoiceExcel(\'' + sidAttr + '\')">⬇ تنزيل</button>' +
+            '<button class="whatsapp" style="margin-top:0; flex:1;" onclick="shareHistoryInvoiceExcel(\'' + sidAttr + '\')">📤 مشاركة</button>' +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  // بيبني نفس شكل "opts" اللي buildExcelBlob/buildInvoiceImageBlob محتاجينه، لكن لنتيجة يوم
+  // جرد/توريد (result.qtyLabel = 'العدد' أو 'الكمية'، مفيش سعر/إجمالي مالي هنا خالص)
+  function buildJardTawridExcelOptsFromResult_(result){
+    const label = result.qtyLabel || 'الكمية';
+    const rows = result.items.map(it => [it['اسم الصنف'], it[label]]);
+    return {
+      fileName: result.type + ' - ' + safeDateForFile(result.date) + ' - ' + (result.repName || state.user.name),
+      reportTitle: 'تقرير ' + result.type,
+      meta: [
+        ['اسم المندوب', result.repName || state.user.name],
+        ['الفرع', state.user.branch || '—'],
+        ['التاريخ', result.date],
+        ['عدد الأصناف', result.items.length],
+      ],
+      headers: ['اسم الصنف', label],
+      rows: rows,
+      totalsLabel: 'إجمالي ' + label,
+      totalsValue: result.total,
+      totalsIsCurrency: false,
+    };
+  }
+
+  function historyExcelOptsFromResult_(result){
+    return (result.type === 'جرد' || result.type === 'توريد')
+      ? buildJardTawridExcelOptsFromResult_(result)
+      : buildInvoiceExcelOpts(result, result.type === 'مرتجع');
+  }
+
+  function downloadHistoryInvoiceExcel(sessionId){
+    clearMsg();
+    showLoading(true);
+    callApi('getInvoiceDetails', [state.auth, sessionId])
+      .then(async function(result){
+        const opts = historyExcelOptsFromResult_(result);
+        const { blob, fileName } = await buildExcelBlob(opts);
+        showLoading(false);
+        triggerBlobDownload(blob, fileName);
+      })
+      .catch(onError);
+  }
+
+  function shareHistoryInvoiceExcel(sessionId){
+    clearMsg();
+    showLoading(true);
+    callApi('getInvoiceDetails', [state.auth, sessionId])
+      .then(async function(result){
+        const opts = historyExcelOptsFromResult_(result);
+        const { blob, fileName } = await buildInvoiceImageBlob(opts);
+        showLoading(false);
+        const shared = await shareImageFile(blob, fileName, opts.fileName);
+        if(!shared){
+          triggerImageDownload(blob, fileName);
+          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+        }
+      })
+      .catch(onError);
+  }
+
   // ============ صفحة إدارة المشرفين والمناديب ============
   function loadAdmin(){
     document.getElementById('pageTitle').textContent = 'إدارة المناديب';
@@ -1009,9 +2262,33 @@
     document.getElementById('repEmailInput').value = '';
     document.getElementById('asnafCodeInput').value = '';
     document.getElementById('asnafNameInput').value = '';
+    document.getElementById('productNameInput').value = '';
+    document.getElementById('productSpecsInput').value = '';
+    selectedProductPhotos_ = [];
+    renderProductPhotoPicker();
     setView('viewAdmin');
-    refreshRepsList();
-    refreshAsnafList();
+    // طلب واحد بيجيب الأربع قوايم مع بعض بدل 4 طلبات منفصلة
+    ['repsList','asnafList','suggestionsAdminList','productsAdminList'].forEach(function(id){
+      document.getElementById(id).innerHTML = '<div class="empty">جاري التحميل...</div>';
+    });
+    callApi('bootstrapAdmin', [state.auth])
+      .then(function(data){
+        renderRepsList(data.reps);
+        renderAsnafList(data.asnaf);
+        renderSuggestionsAdminList(data.suggestions);
+        renderProductsList(data.products, 'productsAdminList', true);
+      })
+      .catch(function(err){
+        // لو السيرفر لسه نسخة قديمة مفيهاش bootstrapAdmin، نرجع للطريقة القديمة (4 طلبات)
+        if(String(err && err.message).indexOf('طلب غير معروف') !== -1){
+          refreshRepsList();
+          refreshAsnafList();
+          refreshSuggestionsAdmin();
+          refreshProductsAdmin();
+          return;
+        }
+        onError(err);
+      });
   }
 
   function refreshRepsList(){
@@ -1061,20 +2338,14 @@
 
   // ============ فاتورة (مبيعات/مرتجع) — كل حاجة في المتصفح لحد الترحيل ============
   function loadInvoice(name){
-    showLoading(true);
     state.draftItems = [];
     state.finalized = false;
     state.finalResult = null;
     state.finalizeInFlight = false; // لو حصل أي حالة غريبة سابقًا، ميفضلش القفل عالق على الفاتورة الجديدة
-    const type = (name === 'returns') ? 'مرتجع' : 'بيع';
-    callApi('bootstrapInvoice', [state.auth, type])
-      .then(function(data){
-        state.asnaf = data.asnaf;
-        state.myPrices = data.prices || {};
-        showLoading(false);
-        renderInvoice(name);
-      })
-      .catch(onError);
+    showLoading(false);
+    // الأصناف والأسعار بتستخدم في البحث وملء السعر بس (مفيش قايمة مرسومة)، فالتحديث في الخلفية
+    // بيتطبق بهدوء من غير ما يلمس أي حاجة المندوب كاتبها
+    openWithCatalog_(name, function(){ renderInvoice(name); });
   }
 
   // ============ اختيار صنف بالبحث (اكتب أول حرف وهيظهرلك الأصناف المطابقة) ============
@@ -1114,7 +2385,12 @@
     listEl.hidden = false;
   }
 
+  function acCancelFrame_(cfg){
+    if(cfg._frame){ cancelAnimationFrame(cfg._frame); cfg._frame = 0; }
+  }
+
   function acSelect(cfg, name){
+    acCancelFrame_(cfg);
     document.getElementById(cfg.hidden).value = name;
     document.getElementById(cfg.input).value = name;
     document.getElementById(cfg.list).hidden = true;
@@ -1122,6 +2398,7 @@
   }
 
   function acReset(cfg){
+    acCancelFrame_(cfg);
     document.getElementById(cfg.hidden).value = '';
     document.getElementById(cfg.input).value = '';
     document.getElementById(cfg.list).innerHTML = '';
@@ -1139,7 +2416,9 @@
       const val = this.value.trim();
       const exact = state.asnaf.find(a => a.name.toLowerCase() === val.toLowerCase());
       document.getElementById(cfg.hidden).value = exact ? exact.name : '';
-      acRenderList(cfg);
+      // رسم القايمة مرة واحدة بس لكل فريم حتى لو المندوب بيكتب بسرعة
+      acCancelFrame_(cfg);
+      cfg._frame = requestAnimationFrame(function(){ cfg._frame = 0; acRenderList(cfg); });
     });
     inputEl.addEventListener('focus', function(){ acRenderList(cfg); });
   });
@@ -1160,6 +2439,9 @@
     });
   });
 
+  // بترسم شاشة الفاتورة (بيع أو مرتجع) — نفس السلوك بالظبط للاتنين: أصناف بتتجمع محليًا في
+  // state.draftItems، ومفيش أي كتابة على الشيت غير لما المندوب يدوس "موافق وترحيل" ويأكد من
+  // شاشة المراجعة (finalizeInvoice بتكتب كل الأصناف مرة واحدة وتقفل الفاتورة فورًا).
   function renderInvoice(name){
     const isReturns = (name === 'returns');
     document.getElementById('pageTitle').textContent = isReturns ? 'تسجيل مرتجع' : 'تسجيل مبيعات';
@@ -1168,23 +2450,22 @@
 
     acReset(AC_CONFIGS.item);
 
+    document.getElementById('returnKindWrap').hidden = !isReturns;
+    document.getElementById('returnKindInput').value = '';
+
     document.getElementById('lockBadge').hidden = !state.finalized;
     document.getElementById('addBtn').disabled = state.finalized;
     document.getElementById('finalizeBtn').hidden = state.finalized;
-    // لازم نرجّع الزرار "شغال" هنا كل مرة الشاشة دي بترندر من الأول (فاتورة جديدة/مرتجع جديد)،
-    // عشان القفل اللي بيحصل في confirmFinalizeFromReview وقت الترحيل ميفضلش عالق على الفاتورة
-    // الجديدة اللي بعدها
+    // لازم نرجّع الزرار "شغال" هنا كل مرة الشاشة دي بترندر من الأول (فاتورة جديدة)، عشان القفل
+    // اللي بيحصل في confirmFinalizeFromReview وقت الترحيل ميفضلش عالق على الفاتورة الجديدة اللي بعدها
     document.getElementById('finalizeBtn').disabled = state.finalized;
     acSetDisabled(AC_CONFIGS.item, state.finalized);
     document.getElementById('qtyInput').disabled = state.finalized;
     document.getElementById('priceInput').disabled = state.finalized;
-    document.getElementById('downloadBtn').disabled = !state.finalized;
-    document.getElementById('downloadBtn').textContent = state.finalized
-      ? '⬇ تحميل Excel'
-      : '⬇ تحميل Excel (متاح بعد الترحيل)';
-    document.getElementById('shareBtn').disabled = !state.finalized;
-
+    document.getElementById('returnKindInput').disabled = state.finalized;
+    document.getElementById('invoiceDownloadRow').hidden = !state.finalized;
     renderItemsList();
+
     setView('viewInvoice');
   }
 
@@ -1203,9 +2484,11 @@
         const total = state.finalized ? Number(it['الاجمالي']) : (isReturns ? -qty : qty) * price;
         const displayQty = state.finalized ? qty : (isReturns ? -qty : qty);
         const neg = displayQty < 0;
+        const returnKind = state.finalized ? it['نوع المرتجع'] : it.returnKind;
+        const kindSuffix = (isReturns && returnKind === 'تالف') ? ' (تالف)' : '';
         return '<div class="itemRow' + (neg ? ' neg' : '') + '">' +
           '<div>' +
-            '<div class="name">' + escapeHtml(name) + '</div>' +
+            '<div class="name">' + escapeHtml(name) + escapeHtml(kindSuffix) + '</div>' +
             '<div class="meta">' + fmt(displayQty) + ' × ' + fmt(price) + '</div>' +
           '</div>' +
           '<div style="display:flex; align-items:center; gap:8px;">' +
@@ -1227,6 +2510,7 @@
 
   function handleAddItem(){
     clearMsg();
+    const isReturns = (state.screen === 'returns');
     const name = document.getElementById('itemSelect').value;
     const qty = Number(document.getElementById('qtyInput').value);
     const priceRaw = document.getElementById('priceInput').value;
@@ -1235,10 +2519,21 @@
     if(!qty || qty <= 0){ showMsg('اكتب كمية صحيحة', 'error'); return; }
     if(isNaN(price) || price < 0){ showMsg('اكتب سعر صحيح', 'error'); return; }
 
-    state.draftItems.push({ itemName: name, qty: qty, price: price });
+    if(isReturns){
+      const kindSel = document.getElementById('returnKindInput').value;
+      if(kindSel !== 'سليم' && kindSel !== 'تالف'){
+        showMsg('من فضلك حدد نوع المرتجع (سليم أو تالف) قبل الإضافة', 'error');
+        return;
+      }
+      state.draftItems.push({ itemName: name, qty: qty, price: price, returnKind: kindSel });
+    } else {
+      state.draftItems.push({ itemName: name, qty: qty, price: price });
+    }
+
     acReset(AC_CONFIGS.item);
     document.getElementById('qtyInput').value = '';
     document.getElementById('priceInput').value = '';
+    document.getElementById('returnKindInput').value = '';
     renderItemsList();
   }
 
@@ -1266,10 +2561,11 @@
       const qty = isReturns ? -Number(it.qty) : Number(it.qty);
       const rowTotal = qty * Number(it.price);
       total += rowTotal;
+      const kindSuffix = (isReturns && it.returnKind === 'تالف') ? ' (تالف)' : '';
       return (
         '<div class="reviewRow">' +
           '<div>' +
-            '<div class="rName">' + escapeHtml(it.itemName) + '</div>' +
+            '<div class="rName">' + escapeHtml(it.itemName) + escapeHtml(kindSuffix) + '</div>' +
             '<div class="rMeta">' + fmt(qty) + ' × ' + fmt(it.price) + '</div>' +
           '</div>' +
           '<div class="rTotal' + (rowTotal < 0 ? ' neg' : '') + '">' + fmt(rowTotal) + '</div>' +
@@ -1305,15 +2601,32 @@
 
     closeReviewModal();
     clearMsg();
+    doFinalizeRequest_(false);
+  }
+
+  // بتبعت طلب الترحيل الفعلي للسيرفر — confirmDuplicate=false أول مرة، وtrue تاني مرة لو
+  // المندوب شاف تحذير "نفس الفاتورة اتسجلت النهارده" وأكّد إنها مش تكرار
+  function doFinalizeRequest_(confirmDuplicate){
     showLoading(true);
     const type = (state.screen === 'returns') ? 'مرتجع' : 'بيع';
     const requestId = state.pendingFinalizeId;
-    callApi('finalizeInvoice', [state.auth, type, state.draftItems, requestId])
+    callApi('finalizeInvoice', [state.auth, type, state.draftItems, requestId, !!confirmDuplicate])
       .then(function(result){
+        showLoading(false);
+        // السيرفر لقى فاتورة بنفس الأصناف والكميات والأسعار اتسجلت النهارده أصلاً — منرحّلش
+        // على طول، بنسأل المندوب يتأكد الأول (بوب أب بزرارين، مش تحذير عادي بيختفي لوحده)
+        if(result && result.needsDuplicateConfirm){
+          state.finalizeInFlight = false;
+          const btn = document.getElementById('reviewConfirmBtn');
+          if(btn) btn.disabled = false;
+          const mainBtn = document.getElementById('finalizeBtn');
+          if(mainBtn) mainBtn.disabled = false;
+          document.getElementById('dupConfirmOverlay').hidden = false;
+          return;
+        }
         state.finalizeInFlight = false;
         state.finalized = true;
         state.finalResult = result;
-        showLoading(false);
         renderInvoice(state.screen); // بتخفي finalizeBtn خالص لما state.finalized=true
         showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
       })
@@ -1321,62 +2634,85 @@
         state.finalizeInFlight = false;
         const btn = document.getElementById('reviewConfirmBtn');
         if(btn) btn.disabled = false;
+        const mainBtn = document.getElementById('finalizeBtn');
         if(mainBtn) mainBtn.disabled = false; // الترحيل فشل فعلاً، رجّع الزرار يشتغل تاني
         onError(err);
       });
   }
 
-  function invoiceExcelOpts(){
-    const isReturns = (state.screen === 'returns');
+  // المندوب دوس "رجّعني اراجع" في تحذير التكرار — نرجّعه لشاشة المراجعة تاني من غير ما نترحّل حاجة
+  function cancelDuplicateFinalize_(){
+    document.getElementById('dupConfirmOverlay').hidden = true;
+    openReviewModal();
+  }
+
+  // المندوب دوس "أيوه اتأكدت" — يبقى فعلاً فاتورة تانية، كمّل الترحيل بنفس رقم الطلب
+  function confirmDuplicateFinalize_(){
+    if(state.finalizeInFlight) return;
+    document.getElementById('dupConfirmOverlay').hidden = true;
+    state.finalizeInFlight = true;
+    const btn = document.getElementById('reviewConfirmBtn');
+    if(btn) btn.disabled = true;
+    const mainBtn = document.getElementById('finalizeBtn');
+    if(mainBtn) mainBtn.disabled = true;
+    clearMsg();
+    doFinalizeRequest_(true);
+  }
+
+  // دالة مشتركة لبناء خيارات ملف إكسل فاتورة (بيع/مرتجع) من أي نتيجة بنفس شكل نتيجة
+  // finalizeInvoice — بتُستخدم فور الترحيل في نفس الشاشة، وكمان من شاشة "سجل فواتيري"
+  // (كنسخة احتياطية تانية) عشان منكررش منطق البناء في مكانين
+  function buildInvoiceExcelOpts(result, isReturns){
     const label = isReturns ? 'مرتجع' : 'مبيعات';
-    const rows = state.finalResult.items.map(it => [it['اسم الصنف'], it['الكمية'], it['السعر'], it['الاجمالي']]);
+    const rows = result.items.map(it => {
+      const kindSuffix = (isReturns && it['نوع المرتجع'] === 'تالف') ? ' (تالف)' : '';
+      return [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
+    });
     return {
-      fileName: label + '_' + state.user.name + '_' + safeDateForFile(state.finalResult.date),
+      fileName: label + ' - ' + safeDateForFile(result.date) + ' - ' + state.user.name,
       reportTitle: 'تقرير ' + label,
       meta: [
         ['اسم المندوب', state.user.name],
         ['الفرع', state.user.branch || '—'],
-        ['التاريخ', state.finalResult.date],
+        ['التاريخ', result.date],
         ['نوع العملية', label],
       ],
       headers: ['اسم الصنف', 'الكمية', 'السعر', 'الاجمالي'],
       rows: rows,
       totalsLabel: 'الإجمالي',
-      totalsValue: state.finalResult.total,
+      totalsValue: result.total,
     };
   }
 
-  async function downloadInvoiceExcel(){
-    if(!state.finalized) return;
-    const { blob, fileName } = await buildExcelBlob(invoiceExcelOpts());
-    triggerBlobDownload(blob, fileName);
+  function currentInvoiceExcelOpts_(){
+    const isReturns = (state.screen === 'returns');
+    return buildInvoiceExcelOpts(state.finalResult, isReturns);
   }
 
-  async function shareInvoiceExcel(){
-    if(!state.finalized) return;
-    const opts = invoiceExcelOpts();
-    const { blob, fileName } = await buildExcelBlob(opts);
-    const shared = await shareExcelFile(blob, fileName, opts.fileName);
-    if(!shared){
-      triggerBlobDownload(blob, fileName);
-      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-    }
+  function shareInvoiceExcel(){
+    clearMsg();
+    showLoading(true);
+    const opts = currentInvoiceExcelOpts_();
+    buildInvoiceImageBlob(opts)
+      .then(async function(r){
+        showLoading(false);
+        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
+        if(!shared){
+          triggerImageDownload(r.blob, r.fileName);
+          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+        }
+      })
+      .catch(onError);
   }
 
   // ============ التوريد ============
   function loadTawrid(){
-    showLoading(true);
     state.tawridItems = [];
     state.tawridFinalized = false;
     state.tawridResult = null;
     state.tawridSaveInFlight = false;
-    callApi('bootstrapTawrid', [state.auth])
-      .then(function(data){
-        state.asnaf = data.asnaf;
-        showLoading(false);
-        renderTawrid();
-      })
-      .catch(onError);
+    showLoading(false);
+    openWithCatalog_('tawrid', renderTawrid);
   }
 
   function renderTawrid(){
@@ -1392,11 +2728,7 @@
     document.getElementById('saveTawridBtn').disabled = state.tawridFinalized;
     acSetDisabled(AC_CONFIGS.tawridItem, state.tawridFinalized);
     document.getElementById('tawridQtyInput').disabled = state.tawridFinalized;
-    document.getElementById('tawridDownloadBtn').disabled = !state.tawridFinalized;
-    document.getElementById('tawridDownloadBtn').textContent = state.tawridFinalized
-      ? '⬇ تحميل Excel'
-      : '⬇ تحميل Excel (متاح بعد التأكيد)';
-    document.getElementById('tawridShareBtn').disabled = !state.tawridFinalized;
+    document.getElementById('tawridDownloadRow').hidden = !state.tawridFinalized;
 
     renderTawridList();
     setView('viewTawrid');
@@ -1462,41 +2794,44 @@
       });
   }
 
-  function tawridExcelOpts(){
+  // بيبني خيارات ملف إكسل التوريد من أصناف الشاشة نفسها (لسه في الذاكرة عند العميل) — بنستخدمها
+  // بدل نتيجة saveTawrid لأنها مش راجعة فيها تفاصيل الأصناف، بس تأكيد الحفظ
+  function tawridExcelOptsFromState_(){
     const rows = state.tawridItems.map(it => [it.itemName, it.qty]);
-    const totalQty = state.tawridItems.reduce((s, it) => s + (Number(it.qty) || 0), 0);
+    const total = state.tawridItems.reduce((s, it) => s + Number(it.qty), 0);
+    const date = (state.tawridResult && state.tawridResult.date) || '';
+    const repName = (state.tawridResult && state.tawridResult.repName) || state.user.name;
     return {
-      fileName: 'توريد_' + state.user.name + '_' + safeDateForFile(state.tawridResult.date),
+      fileName: 'توريد - ' + safeDateForFile(date) + ' - ' + repName,
       reportTitle: 'تقرير توريد',
       meta: [
-        ['اسم المندوب', state.user.name],
+        ['اسم المندوب', repName],
         ['الفرع', state.user.branch || '—'],
-        ['التاريخ', state.tawridResult.date],
+        ['التاريخ', date],
         ['عدد الأصناف', state.tawridItems.length],
       ],
       headers: ['اسم الصنف', 'الكمية'],
       rows: rows,
       totalsLabel: 'إجمالي الكمية',
-      totalsValue: totalQty,
+      totalsValue: total,
       totalsIsCurrency: false,
     };
   }
 
-  async function downloadTawridExcel(){
-    if(!state.tawridFinalized) return;
-    const { blob, fileName } = await buildExcelBlob(tawridExcelOpts());
-    triggerBlobDownload(blob, fileName);
-  }
-
-  async function shareTawridExcel(){
-    if(!state.tawridFinalized) return;
-    const opts = tawridExcelOpts();
-    const { blob, fileName } = await buildExcelBlob(opts);
-    const shared = await shareExcelFile(blob, fileName, opts.fileName);
-    if(!shared){
-      triggerBlobDownload(blob, fileName);
-      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-    }
+  function shareTawridExcel(){
+    clearMsg();
+    showLoading(true);
+    const opts = tawridExcelOptsFromState_();
+    buildInvoiceImageBlob(opts)
+      .then(async function(r){
+        showLoading(false);
+        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
+        if(!shared){
+          triggerImageDownload(r.blob, r.fileName);
+          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+        }
+      })
+      .catch(onError);
   }
 
   // ============ الجرد ============
@@ -1523,11 +2858,7 @@
     document.getElementById('jardLockBadge').hidden = !state.jardFinalized;
     document.getElementById('saveJardBtn').hidden = state.jardFinalized;
     document.getElementById('saveJardBtn').disabled = state.jardFinalized;
-    document.getElementById('jardDownloadBtn').disabled = !state.jardFinalized;
-    document.getElementById('jardDownloadBtn').textContent = state.jardFinalized
-      ? '⬇ تحميل Excel'
-      : '⬇ تحميل Excel (متاح بعد الحفظ)';
-    document.getElementById('jardShareBtn').disabled = !state.jardFinalized;
+    document.getElementById('jardDownloadRow').hidden = !state.jardFinalized;
 
     renderJardItemsList();
     setView('viewJard');
@@ -1555,11 +2886,20 @@
       list.innerHTML = rowsHtml || '<div class="empty">لسه مفيش أصناف متسجلة في الجرد ده</div>';
       return;
     }
+    // كل صنف بيتعرض ومعاه (لو معروف) "رصيدك المتوقع" — نفس الرقم المحسوب في شاشة "أرصدتي" —
+    // كـ badge دهبي واضح فوق خانة الإدخال مباشرة، وكمان كـ placeholder جوه الخانة نفسها،
+    // عشان يسهّل على المندوب يقارن بسرعة وهو بيعدّ فعليًا بدل ما يدوّر في شاشة تانية.
     list.innerHTML = state.asnaf.map(function(a){
+      const hasExpected = typeof a.expectedBalance === 'number' && !isNaN(a.expectedBalance);
+      const expectedHtml = hasExpected
+        ? '<div style="display:inline-flex; align-items:center; gap:6px; background:var(--gold-bg); border:1px solid var(--gold); color:var(--gold-d); font-weight:800; font-size:13.5px; padding:5px 12px; border-radius:20px; margin:4px 0 8px;">📦 رصيدك المتوقع: ' + fmt(a.expectedBalance) + '</div>'
+        : '';
+      const placeholder = hasExpected ? ('تقريبًا ' + fmt(a.expectedBalance)) : 'العدد';
       return (
-        '<div style="margin-bottom:14px;">' +
+        '<div style="margin-bottom:16px;">' +
           '<label>' + escapeHtml(a.name) + '</label>' +
-          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="العدد">' +
+          expectedHtml +
+          '<input type="text" inputmode="numeric" dir="ltr" class="jardCountRowInput ltrNum" data-name="' + escapeHtml(a.name) + '" placeholder="' + escapeHtml(placeholder) + '">' +
         '</div>'
       );
     }).join('');
@@ -1600,41 +2940,43 @@
       });
   }
 
-  function jardExcelOpts(){
+  // بيبني خيارات ملف إكسل الجرد من أصناف الشاشة نفسها (اللي اتحفظت فعلاً في state.jardItems)
+  function jardExcelOptsFromState_(){
     const rows = state.jardItems.map(it => [it.itemName, it.count]);
-    const totalCount = state.jardItems.reduce((s, it) => s + (Number(it.count) || 0), 0);
+    const total = state.jardItems.reduce((s, it) => s + Number(it.count), 0);
+    const date = (state.jardResult && state.jardResult.date) || '';
+    const repName = (state.jardResult && state.jardResult.repName) || state.user.name;
     return {
-      fileName: 'جرد_' + state.user.name + '_' + safeDateForFile(state.jardResult.date),
+      fileName: 'جرد - ' + safeDateForFile(date) + ' - ' + repName,
       reportTitle: 'تقرير جرد',
       meta: [
-        ['اسم المندوب', state.user.name],
+        ['اسم المندوب', repName],
         ['الفرع', state.user.branch || '—'],
-        ['التاريخ', state.jardResult.date],
+        ['التاريخ', date],
         ['عدد الأصناف', state.jardItems.length],
       ],
-      headers: ['اسم الصنف', 'الجرد'],
+      headers: ['اسم الصنف', 'العدد'],
       rows: rows,
-      totalsLabel: 'إجمالي الجرد',
-      totalsValue: totalCount,
+      totalsLabel: 'إجمالي العدد',
+      totalsValue: total,
       totalsIsCurrency: false,
     };
   }
 
-  async function downloadJardExcel(){
-    if(!state.jardFinalized) return;
-    const { blob, fileName } = await buildExcelBlob(jardExcelOpts());
-    triggerBlobDownload(blob, fileName);
-  }
-
-  async function shareJardExcel(){
-    if(!state.jardFinalized) return;
-    const opts = jardExcelOpts();
-    const { blob, fileName } = await buildExcelBlob(opts);
-    const shared = await shareExcelFile(blob, fileName, opts.fileName);
-    if(!shared){
-      triggerBlobDownload(blob, fileName);
-      showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
-    }
+  function shareJardExcel(){
+    clearMsg();
+    showLoading(true);
+    const opts = jardExcelOptsFromState_();
+    buildInvoiceImageBlob(opts)
+      .then(async function(r){
+        showLoading(false);
+        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
+        if(!shared){
+          triggerImageDownload(r.blob, r.fileName);
+          showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
+        }
+      })
+      .catch(onError);
   }
 
   // ============ إضافة مندوب (مشرفين فقط) ============
@@ -1690,17 +3032,17 @@
   function loadPrices(){
     document.getElementById('pageTitle').textContent = 'أسعاري';
     document.getElementById('pageSub').textContent = state.user.name;
-    showLoading(true);
-    callApi('bootstrapPrices', [state.auth])
-      .then(function(data){
-        state.asnaf = data.asnaf;
-        state.myPrices = data.prices || {};
-        showLoading(false);
-        renderPrices();
-        setView('viewPrices');
-      })
-      .catch(onError);
+    openWithCatalog_('prices', function(){
+      pricesDirty_ = false;
+      renderPrices();
+      setView('viewPrices');
+    }, function(fresh, old){
+      // لو البيانات الجديدة مختلفة والمندوب لسه مكتبش حاجة، نعيد رسم الشاشة؛ لو كتب، منمسحش كتابته
+      if(!pricesDirty_ && JSON.stringify(fresh) !== JSON.stringify(old)) renderPrices();
+    });
   }
+  let pricesDirty_ = false;
+  document.getElementById('pricesList').addEventListener('input', function(){ pricesDirty_ = true; });
 
   function renderPrices(){
     const list = document.getElementById('pricesList');
@@ -1735,6 +3077,11 @@
     callApi('savePrices', [state.auth, items])
       .then(function(result){
         showLoading(false);
+        const newPrices = {};
+        items.forEach(function(it){ newPrices[it.itemName] = it.price; });
+        state.myPrices = newPrices;
+        localCacheSet_('catalog', { asnaf: state.asnaf, prices: newPrices });
+        pricesDirty_ = false;
         showMsg('تم حفظ أسعارك بنجاح ✔ (' + result.count + ' صنف)', 'success');
       })
       .catch(onError);
@@ -1783,6 +3130,313 @@
       .catch(onError);
   }
 
+  // ============ إعداداتي (بيانات المندوب: صورة، سن، خبرة، إجازة أسبوعية) ============
+  let selectedWeeklyOff_ = [];
+
+  function loadProfile(){
+    document.getElementById('pageTitle').textContent = 'إعداداتي';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('bootstrapProfile', [state.auth])
+      .then(function(data){
+        showLoading(false);
+        renderProfile(data);
+        document.getElementById('appVersionNote').textContent = 'إصدار التطبيق: ' + APP_VERSION_;
+        setView('viewProfile');
+      })
+      .catch(onError);
+  }
+
+  function renderProfile(data){
+    const profile = data.profile || {};
+    const img = document.getElementById('profilePhotoImg');
+    const placeholder = document.getElementById('profilePhotoPlaceholder');
+    if(profile.photoUrl){
+      img.src = profile.photoUrl;
+      img.hidden = false;
+      placeholder.hidden = true;
+    } else {
+      img.hidden = true;
+      placeholder.hidden = false;
+    }
+    document.getElementById('profileAgeInput').value = profile.age != null ? profile.age : '';
+    document.getElementById('profileExperienceInput').value = profile.experienceYears != null ? profile.experienceYears : '';
+    selectedWeeklyOff_ = Array.isArray(profile.weeklyOff) ? profile.weeklyOff.slice() : [];
+
+    const options = data.weeklyOffOptions || [];
+    const wrap = document.getElementById('weeklyOffChipsWrap');
+    wrap.innerHTML = options.map(function(day){
+      const active = selectedWeeklyOff_.indexOf(day) !== -1;
+      return '<div class="dayChip' + (active ? ' active' : '') + '" data-day="' + escapeHtml(day) + '" onclick="toggleWeeklyOffDay(this)">' + escapeHtml(day) + '</div>';
+    }).join('');
+  }
+
+  function toggleWeeklyOffDay(el){
+    const day = el.dataset.day;
+    const idx = selectedWeeklyOff_.indexOf(day);
+    if(idx === -1){ selectedWeeklyOff_.push(day); el.classList.add('active'); }
+    else { selectedWeeklyOff_.splice(idx, 1); el.classList.remove('active'); }
+  }
+
+  function handleSaveProfile(){
+    clearMsg();
+    const ageRaw = document.getElementById('profileAgeInput').value;
+    const expRaw = document.getElementById('profileExperienceInput').value;
+    const profile = {
+      age: ageRaw === '' ? null : Number(ageRaw),
+      experienceYears: expRaw === '' ? null : Number(expRaw),
+      weeklyOff: selectedWeeklyOff_,
+    };
+    showLoading(true);
+    callApi('saveMyProfile', [state.auth, profile])
+      .then(function(){
+        showLoading(false);
+        showMsg('تم حفظ بياناتك بنجاح ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  // تصغير الصورة بـ Canvas قبل الرفع (أقصى بعد 500px، جودة JPEG 0.82) عشان الملف يفضل صغير
+  // ومناسب لحجم الطلب اللي Apps Script بيقبله
+  function handlePhotoSelected(e){
+    const file = e.target.files && e.target.files[0];
+    if(!file) return;
+    clearMsg();
+    const reader = new FileReader();
+    reader.onload = function(ev){
+      const img = new Image();
+      img.onload = function(){
+        let w = img.width, h = img.height;
+        const maxDim = 500;
+        if(w > maxDim || h > maxDim){
+          if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+          else { w = Math.round(w * maxDim / h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.82);
+        const base64Data = dataUrl.split(',')[1];
+        showLoading(true);
+        callApi('uploadMyPhoto', [state.auth, base64Data, 'image/jpeg'])
+          .then(function(result){
+            showLoading(false);
+            // السيرفر بيرجّع الرابط في result.url (مش photoUrl) — كان بيتقري غلط فالصورة الجديدة
+            // مكانتش بتظهر غير بعد ما التطبيق يتقفل ويتفتح تاني
+            const newUrl = result.url || result.photoUrl;
+            const imgEl = document.getElementById('profilePhotoImg');
+            imgEl.src = newUrl;
+            imgEl.hidden = false;
+            document.getElementById('profilePhotoPlaceholder').hidden = true;
+            if(state.user){ state.user.photoUrl = newUrl; }
+            renderHomeBadgeIcon(newUrl);
+            saveHomeCache_();
+            showMsg('تم تحديث الصورة بنجاح ✔', 'success');
+          })
+          .catch(onError);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  }
+
+  // ============ ابعت اقتراح ============
+  function loadSuggestionScreen(){
+    document.getElementById('pageTitle').textContent = 'ابعت اقتراح';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('suggestionTextInput').value = '';
+    setView('viewSuggestion');
+  }
+
+  function handleSendSuggestion(){
+    clearMsg();
+    const text = document.getElementById('suggestionTextInput').value.trim();
+    if(!text){ showMsg('اكتب اقتراحك الأول', 'error'); return; }
+    showLoading(true);
+    callApi('addSuggestion', [state.auth, text])
+      .then(function(){
+        showLoading(false);
+        document.getElementById('suggestionTextInput').value = '';
+        showMsg('تم إرسال اقتراحك بنجاح، شكرًا ليك ✔', 'success');
+      })
+      .catch(onError);
+  }
+
+  // ============ وصف المنتجات ============
+  function loadProductsScreen(){
+    document.getElementById('pageTitle').textContent = 'وصف المنتجات';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('listProductDescriptions', [state.auth])
+      .then(function(products){
+        showLoading(false);
+        renderProductsList(products, 'productsList', false);
+        setView('viewProducts');
+      })
+      .catch(onError);
+  }
+
+  function renderProductsList(products, containerId, adminMode){
+    const el = document.getElementById(containerId);
+    if(!products || !products.length){
+      el.innerHTML = '<div class="empty">لسه مفيش منتجات متضافة</div>';
+      return;
+    }
+    el.innerHTML = products.map(function(p){
+      const delBtn = adminMode
+        ? '<button class="delBtn" style="margin-top:8px;" onclick="handleDeleteProduct(\'' + String(p.id).replace(/'/g, "\\'") + '\')">🗑 حذف</button>'
+        : '';
+      const photosHtml = (p.photos && p.photos.length)
+        ? '<div class="productPhotos">' + p.photos.map(function(url){
+            return '<img src="' + escapeHtml(url) + '" loading="lazy" onclick="window.open(\'' + escapeHtml(url).replace(/'/g, "\\'") + '\', \'_blank\')">';
+          }).join('') + '</div>'
+        : '';
+      const lines = String(p.specs || '').split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
+      const specsHtml = lines.length
+        ? '<ul class="pSpecsList">' + lines.map(function(l){ return '<li>' + escapeHtml(l) + '</li>'; }).join('') + '</ul>'
+        : '';
+      return (
+        '<div class="productCard">' +
+          '<div class="pTitle">' + escapeHtml(p.name) + '</div>' +
+          photosHtml +
+          specsHtml +
+          delBtn +
+        '</div>'
+      );
+    }).join('');
+  }
+
+  // ============ اختيار صور المنتج (قبل الإضافة) — بتتصغّر بالمتصفح زي صورة البروفايل بالظبط ============
+  let selectedProductPhotos_ = []; // [{dataUrl, base64Data, mimeType}]
+
+  function resizeImageFile_(file, maxDim, quality){
+    return new Promise(function(resolve, reject){
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = function(ev){
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = function(){
+          let w = img.width, h = img.height;
+          if(w > maxDim || h > maxDim){
+            if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+            else { w = Math.round(w * maxDim / h); h = maxDim; }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          resolve({ dataUrl: dataUrl, base64Data: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderProductPhotoPicker(){
+    const wrap = document.getElementById('productPhotoPicker');
+    const thumbsHtml = selectedProductPhotos_.map(function(p, idx){
+      return (
+        '<div class="thumb">' +
+          '<img src="' + p.dataUrl + '">' +
+          '<button type="button" class="rmBtn" onclick="removeSelectedProductPhoto(' + idx + ')">✕</button>' +
+        '</div>'
+      );
+    }).join('');
+    const addBtnHtml = selectedProductPhotos_.length < 5
+      ? '<button type="button" class="productPhotoAddBtn" onclick="document.getElementById(\'productPhotoInput\').click()">+</button>'
+      : '';
+    wrap.innerHTML = thumbsHtml + addBtnHtml;
+  }
+
+  function handleProductPhotosSelected(e){
+    clearMsg();
+    const files = Array.from(e.target.files || []);
+    e.target.value = '';
+    if(!files.length) return;
+    const remaining = 5 - selectedProductPhotos_.length;
+    if(remaining <= 0){ showMsg('أقصى عدد صور للمنتج الواحد هو 5 صور', 'error'); return; }
+    const toProcess = files.slice(0, remaining);
+    Promise.all(toProcess.map(function(f){ return resizeImageFile_(f, 900, 0.82); }))
+      .then(function(results){
+        selectedProductPhotos_ = selectedProductPhotos_.concat(results);
+        renderProductPhotoPicker();
+      })
+      .catch(function(){ showMsg('حصل خطأ في تحميل إحدى الصور، حاول تاني', 'error'); });
+  }
+
+  function removeSelectedProductPhoto(idx){
+    selectedProductPhotos_.splice(idx, 1);
+    renderProductPhotoPicker();
+  }
+
+  function refreshProductsAdmin(){
+    document.getElementById('productsAdminList').innerHTML = '<div class="empty">جاري التحميل...</div>';
+    callApi('listProductDescriptions', [state.auth])
+      .then(function(products){ renderProductsList(products, 'productsAdminList', true); })
+      .catch(onError);
+  }
+
+  function handleAddProduct(){
+    clearMsg();
+    const name = document.getElementById('productNameInput').value.trim();
+    const specs = document.getElementById('productSpecsInput').value.trim();
+    if(!name){ showMsg('اكتب اسم المنتج', 'error'); return; }
+    if(!specs){ showMsg('اكتب مواصفات المنتج', 'error'); return; }
+    const photos = selectedProductPhotos_.map(function(p){ return { base64Data: p.base64Data, mimeType: p.mimeType }; });
+    showLoading(true);
+    callApi('addProductDescription', [state.auth, name, specs, photos])
+      .then(function(){
+        showLoading(false);
+        document.getElementById('productNameInput').value = '';
+        document.getElementById('productSpecsInput').value = '';
+        selectedProductPhotos_ = [];
+        renderProductPhotoPicker();
+        showMsg('تم إضافة المنتج بنجاح ✔', 'success');
+        refreshProductsAdmin();
+      })
+      .catch(onError);
+  }
+
+  function handleDeleteProduct(productId){
+    clearMsg();
+    if(!confirm('متأكد إنك عاوز تحذف المنتج ده؟')) return;
+    showLoading(true);
+    callApi('deleteProductDescription', [state.auth, productId])
+      .then(function(){
+        showLoading(false);
+        showMsg('تم حذف المنتج ✔', 'success');
+        refreshProductsAdmin();
+      })
+      .catch(onError);
+  }
+
+  // ============ مقترحات المناديب (صاحب الحساب فقط) ============
+  function refreshSuggestionsAdmin(){
+    document.getElementById('suggestionsAdminList').innerHTML = '<div class="empty">جاري التحميل...</div>';
+    callApi('listSuggestions', [state.auth])
+      .then(renderSuggestionsAdminList)
+      .catch(onError);
+  }
+
+  function renderSuggestionsAdminList(suggestions){
+    const el = document.getElementById('suggestionsAdminList');
+    if(!suggestions || !suggestions.length){
+      el.innerHTML = '<div class="empty">لسه مفيش اقتراحات متبعتة</div>';
+      return;
+    }
+    el.innerHTML = suggestions.map(function(s){
+      return (
+        '<div class="suggRow">' +
+          '<div class="sMeta">' + escapeHtml(s.repName) + ' · ' + escapeHtml(s.date) + '</div>' +
+          '<div class="sText">' + escapeHtml(s.text) + '</div>' +
+        '</div>'
+      );
+    }).join('');
+  }
+
   // ============ مشاركة/تنزيل ملف Excel ============
   function triggerBlobDownload(blob, fileName){
     const url = URL.createObjectURL(blob);
@@ -1795,24 +3449,6 @@
     URL.revokeObjectURL(url);
   }
 
-  // بيفتح شاشة "مشاركة" الجهاز نفسه (Web Share API) عشان المندوب يختار واتساب منها.
-  // متاحة بس على المتصفحات اللي بتدعم مشاركة الملفات (أندرويد/آيفون الحديثة) — على أي جهاز/متصفح
-  // تاني (وأغلب متصفحات الكمبيوتر) هترجع false، وساعتها بننزّل الملف عادي بدل ما نكسر حاجة.
-  async function shareExcelFile(blob, fileName, shareText){
-    try{
-      const file = new File([blob], fileName + '.xlsx', {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-      if(navigator.canShare && navigator.canShare({ files: [file] })){
-        await navigator.share({ files: [file], title: fileName, text: shareText || '' });
-        return true;
-      }
-    }catch(e){
-      if(e && e.name === 'AbortError') return true; // المستخدم قفل شاشة المشاركة بنفسه، مش خطأ حقيقي
-    }
-    return false;
-  }
-
   // بيحسب عرض عمود مناسب من طول أطول قيمة فيه (بالحروف)، مع حد أدنى وأقصى معقولين حتى ما
   // يبقاش العمود ضيق يقص الكلام أو واسع أوي من غير داعي.
   function autoColWidth_(header, colValues){
@@ -1821,7 +3457,7 @@
       const len = String(v === null || v === undefined ? '' : v).length;
       if(len > maxLen) maxLen = len;
     });
-    return Math.max(14, Math.min(42, maxLen + 8));
+    return Math.max(16, Math.min(46, maxLen + 8));
   }
 
   // بيتأكد إن كل قيم العمود ده أرقام (يستخدم عشان نحدد التنسيق ومحاذاة العمود صح)
@@ -1849,8 +3485,9 @@
   const BRAND_ZEBRA = 'FFEAF2FA';
   const BRAND_FRAME = 'FF1F4E79';
 
-  // ============ توليد ملف Excel منسّق (يُستخدم في كل الشاشات) — بيرجع Blob بس من غير تنزيل ============
+  // ============ توليد ملف Excel منسّق (يُستخدم من شاشة "سجل فواتيري" بس) — بيرجع Blob بس من غير تنزيل ============
   async function buildExcelBlob(opts){
+    await ensureExcelJsLoaded_();
     const headers = opts.headers;
     const rows = opts.rows;
     const meta = opts.meta || [];
@@ -1896,22 +3533,17 @@
     }
 
     // بيانات المندوب/الفرع/التاريخ/النوع — في شكل "كارت" بإطار كامل حواليه، كل زوج (تسمية/قيمة)
-    // في عمودين متجاورين بدل سطر مدمج كامل عشان تبقى منظّمة زي جدول بيانات مصغّر
+    // في خلية واحدة مدمجة بعرض الجدول كله (بدل عمودين جنب بعض) عشان ما يحصلش تداخل في القيم
+    // الطويلة (زي اسم الفرع) لما يكون عدد أعمدة الجدول قليل — وده كمان أنضف وأوضح في القراءة
+    // من اليمين للشمال (RTL) واللي احنا بنشتغل بيه، مع wrapText عشان أي نص طويل يلف بدل ما يتقطع
     let r = 3;
     const metaFirstRow = r;
     meta.forEach(function(pair){
-      const half = Math.max(1, Math.floor(colCount / 2));
-      ws.mergeCells(r, 1, r, half);
-      const labelCell = ws.getCell(r, 1);
-      labelCell.value = pair[0] + ':';
-      labelCell.font = { name: numFont, bold: true, size: 13, color: { argb: BRAND_BANNER } };
-      labelCell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
-
-      ws.mergeCells(r, half + 1, r, colCount);
-      const valueCell = ws.getCell(r, half + 1);
-      valueCell.value = pair[1];
-      valueCell.font = { name: numFont, bold: true, size: 13, color: { argb: 'FF1A1A1A' } };
-      valueCell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1 };
+      ws.mergeCells(r, 1, r, colCount);
+      const cell = ws.getCell(r, 1);
+      cell.value = pair[0] + ':   ' + pair[1];
+      cell.font = { name: numFont, bold: true, size: 14, color: { argb: 'FF1A1A1A' } };
+      cell.alignment = { horizontal: 'right', vertical: 'middle', indent: 1, wrapText: true };
 
       for(let c = 1; c <= colCount; c++){
         ws.getCell(r, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: BRAND_META_BG } };
@@ -1922,7 +3554,7 @@
           right: { style: 'hair', color: { argb: BRAND_META_BORDER } },
         };
       }
-      ws.getRow(r).height = 23;
+      // من غير ارتفاع صف ثابت (customHeight) عشان اكسل يعمل auto-fit للنص لو لف على أكتر من سطر
       r++;
     });
     // إطار خارجي غامق حوالين صندوق البيانات كله عشان يبان كارت متكامل
@@ -1978,7 +3610,7 @@
       row.forEach(function(val, i){
         const cell = ws.getCell(r, i + 1);
         cell.value = val;
-        cell.font = { name: numFont, bold: true, size: 13, color: { argb: 'FF1A1A1A' } };
+        cell.font = { name: numFont, bold: true, size: 14, color: { argb: 'FF1A1A1A' } };
         const isTextCol = !colIsNumeric[i];
         cell.alignment = { horizontal: isTextCol ? 'right' : 'center', vertical: 'middle', indent: isTextCol ? 1 : 0 };
         cell.border = {
@@ -1992,7 +3624,7 @@
           cell.numFmt = colIsInteger[i] ? '#,##0' : '#,##0.00';
         }
       });
-      ws.getRow(r).height = 22;
+      ws.getRow(r).height = 24;
       r++;
     });
     const lastDataRow = r - 1;
@@ -2079,12 +3711,176 @@
     return { blob: blob, fileName: opts.fileName };
   }
 
-  // تسجيل الـ Service Worker عشان التطبيق يبقى قابل للتثبيت (PWA حقيقي) ويفتح بسرعة حتى بنت ضعيف
-  if('serviceWorker' in navigator){
-    window.addEventListener('load', function(){
-      navigator.serviceWorker.register('sw.js').catch(function(e){ console.warn('SW register failed', e); });
+  // ============ توليد نفس التقرير كصورة PNG (يُستخدم في "مشاركة" فقط — التنزيل فاضل Excel) ============
+  // بنبني نفس بيانات التقرير كصفحة HTML عادية بخط عربي واضح وألوان هويّة الشركة، وبعدين بنصوّرها
+  // (html2canvas) ونطلعها كصورة PNG واحدة. الطريقة دي بتضمن إن العربي يتكتب صح 100% (زي ما
+  // المتصفح نفسه بيعرضه)، وأخف وأسرع بكتير من تجميعها في ملف PDF (مفيش تقسيم صفحات ولا مكتبة
+  // إضافية) — والصورة كمان بتتفتح مباشرة جوه واتساب من غير ما تحتاج فاتح PDF منفصل.
+  // ARGB (زي 'FF1F4E79') لـ CSS hex عادي ('#1F4E79') — عشان نستخدم نفس ألوان BRAND_* بتاعة
+  // ملف الإكسل هنا بالظبط، فتطلع الصورة بنفس هوية الشكل تمامًا
+  function argbToCss_(argb){ return '#' + argb.slice(2); }
+
+  async function buildInvoiceImageBlob(opts){
+    await ensureHtml2CanvasLoaded_();
+    const headers = opts.headers;
+    const rows = opts.rows;
+    const meta = opts.meta || [];
+    // نفس ألوان "الأزرق الكوربوريتي" المستخدمة في ملف الإكسل بالظبط (BRAND_* فوق)
+    const C_BANNER = argbToCss_(BRAND_BANNER);
+    const C_SUBTITLE = argbToCss_(BRAND_SUBTITLE_BG);
+    const C_META_BG = argbToCss_(BRAND_META_BG);
+    const C_META_BORDER = argbToCss_(BRAND_META_BORDER);
+    const C_GRID = argbToCss_(BRAND_GRID);
+    const C_ZEBRA = argbToCss_(BRAND_ZEBRA);
+    const C_FRAME = argbToCss_(BRAND_FRAME);
+    const C_ACCENT = argbToCss_(BRAND_ACCENT);
+
+    const isNumericCol = headers.map(function(_, i){ return isNumericCol_(rows.map(function(r){ return r[i]; })); });
+    const isCurrencyCol = headers.map(function(h, i){ return isNumericCol[i] && isCurrencyHeader_(h); });
+
+    const metaHtml = meta.map(function(pair, i){
+      const isLast = i === meta.length - 1;
+      return '<div style="padding:10px 14px; ' + (isLast ? '' : 'border-bottom:1px solid ' + C_META_BORDER + '; ') +
+        'font-size:16.5px; font-weight:700; color:#1a1a1a; background:' + C_META_BG + ';">' +
+        '<span style="color:' + C_BANNER + ';">' + escapeHtml_(pair[0]) + ':</span>&nbsp;&nbsp;' + escapeHtml_(String(pair[1])) +
+        '</div>';
+    }).join('');
+
+    const headHtml = headers.map(function(h){
+      return '<th style="padding:13px 10px; font-size:18px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_ACCENT + ';">' + escapeHtml_(h) + '</th>';
+    }).join('');
+
+    const rowsHtml = rows.map(function(row, ri){
+      const bg = (ri % 2 === 1) ? C_ZEBRA : '#ffffff';
+      const cells = row.map(function(val, i){
+        const align = isNumericCol[i] ? 'center' : 'right';
+        let display = val === null || val === undefined ? '' : val;
+        if(typeof display === 'number'){
+          display = isCurrencyCol[i] ? (display.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م') : display.toLocaleString('en-US');
+        }
+        return '<td style="padding:12px 10px; font-size:19px; font-weight:800; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + C_GRID + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
+      }).join('');
+      return '<tr>' + cells + '</tr>';
+    }).join('');
+
+    const totalsHtml = opts.totalsLabel ? (
+      '<tr>' +
+        '<td colspan="' + (headers.length - 1) + '" style="padding:13px 10px; font-size:19px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
+        '<td style="padding:13px 10px; font-size:20px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:center;">' +
+          (typeof opts.totalsValue === 'number'
+            ? (opts.totalsIsCurrency === false ? opts.totalsValue.toLocaleString('en-US') : opts.totalsValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م')
+            : escapeHtml_(String(opts.totalsValue))) +
+        '</td>' +
+      '</tr>'
+    ) : '';
+
+    const now = new Date();
+    const pad2 = function(n){ return String(n).padStart(2, '0'); };
+    const stamp = pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear() + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed; top:0; left:-99999px; width:794px; background:#ffffff; direction:rtl; font-family:"Cairo","Tajawal",Arial,sans-serif;';
+    container.innerHTML =
+      '<div style="padding:24px;">' +
+        '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; font-size:20px; font-weight:900; padding:16px;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
+        '<div style="background:' + C_SUBTITLE + '; color:#fff; text-align:center; font-size:14.5px; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + '</div>' +
+        '<div style="border:2px solid ' + C_ACCENT + '; border-top:none; margin-bottom:14px;">' + metaHtml + '</div>' +
+        '<table style="width:100%; border-collapse:collapse; border:2px solid ' + C_FRAME + ';"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
+        '<div style="text-align:center; font-size:11px; color:#9a9a9a; font-style:italic; margin-top:14px;">تم إنشاء الملف تلقائيًا بتاريخ ' + stamp + '</div>' +
+      '</div>';
+    document.body.appendChild(container);
+
+    let blob;
+    try{
+      const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
+    } finally {
+      document.body.removeChild(container);
+    }
+    return { blob: blob, fileName: opts.fileName };
+  }
+
+  // نفس escapeHtml بالظبط (كانت نسخة مكررة منها)
+  const escapeHtml_ = escapeHtml;
+
+  function triggerImageDownload(blob, fileName){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  // بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
+  async function shareImageFile(blob, fileName, shareText){
+    try{
+      const file = new File([blob], fileName + '.png', { type: 'image/png' });
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: fileName, text: shareText || '' });
+        return true;
+      }
+    }catch(e){
+      if(e && e.name === 'AbortError') return true;
+    }
+    return false;
+  }
+
+  // ============ تسجيل الـ Service Worker + اكتشاف التحديثات تلقائيًا ============
+  // ده اللي كان بيحل مشكلة "المندوب شايل نسخة قديمة كاش ومش شايف الميزة الجديدة" —
+  // دلوقتي أول ما ننشر نسخة جديدة من الملفات، أي حد فاتح التطبيق هيشوف شريط أسفل الشاشة
+  // "فيه تحديث جديد" وبيدوس عليه يحدّث فورًا بدل ما يقفل ويفتح التطبيق يدوي أو يمسح الكاش
+  let newWorkerWaiting_ = null;
+
+  function registerServiceWorkerWithUpdateCheck_(){
+    if(!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      if(reg.waiting && navigator.serviceWorker.controller){
+        newWorkerWaiting_ = reg.waiting;
+        document.getElementById('updateBanner').hidden = false;
+      }
+      reg.addEventListener('updatefound', function(){
+        const nw = reg.installing;
+        if(!nw) return;
+        nw.addEventListener('statechange', function(){
+          if(nw.state === 'installed' && navigator.serviceWorker.controller){
+            newWorkerWaiting_ = nw;
+            document.getElementById('updateBanner').hidden = false;
+          }
+        });
+      });
+      // فحص دوري كل ساعة لو التطبيق فاضل فاتح فترة طويلة من غير ما يتقفل
+      setInterval(function(){ reg.update(); }, 60 * 60 * 1000);
+    }).catch(function(e){ console.warn('SW register failed', e); });
+
+    let reloadingAfterUpdate_ = false;
+    navigator.serviceWorker.addEventListener('controllerchange', function(){
+      if(reloadingAfterUpdate_) return;
+      reloadingAfterUpdate_ = true;
+      window.location.reload();
     });
   }
+
+  function applyAppUpdate_(){
+    document.getElementById('updateBanner').hidden = true;
+    if(newWorkerWaiting_){
+      newWorkerWaiting_.postMessage({ type: 'SKIP_WAITING' });
+    } else {
+      window.location.reload();
+    }
+  }
+
+  window.addEventListener('load', registerServiceWorkerWithUpdateCheck_);
+
+  // ============ شريط "مفيش اتصال بالإنترنت" — بيظهر/يختفي تلقائي مع حالة الشبكة ============
+  function updateOfflineBanner_(){
+    document.getElementById('offlineBanner').hidden = navigator.onLine;
+  }
+  window.addEventListener('online', updateOfflineBanner_);
+  window.addEventListener('offline', updateOfflineBanner_);
+  updateOfflineBanner_();
 
   init();
 </script>
