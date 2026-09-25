@@ -159,9 +159,19 @@
   .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:21px; }
   .welcomeCard .wText{direction:rtl; text-align:right; min-width:0;}
   .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
+  /* الاسم بيظهر كامل دايمًا — لو طويل بيلف على سطر تاني بدل ما يتقص بـ "..." */
   .welcomeCard .name{
     font-size:22px; font-weight:900; color:#ffffff; margin-top:5px; position:relative; letter-spacing:.2px;
-    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px;
+    white-space:normal; overflow-wrap:anywhere; line-height:1.35;
+  }
+  .welcomeLeftGroup{flex:1;}
+  /* على الموبايل: الصورة وشريط الهدف في سطر، والترحيب + الاسم في سطر لوحده تحتهم بعرض الكارت كله */
+  @media (max-width:520px){
+    .welcomeRow{flex-wrap:wrap; row-gap:14px;}
+    .welcomeLeftGroup{display:contents;}
+    .welcomeCard .badgeIcon{order:1;}
+    .targetProgressWrap{order:2;}
+    .welcomeCard .wText{order:3; flex-basis:100%;}
   }
   /* شريط الهدف — دلوقتي ثابت على اليمين (طرف الصف التاني)، مش محتاج margin دفع بقى لأن الصف بقى
      justify-content:space-between */
@@ -529,6 +539,16 @@
     font-family:inherit; resize:vertical; min-height:110px;
   }
   textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
+  .inAppBanner{
+    background:#fff6e0; border:1px solid var(--gold); color:#6b4a10; border-radius:13px;
+    padding:12px 14px; margin-bottom:14px; font-size:13.5px; font-weight:700; line-height:1.7;
+  }
+  .inAppBanner .inAppBtns{display:flex; gap:8px; margin-top:10px;}
+  .inAppBanner button{
+    flex:1; border:1px solid var(--gold); background:#fff; color:var(--gold-d); border-radius:10px;
+    padding:9px 8px; font-weight:800; font-size:13px; font-family:inherit; cursor:pointer;
+  }
+  .inAppBanner button.inAppClose{flex:0 0 42px; color:var(--muted2); border-color:var(--border);}
   /* الأجهزة اللي صاحبها مفعّل "تقليل الحركة" من إعدادات الموبايل: من غير أنيميشن الحديث/البلور */
   @media (prefers-reduced-motion: reduce){
     .hadithBox .hadithText .word{ animation:none; opacity:1; transform:none; }
@@ -562,6 +582,14 @@
       <span class="spinnerLabel">جاري التحميل...</span>
     </div>
   </div>
+  <div id="inAppBanner" class="inAppBanner" hidden>
+    <div class="inAppText">⚠️ انت فاتح التطبيق من جوه تطبيق تاني (واتساب/فيسبوك) — ده بيخليه يطلب كود الإيميل كل شوية. افتحه من <b>Chrome</b> أو من <b>أيقونة التطبيق</b> على الشاشة.</div>
+    <div class="inAppBtns">
+      <button type="button" id="inAppOpenChromeBtn" hidden onclick="openInChrome_()">فتح في Chrome</button>
+      <button type="button" onclick="copyAppLink_()">نسخ اللينك</button>
+      <button type="button" class="inAppClose" onclick="dismissInAppBanner_()">✕</button>
+    </div>
+  </div>
   <div id="globalMsg"></div>
 
   <!-- ============ شاشة تسجيل الدخول (اسم + كود) ============ -->
@@ -584,7 +612,7 @@
       <div class="cardTitle">تأكيد الدخول</div>
       <div id="otpHint" style="margin-bottom:10px; color:#666; font-size:14px;">بعتنالك كود تأكيد على إيميلك</div>
       <label>الكود اللي وصلك على الإيميل</label>
-      <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" dir="ltr" maxlength="6" placeholder="مثال: 123456">
+      <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="6" placeholder="مثال: 123456">
       <button class="primary" id="otpBtn" onclick="handleVerifyOtp()">تأكيد ودخول</button>
       <button class="ghost" id="otpResendBtn" onclick="handleResendOtp()" style="margin-top:8px;">إعادة إرسال الكود</button>
       <button class="ghost" onclick="handleOtpBack()" style="margin-top:8px;">رجوع لتسجيل الدخول</button>
@@ -1081,7 +1109,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.5.1';
+  const APP_VERSION_ = 'v1.6.1';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -1101,7 +1129,9 @@
       .catch(function(err){
         if(err instanceof TypeError){
           // الغالب مشكلة إنترنت أو الرابط اتغيّر
-          throw new Error('تعذر الاتصال بالسيرفر — تأكد إنك متصل بالإنترنت وحاول تاني');
+          const netErr = new Error('تعذر الاتصال بالسيرفر — تأكد إنك متصل بالإنترنت وحاول تاني');
+          netErr.isNetwork = true; // عشان نفرّق بين "النت فاصل" و"الدخول مرفوض"
+          throw netErr;
         }
         throw err;
       });
@@ -1195,12 +1225,95 @@
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
   }
 
+  // ============ ذاكرة محلية على الموبايل (عرض فوري + تحديث في الخلفية) ============
+  // الشاشات بتفتح على طول بآخر بيانات اتحفظت على الجهاز، وفي نفس اللحظة بنجيب الجديد من السيرفر
+  // ونحدّث بيه. كل حاجة بتتخزن باسم إيميل المندوب، وبتتمسح كلها عند تسجيل الخروج.
+  // ملحوظة: الترحيل والتحقق من الرصيد بيفضلوا من السيرفر 100% — الذاكرة دي للعرض بس.
+  const LOCAL_CACHE_PREFIX_ = 'tz_cache_v1:';
+  function localCacheKey_(name){
+    return LOCAL_CACHE_PREFIX_ + String((state.auth && state.auth.email) || '').toLowerCase() + ':' + name;
+  }
+  function localCacheGet_(name){
+    try{ const raw = localStorage.getItem(localCacheKey_(name)); return raw ? JSON.parse(raw) : null; }
+    catch(e){ return null; }
+  }
+  function localCacheSet_(name, value){
+    try{ localStorage.setItem(localCacheKey_(name), JSON.stringify({ t: Date.now(), v: value })); }catch(e){}
+  }
+  function localCacheClearAll_(){
+    try{
+      Object.keys(localStorage).forEach(function(k){ if(k.indexOf(LOCAL_CACHE_PREFIX_) === 0) localStorage.removeItem(k); });
+    }catch(e){}
+  }
+
+  // "الكتالوج" = قايمة الأصناف + أسعار المندوب — نفس البيانات اللي شاشات البيع/المرتجع/التوريد/أسعاري
+  // بتحتاجها. لو في طلب شغال أصلاً (مثلاً التجهيز المسبق من الرئيسية) بنستنى نفس الطلب بدل ما نبعت تاني.
+  let catalogInFlight_ = null;
+  function fetchCatalog_(){
+    if(catalogInFlight_) return catalogInFlight_;
+    catalogInFlight_ = callApi('bootstrapInvoice', [state.auth, 'بيع'])
+      .then(function(data){
+        const c = { asnaf: data.asnaf || [], prices: data.prices || {} };
+        localCacheSet_('catalog', c);
+        return c;
+      })
+      .finally(function(){ catalogInFlight_ = null; });
+    return catalogInFlight_;
+  }
+
+  // تجهيز مسبق: بعد ما الرئيسية تفتح بثانية ونص، بنجيب الكتالوج في الخلفية (للمندوب بس، ومرة كل
+  // 10 دقايق بالكتير) عشان لما يدوس "تسجيل مبيعات" أو "توريد" الشاشة تفتح فورًا
+  const CATALOG_PREFETCH_EVERY_MS_ = 10 * 60 * 1000;
+  function prefetchCatalogSoon_(){
+    setTimeout(function(){
+      if(!state.auth || state.isAdmin) return;
+      const c = localCacheGet_('catalog');
+      if(c && Date.now() - c.t < CATALOG_PREFETCH_EVERY_MS_) return;
+      fetchCatalog_().catch(function(){});
+    }, 1500);
+  }
+
+  // بيفتح شاشة معتمدة على الكتالوج: فورًا من الذاكرة لو موجودة (وبيحدّث في الخلفية)، وإلا بالطريقة العادية
+  // onFresh(c, cached) بتتنادى لما البيانات الجديدة توصل والمندوب لسه على نفس الشاشة
+  function openWithCatalog_(screenName, render, onFresh){
+    const cached = localCacheGet_('catalog');
+    if(cached && cached.v){
+      state.asnaf = cached.v.asnaf || [];
+      state.myPrices = cached.v.prices || {};
+      render();
+      fetchCatalog_()
+        .then(function(c){
+          if(state.screen !== screenName) return;
+          state.asnaf = c.asnaf;
+          state.myPrices = c.prices;
+          if(onFresh) onFresh(c, cached.v);
+        })
+        .catch(function(){}); // النت فاصل؟ نكمّل بالبيانات المحفوظة
+      return;
+    }
+    showLoading(true);
+    fetchCatalog_()
+      .then(function(c){
+        state.asnaf = c.asnaf;
+        state.myPrices = c.prices;
+        showLoading(false);
+        render();
+      })
+      .catch(onError);
+  }
+
+  function saveHomeCache_(){
+    if(!state.user) return;
+    localCacheSet_('home', { user: state.user, isAdmin: state.isAdmin, targetProgress: state.targetProgress_ || null });
+  }
+
   function goHome(){
     clearMsg();
     state.screen = null;
     document.getElementById('pageTitle').textContent = 'تاتش الزنوكي';
     document.getElementById('pageSub').textContent = state.user ? state.user.name : '';
     setView('viewHome');
+    prefetchCatalogSoon_();
   }
 
   // ============ تخزين بيانات الدخول محليًا في المتصفح عشان المندوب ميدخلش كل مرة ============
@@ -1219,12 +1332,133 @@
   }
 
   // كود التأكيد (OTP) ميتطلبش غير مرة واحدة بس لكل جهاز — نفس منطق نسخة Apps Script بالظبط
+  // علامة الجهاز بتتحفظ في 3 أماكن على الموبايل (localStorage + كوكي + IndexedDB) — لو المتصفح مسح
+  // مكان منهم (زي ما Chrome بيعمل لما مساحة الموبايل تقل، أو سفاري بعد أسبوع من غير استخدام)،
+  // بترجع من مكان تاني فالجهاز يفضل "متذكر" ومش بيطلب كود الإيميل تاني.
   const DEVICE_TOKEN_KEY = 'tatsh_zenouki_device';
-  function saveDeviceToken(token){
-    try{ if(token) localStorage.setItem(DEVICE_TOKEN_KEY, token); }catch(e){}
+  const DEVICE_COOKIE_ = 'tz_dev';
+  const DEVICE_IDB_TIMEOUT_MS_ = 700; // بعض المتصفحات الداخلية بتعلّق في IndexedDB — منستناش أكتر من كده
+
+  function cookieGet_(name){
+    try{
+      const m = document.cookie.match(new RegExp('(?:^|; )' + name + '=([^;]*)'));
+      return m ? decodeURIComponent(m[1]) : '';
+    }catch(e){ return ''; }
   }
+  function cookieSet_(name, val){
+    try{
+      document.cookie = name + '=' + encodeURIComponent(val) + '; max-age=' + (400 * 86400) +
+        '; path=/; SameSite=Lax' + (location.protocol === 'https:' ? '; Secure' : '');
+    }catch(e){}
+  }
+  function idbRun_(mode, fn){
+    return new Promise(function(resolve){
+      let done = false;
+      const finish = function(v){ if(!done){ done = true; resolve(v); } };
+      setTimeout(function(){ finish(''); }, DEVICE_IDB_TIMEOUT_MS_);
+      try{
+        if(!window.indexedDB) return finish('');
+        const req = indexedDB.open('tz_device', 1);
+        req.onupgradeneeded = function(){ req.result.createObjectStore('kv'); };
+        req.onerror = function(){ finish(''); };
+        req.onsuccess = function(){
+          const db = req.result;
+          try{
+            const tx = db.transaction('kv', mode);
+            fn(tx.objectStore('kv'), function(v){ finish(v); });
+            tx.oncomplete = function(){ db.close(); finish(''); };
+            tx.onerror = function(){ db.close(); finish(''); };
+          }catch(e){ db.close(); finish(''); }
+        };
+      }catch(e){ finish(''); }
+    });
+  }
+  function idbGetToken_(){
+    return idbRun_('readonly', function(store, done){
+      const q = store.get(DEVICE_TOKEN_KEY);
+      q.onsuccess = function(){ done(q.result || ''); };
+    });
+  }
+  function idbSetToken_(token){
+    return idbRun_('readwrite', function(store){ store.put(token, DEVICE_TOKEN_KEY); });
+  }
+
+  function saveDeviceToken(token){
+    if(!token) return;
+    try{ localStorage.setItem(DEVICE_TOKEN_KEY, token); }catch(e){}
+    cookieSet_(DEVICE_COOKIE_, token);
+    idbSetToken_(token);
+  }
+  // سريع (من غير انتظار): localStorage ثم الكوكي
   function loadDeviceToken(){
-    try{ return localStorage.getItem(DEVICE_TOKEN_KEY) || ''; }catch(e){ return ''; }
+    let t = '';
+    try{ t = localStorage.getItem(DEVICE_TOKEN_KEY) || ''; }catch(e){}
+    return t || cookieGet_(DEVICE_COOKIE_);
+  }
+  // لو المكانين السريعين فاضيين بس، بنسأل IndexedDB (بحد أقصى 700ms)
+  function loadDeviceTokenAsync_(){
+    const quick = loadDeviceToken();
+    if(quick) return Promise.resolve(quick);
+    return idbGetToken_();
+  }
+  // مع كل فتح للتطبيق: لو العلامة موجودة في أي مكان، نرجّعها في الأماكن التانية ونجدد مدة الكوكي
+  function syncDeviceToken_(){
+    loadDeviceTokenAsync_().then(function(token){
+      if(!token) return;
+      let ls = '';
+      try{ ls = localStorage.getItem(DEVICE_TOKEN_KEY) || ''; }catch(e){}
+      if(ls !== token){ try{ localStorage.setItem(DEVICE_TOKEN_KEY, token); }catch(e){} }
+      cookieSet_(DEVICE_COOKIE_, token);
+      idbGetToken_().then(function(v){ if(v !== token) idbSetToken_(token); });
+    });
+  }
+
+  // بنطلب من المتصفح يعتبر بيانات التطبيق "دائمة" ومايمسحهاش لوحده — Chrome بيوافق من غير أي
+  // سؤال للمستخدم. بيتطلب مرة واحدة بس بعد أول دخول ناجح.
+  function requestPersistentStorage_(){
+    try{
+      if(localStorage.getItem('tz_persist_asked')) return;
+      localStorage.setItem('tz_persist_asked', '1');
+    }catch(e){ return; }
+    try{
+      if(navigator.storage && navigator.storage.persist){
+        navigator.storage.persisted().then(function(p){ if(!p) navigator.storage.persist(); }).catch(function(){});
+      }
+    }catch(e){}
+  }
+
+  // ============ تنبيه "انت فاتح التطبيق من جوه واتساب/فيسبوك" ============
+  function isStandaloneApp_(){
+    try{ return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+    catch(e){ return false; }
+  }
+  function isInAppBrowser_(){
+    const ua = navigator.userAgent || '';
+    return /FBAN|FBAV|FB_IAB|FBIOS|Instagram|Messenger|WhatsApp|Snapchat|Line\/|MicroMessenger|TikTok|musical_ly|Telegram/i.test(ua) ||
+      /; wv\)/.test(ua); // WebView عام جوه أي تطبيق أندرويد
+  }
+  function initInAppBanner_(){
+    try{ if(sessionStorage.getItem('tz_inapp_dismissed')) return; }catch(e){}
+    if(isStandaloneApp_() || !isInAppBrowser_()) return;
+    document.getElementById('inAppBanner').hidden = false;
+    document.getElementById('inAppOpenChromeBtn').hidden = !/Android/i.test(navigator.userAgent || '');
+  }
+  function dismissInAppBanner_(){
+    document.getElementById('inAppBanner').hidden = true;
+    try{ sessionStorage.setItem('tz_inapp_dismissed', '1'); }catch(e){}
+  }
+  function openInChrome_(){
+    const u = location.href.replace(/^https?:\/\//, '');
+    location.href = 'intent://' + u + '#Intent;scheme=https;package=com.android.chrome;end';
+  }
+  function copyAppLink_(){
+    const url = location.href;
+    const ok = function(){ showMsg('اتنسخ اللينك ✔ — افتح Chrome والصقه فوق', 'success'); };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(url).then(ok).catch(function(){ prompt('انسخ اللينك ده:', url); });
+    } else {
+      prompt('انسخ اللينك ده:', url);
+    }
   }
 
   // شاشة "إدارة المناديب والمشرفين" بقت مقصورة على صاحب الحساب المحمي بس، مش كل المشرفين
@@ -1234,6 +1468,7 @@
   function applyLoggedInUser(user, isAdmin, targetProgress){
     state.user = user;
     state.isAdmin = !!isAdmin;
+    state.targetProgress_ = targetProgress || null;
     state.isOwner = !!(user && String(user.email || '').trim().toLowerCase() === OWNER_EMAIL_);
     document.getElementById('homeUserName').textContent = user.name;
     document.getElementById('adminLink').hidden = !state.isOwner;
@@ -1249,12 +1484,13 @@
     document.getElementById('jardHomeBtn').hidden = state.isAdmin;
     document.getElementById('pricesLink').hidden = state.isAdmin;
     document.getElementById('invoiceHistoryLink').hidden = state.isAdmin;
-    document.getElementById('profileLink').hidden = state.isAdmin;
+    document.getElementById('profileLink').hidden = false; // إعداداتي متاحة للكل (مندوب ومشرف وصاحب الحساب)
     document.getElementById('suggestionLink').hidden = state.isAdmin;
     document.getElementById('staleReasonsLink').hidden = !state.isAdmin;
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
+    saveHomeCache_();
   }
 
   // درجات "الحالة المزاجية" لنسبة تحقيق الهدف — كل مرحلة ليها إيموجي ولون وجملة تحفيزية بالعامية،
@@ -1307,6 +1543,7 @@
 
   function handleLogout(){
     if(!confirm('متأكد إنك عاوز تسجل خروج؟')) return;
+    localCacheClearAll_();
     clearAuth();
     state.auth = null;
     state.user = null;
@@ -1337,10 +1574,12 @@
     if(!name){ showMsg('اختر اسمك الأول', 'error'); return; }
     if(!pin){ showMsg('اكتب كود الدخول', 'error'); return; }
     showLoading(true);
-    callApi('login', [name, pin, loadDeviceToken()])
+    loadDeviceTokenAsync_()
+      .then(function(deviceToken){ return callApi('login', [name, pin, deviceToken]); })
       .then(function(data){
         showLoading(false);
         if(data.auth){
+          requestPersistentStorage_();
           // الجهاز ده موثوق بالفعل لنفس المندوب — ادخله على طول من غير كود تأكيد
           state.auth = data.auth;
           saveAuth(data.auth);
@@ -1367,6 +1606,7 @@
         state.auth = data.auth;
         saveAuth(data.auth);
         saveDeviceToken(data.deviceToken);
+        requestPersistentStorage_();
         applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
         state.pendingOtpEmail = null;
         showLoading(false);
@@ -1472,6 +1712,8 @@
 
   function init(){
     startHadithRotation_();
+    initInAppBanner_();
+    syncDeviceToken_();
     showLoading(true);
     const saved = loadAuth();
     if(!saved){
@@ -1480,16 +1722,31 @@
       return;
     }
     state.auth = saved;
+    // الرئيسية بتظهر فورًا من آخر بيانات محفوظة على الجهاز، والتحقق من السيرفر شغال في الخلفية
+    const cachedHome = localCacheGet_('home');
+    if(cachedHome && cachedHome.v && cachedHome.v.user){
+      applyLoggedInUser(cachedHome.v.user, cachedHome.v.isAdmin, cachedHome.v.targetProgress);
+      showLoading(false);
+      goHome();
+    }
     callApi('bootstrapHome', [state.auth])
       .then(function(data){
         applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
-        showLoading(false);
-        goHome();
+        if(!cachedHome){
+          showLoading(false);
+          goHome();
+        } else if(state.screen === null){
+          document.getElementById('pageSub').textContent = state.user.name;
+        }
       })
-      .catch(function(){
+      .catch(function(err){
+        // النت فاصل بس والبيانات المحفوظة موجودة — نسيبه يكمّل (شريط "مفيش اتصال" بيظهر لوحده)
+        if(cachedHome && err && err.isNetwork) return;
         // الكود اتغيّر أو الحساب اتحذف — امسح البيانات القديمة وارجعه لشاشة الدخول من غير رسالة خطأ مزعجة
+        localCacheClearAll_();
         clearAuth();
         state.auth = null;
+        state.user = null;
         showLoading(false);
         loadLoginScreen();
       });
@@ -2081,20 +2338,14 @@
 
   // ============ فاتورة (مبيعات/مرتجع) — كل حاجة في المتصفح لحد الترحيل ============
   function loadInvoice(name){
-    showLoading(true);
     state.draftItems = [];
     state.finalized = false;
     state.finalResult = null;
     state.finalizeInFlight = false; // لو حصل أي حالة غريبة سابقًا، ميفضلش القفل عالق على الفاتورة الجديدة
-    const type = (name === 'returns') ? 'مرتجع' : 'بيع';
-    callApi('bootstrapInvoice', [state.auth, type])
-      .then(function(data){
-        state.asnaf = data.asnaf;
-        state.myPrices = data.prices || {};
-        showLoading(false);
-        renderInvoice(name);
-      })
-      .catch(onError);
+    showLoading(false);
+    // الأصناف والأسعار بتستخدم في البحث وملء السعر بس (مفيش قايمة مرسومة)، فالتحديث في الخلفية
+    // بيتطبق بهدوء من غير ما يلمس أي حاجة المندوب كاتبها
+    openWithCatalog_(name, function(){ renderInvoice(name); });
   }
 
   // ============ اختيار صنف بالبحث (اكتب أول حرف وهيظهرلك الأصناف المطابقة) ============
@@ -2456,18 +2707,12 @@
 
   // ============ التوريد ============
   function loadTawrid(){
-    showLoading(true);
     state.tawridItems = [];
     state.tawridFinalized = false;
     state.tawridResult = null;
     state.tawridSaveInFlight = false;
-    callApi('bootstrapTawrid', [state.auth])
-      .then(function(data){
-        state.asnaf = data.asnaf;
-        showLoading(false);
-        renderTawrid();
-      })
-      .catch(onError);
+    showLoading(false);
+    openWithCatalog_('tawrid', renderTawrid);
   }
 
   function renderTawrid(){
@@ -2787,17 +3032,17 @@
   function loadPrices(){
     document.getElementById('pageTitle').textContent = 'أسعاري';
     document.getElementById('pageSub').textContent = state.user.name;
-    showLoading(true);
-    callApi('bootstrapPrices', [state.auth])
-      .then(function(data){
-        state.asnaf = data.asnaf;
-        state.myPrices = data.prices || {};
-        showLoading(false);
-        renderPrices();
-        setView('viewPrices');
-      })
-      .catch(onError);
+    openWithCatalog_('prices', function(){
+      pricesDirty_ = false;
+      renderPrices();
+      setView('viewPrices');
+    }, function(fresh, old){
+      // لو البيانات الجديدة مختلفة والمندوب لسه مكتبش حاجة، نعيد رسم الشاشة؛ لو كتب، منمسحش كتابته
+      if(!pricesDirty_ && JSON.stringify(fresh) !== JSON.stringify(old)) renderPrices();
+    });
   }
+  let pricesDirty_ = false;
+  document.getElementById('pricesList').addEventListener('input', function(){ pricesDirty_ = true; });
 
   function renderPrices(){
     const list = document.getElementById('pricesList');
@@ -2832,6 +3077,11 @@
     callApi('savePrices', [state.auth, items])
       .then(function(result){
         showLoading(false);
+        const newPrices = {};
+        items.forEach(function(it){ newPrices[it.itemName] = it.price; });
+        state.myPrices = newPrices;
+        localCacheSet_('catalog', { asnaf: state.asnaf, prices: newPrices });
+        pricesDirty_ = false;
         showMsg('تم حفظ أسعارك بنجاح ✔ (' + result.count + ' صنف)', 'success');
       })
       .catch(onError);
@@ -2980,6 +3230,7 @@
             document.getElementById('profilePhotoPlaceholder').hidden = true;
             if(state.user){ state.user.photoUrl = newUrl; }
             renderHomeBadgeIcon(newUrl);
+            saveHomeCache_();
             showMsg('تم تحديث الصورة بنجاح ✔', 'success');
           })
           .catch(onError);
