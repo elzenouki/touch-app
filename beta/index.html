@@ -20,7 +20,11 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<!-- الخط بيتحمّل من غير ما يوقف رسم الصفحة (media=print ثم all) — التطبيق بيظهر فورًا بخط النظام
+     وبعدين يتبدل لـ Cairo أول ما يوصل. Tajawal اتشال من الطلب لأن Cairo مغطي كل الحروف المستخدمة. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
 <!-- ExcelJS و html2canvas اتشالوا من هنا عشان يتحمّلوا بس وقت الحاجة الفعلية ليهم (تحميل/مشاركة
      من شاشة "سجل فواتيري")، مش مع كل فتح للتطبيق — ده بيسرّع فتح التطبيق بشكل ملحوظ، خصوصًا على
      نت ضعيف. شوف loadScriptOnce_ تحت. -->
@@ -145,14 +149,14 @@
   .welcomeRow{display:flex; direction:ltr; align-items:center; justify-content:space-between; gap:14px; position:relative;}
   .welcomeLeftGroup{display:flex; direction:ltr; align-items:center; gap:14px; min-width:0;}
   .welcomeCard .badgeIcon{
-    position:relative; width:106px; height:106px; border-radius:24px; flex-shrink:0;
-    background:#fff; padding:6px;
+    position:relative; width:132px; height:132px; border-radius:28px; flex-shrink:0;
+    background:#fff; padding:7px;
     display:flex; align-items:center; justify-content:center;
-    font-size:34px; color:var(--gold-d);
+    font-size:40px; color:var(--gold-d);
     box-shadow:0 8px 18px rgba(0,0,0,.28), inset 0 0 0 1px rgba(212,169,74,.5);
     overflow:hidden;
   }
-  .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:18px; }
+  .welcomeCard .badgeIcon img{ width:100%; height:100%; object-fit:cover; border-radius:21px; }
   .welcomeCard .wText{direction:rtl; text-align:right; min-width:0;}
   .welcomeCard .hi{font-size:14px; color:#a9b4d0; font-weight:600; letter-spacing:.3px; position:relative;}
   .welcomeCard .name{
@@ -525,6 +529,11 @@
     font-family:inherit; resize:vertical; min-height:110px;
   }
   textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
+  /* الأجهزة اللي صاحبها مفعّل "تقليل الحركة" من إعدادات الموبايل: من غير أنيميشن الحديث/البلور */
+  @media (prefers-reduced-motion: reduce){
+    .hadithBox .hadithText .word{ animation:none; opacity:1; transform:none; }
+    .spinnerOverlay{ backdrop-filter:none; }
+  }
 </style>
 </head>
 <body>
@@ -1027,6 +1036,17 @@
     </div>
   </div>
 
+  <div id="dupConfirmOverlay" class="alertOverlay" hidden>
+    <div class="alertModal">
+      <div class="alertIcon">!</div>
+      <div class="alertText">لاحظنا إنك سجّلت فاتورة بنفس الأصناف والكميات والأسعار النهارده أصلاً — متأكد إن دي مش نفس الفاتورة اتسجلت مرتين؟</div>
+      <div style="display:flex; gap:10px;">
+        <button class="ghost" style="margin-top:0; flex:1;" onclick="cancelDuplicateFinalize_()">رجّعني اراجع</button>
+        <button class="finalize" style="margin-top:0; flex:1;" onclick="confirmDuplicateFinalize_()">أيوه اتأكدت</button>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -1061,7 +1081,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.5.0';
+  const APP_VERSION_ = 'v1.5.1';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -1134,10 +1154,9 @@
   function closeAlertModal_(){
     document.getElementById('alertOverlay').hidden = true;
   }
+  const ESC_MAP_ = {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'};
   function escapeHtml(s){
-    return String(s == null ? '' : s).replace(/[&<>"']/g, c => (
-      {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]
-    ));
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ESC_MAP_[c]);
   }
   function fmt(n){
     n = Number(n) || 0;
@@ -1436,9 +1455,19 @@
       refEl.classList.remove('hiddenRef');
     }, words.length * 70 + 300);
   }
+  // التبديل بيقف لما التطبيق يبقى في الخلفية (الشاشة مقفولة أو فاتح تطبيق تاني) عشان ميصرفش
+  // بطارية ومعالج على حاجة محدش شايفها، ويرجع يشتغل أول ما المندوب يرجع للتطبيق
+  let hadithTimer_ = null;
   function startHadithRotation_(){
     showRandomHadith_();
-    setInterval(showRandomHadith_, 15000);
+    hadithTimer_ = setInterval(showRandomHadith_, 15000);
+    document.addEventListener('visibilitychange', function(){
+      if(document.hidden){
+        if(hadithTimer_){ clearInterval(hadithTimer_); hadithTimer_ = null; }
+      } else if(!hadithTimer_){
+        hadithTimer_ = setInterval(showRandomHadith_, 15000);
+      }
+    });
   }
 
   function init(){
@@ -1981,10 +2010,28 @@
     selectedProductPhotos_ = [];
     renderProductPhotoPicker();
     setView('viewAdmin');
-    refreshRepsList();
-    refreshAsnafList();
-    refreshSuggestionsAdmin();
-    refreshProductsAdmin();
+    // طلب واحد بيجيب الأربع قوايم مع بعض بدل 4 طلبات منفصلة
+    ['repsList','asnafList','suggestionsAdminList','productsAdminList'].forEach(function(id){
+      document.getElementById(id).innerHTML = '<div class="empty">جاري التحميل...</div>';
+    });
+    callApi('bootstrapAdmin', [state.auth])
+      .then(function(data){
+        renderRepsList(data.reps);
+        renderAsnafList(data.asnaf);
+        renderSuggestionsAdminList(data.suggestions);
+        renderProductsList(data.products, 'productsAdminList', true);
+      })
+      .catch(function(err){
+        // لو السيرفر لسه نسخة قديمة مفيهاش bootstrapAdmin، نرجع للطريقة القديمة (4 طلبات)
+        if(String(err && err.message).indexOf('طلب غير معروف') !== -1){
+          refreshRepsList();
+          refreshAsnafList();
+          refreshSuggestionsAdmin();
+          refreshProductsAdmin();
+          return;
+        }
+        onError(err);
+      });
   }
 
   function refreshRepsList(){
@@ -2087,7 +2134,12 @@
     listEl.hidden = false;
   }
 
+  function acCancelFrame_(cfg){
+    if(cfg._frame){ cancelAnimationFrame(cfg._frame); cfg._frame = 0; }
+  }
+
   function acSelect(cfg, name){
+    acCancelFrame_(cfg);
     document.getElementById(cfg.hidden).value = name;
     document.getElementById(cfg.input).value = name;
     document.getElementById(cfg.list).hidden = true;
@@ -2095,6 +2147,7 @@
   }
 
   function acReset(cfg){
+    acCancelFrame_(cfg);
     document.getElementById(cfg.hidden).value = '';
     document.getElementById(cfg.input).value = '';
     document.getElementById(cfg.list).innerHTML = '';
@@ -2112,7 +2165,9 @@
       const val = this.value.trim();
       const exact = state.asnaf.find(a => a.name.toLowerCase() === val.toLowerCase());
       document.getElementById(cfg.hidden).value = exact ? exact.name : '';
-      acRenderList(cfg);
+      // رسم القايمة مرة واحدة بس لكل فريم حتى لو المندوب بيكتب بسرعة
+      acCancelFrame_(cfg);
+      cfg._frame = requestAnimationFrame(function(){ cfg._frame = 0; acRenderList(cfg); });
     });
     inputEl.addEventListener('focus', function(){ acRenderList(cfg); });
   });
@@ -2295,15 +2350,32 @@
 
     closeReviewModal();
     clearMsg();
+    doFinalizeRequest_(false);
+  }
+
+  // بتبعت طلب الترحيل الفعلي للسيرفر — confirmDuplicate=false أول مرة، وtrue تاني مرة لو
+  // المندوب شاف تحذير "نفس الفاتورة اتسجلت النهارده" وأكّد إنها مش تكرار
+  function doFinalizeRequest_(confirmDuplicate){
     showLoading(true);
     const type = (state.screen === 'returns') ? 'مرتجع' : 'بيع';
     const requestId = state.pendingFinalizeId;
-    callApi('finalizeInvoice', [state.auth, type, state.draftItems, requestId])
+    callApi('finalizeInvoice', [state.auth, type, state.draftItems, requestId, !!confirmDuplicate])
       .then(function(result){
+        showLoading(false);
+        // السيرفر لقى فاتورة بنفس الأصناف والكميات والأسعار اتسجلت النهارده أصلاً — منرحّلش
+        // على طول، بنسأل المندوب يتأكد الأول (بوب أب بزرارين، مش تحذير عادي بيختفي لوحده)
+        if(result && result.needsDuplicateConfirm){
+          state.finalizeInFlight = false;
+          const btn = document.getElementById('reviewConfirmBtn');
+          if(btn) btn.disabled = false;
+          const mainBtn = document.getElementById('finalizeBtn');
+          if(mainBtn) mainBtn.disabled = false;
+          document.getElementById('dupConfirmOverlay').hidden = false;
+          return;
+        }
         state.finalizeInFlight = false;
         state.finalized = true;
         state.finalResult = result;
-        showLoading(false);
         renderInvoice(state.screen); // بتخفي finalizeBtn خالص لما state.finalized=true
         showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
       })
@@ -2311,9 +2383,29 @@
         state.finalizeInFlight = false;
         const btn = document.getElementById('reviewConfirmBtn');
         if(btn) btn.disabled = false;
+        const mainBtn = document.getElementById('finalizeBtn');
         if(mainBtn) mainBtn.disabled = false; // الترحيل فشل فعلاً، رجّع الزرار يشتغل تاني
         onError(err);
       });
+  }
+
+  // المندوب دوس "رجّعني اراجع" في تحذير التكرار — نرجّعه لشاشة المراجعة تاني من غير ما نترحّل حاجة
+  function cancelDuplicateFinalize_(){
+    document.getElementById('dupConfirmOverlay').hidden = true;
+    openReviewModal();
+  }
+
+  // المندوب دوس "أيوه اتأكدت" — يبقى فعلاً فاتورة تانية، كمّل الترحيل بنفس رقم الطلب
+  function confirmDuplicateFinalize_(){
+    if(state.finalizeInFlight) return;
+    document.getElementById('dupConfirmOverlay').hidden = true;
+    state.finalizeInFlight = true;
+    const btn = document.getElementById('reviewConfirmBtn');
+    if(btn) btn.disabled = true;
+    const mainBtn = document.getElementById('finalizeBtn');
+    if(mainBtn) mainBtn.disabled = true;
+    clearMsg();
+    doFinalizeRequest_(true);
   }
 
   // دالة مشتركة لبناء خيارات ملف إكسل فاتورة (بيع/مرتجع) من أي نتيجة بنفس شكل نتيجة
@@ -2879,12 +2971,15 @@
         callApi('uploadMyPhoto', [state.auth, base64Data, 'image/jpeg'])
           .then(function(result){
             showLoading(false);
+            // السيرفر بيرجّع الرابط في result.url (مش photoUrl) — كان بيتقري غلط فالصورة الجديدة
+            // مكانتش بتظهر غير بعد ما التطبيق يتقفل ويتفتح تاني
+            const newUrl = result.url || result.photoUrl;
             const imgEl = document.getElementById('profilePhotoImg');
-            imgEl.src = result.photoUrl;
+            imgEl.src = newUrl;
             imgEl.hidden = false;
             document.getElementById('profilePhotoPlaceholder').hidden = true;
-            if(state.user){ state.user.photoUrl = result.photoUrl; }
-            renderHomeBadgeIcon(result.photoUrl);
+            if(state.user){ state.user.photoUrl = newUrl; }
+            renderHomeBadgeIcon(newUrl);
             showMsg('تم تحديث الصورة بنجاح ✔', 'success');
           })
           .catch(onError);
@@ -3101,24 +3196,6 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  // بيفتح شاشة "مشاركة" الجهاز نفسه (Web Share API) عشان المندوب يختار واتساب منها.
-  // متاحة بس على المتصفحات اللي بتدعم مشاركة الملفات (أندرويد/آيفون الحديثة) — على أي جهاز/متصفح
-  // تاني (وأغلب متصفحات الكمبيوتر) هترجع false، وساعتها بننزّل الملف عادي بدل ما نكسر حاجة.
-  async function shareExcelFile(blob, fileName, shareText){
-    try{
-      const file = new File([blob], fileName + '.xlsx', {
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      });
-      if(navigator.canShare && navigator.canShare({ files: [file] })){
-        await navigator.share({ files: [file], title: fileName, text: shareText || '' });
-        return true;
-      }
-    }catch(e){
-      if(e && e.name === 'AbortError') return true; // المستخدم قفل شاشة المشاركة بنفسه، مش خطأ حقيقي
-    }
-    return false;
   }
 
   // بيحسب عرض عمود مناسب من طول أطول قيمة فيه (بالحروف)، مع حد أدنى وأقصى معقولين حتى ما
@@ -3472,11 +3549,8 @@
     return { blob: blob, fileName: opts.fileName };
   }
 
-  function escapeHtml_(s){
-    return String(s).replace(/[&<>"']/g, function(c){
-      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
-    });
-  }
+  // نفس escapeHtml بالظبط (كانت نسخة مكررة منها)
+  const escapeHtml_ = escapeHtml;
 
   function triggerImageDownload(blob, fileName){
     const url = URL.createObjectURL(blob);
@@ -3489,7 +3563,7 @@
     URL.revokeObjectURL(url);
   }
 
-  // زي shareExcelFile بالظبط بس لصورة PNG بدل Excel — بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
+  // بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
   async function shareImageFile(blob, fileName, shareText){
     try{
       const file = new File([blob], fileName + '.png', { type: 'image/png' });
