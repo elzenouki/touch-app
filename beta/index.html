@@ -740,6 +740,8 @@
           <option value="سليم">سليم (قابل للبيع تاني)</option>
           <option value="تالف">تالف (مرتجع للشركة)</option>
         </select>
+        <label>سبب المرتجع</label>
+        <input type="text" id="returnReasonInput" maxlength="300" placeholder="مثال: عيب في الموتور / العميل غيّر رأيه">
       </div>
       <button class="primary" id="addBtn" onclick="handleAddItem()">إضافة الصنف</button>
     </div>
@@ -1128,7 +1130,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.6.4';
+  const APP_VERSION_ = 'v1.6.6';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -2469,6 +2471,7 @@
 
     document.getElementById('returnKindWrap').hidden = !isReturns;
     document.getElementById('returnKindInput').value = '';
+    document.getElementById('returnReasonInput').value = '';
 
     document.getElementById('lockBadge').hidden = !state.finalized;
     document.getElementById('addBtn').disabled = state.finalized;
@@ -2480,6 +2483,7 @@
     document.getElementById('qtyInput').disabled = state.finalized;
     document.getElementById('priceInput').disabled = state.finalized;
     document.getElementById('returnKindInput').disabled = state.finalized;
+    document.getElementById('returnReasonInput').disabled = state.finalized;
     document.getElementById('invoiceDownloadRow').hidden = !state.finalized;
     renderItemsList();
 
@@ -2503,10 +2507,13 @@
         const neg = displayQty < 0;
         const returnKind = state.finalized ? it['نوع المرتجع'] : it.returnKind;
         const kindSuffix = (isReturns && returnKind === 'تالف') ? ' (تالف)' : '';
+        const reason = isReturns ? (state.finalized ? it['سبب المرتجع'] : it.returnReason) : '';
+        const reasonHtml = reason ? '<div class="meta">السبب: ' + escapeHtml(reason) + '</div>' : '';
         return '<div class="itemRow' + (neg ? ' neg' : '') + '">' +
           '<div>' +
             '<div class="name">' + escapeHtml(name) + escapeHtml(kindSuffix) + '</div>' +
             '<div class="meta">' + fmt(displayQty) + ' × ' + fmt(price) + '</div>' +
+            reasonHtml +
           '</div>' +
           '<div style="display:flex; align-items:center; gap:8px;">' +
             '<div class="total">' + fmt(total) + '</div>' +
@@ -2542,7 +2549,13 @@
         showMsg('من فضلك حدد نوع المرتجع (سليم أو تالف) قبل الإضافة', 'error');
         return;
       }
-      state.draftItems.push({ itemName: name, qty: qty, price: price, returnKind: kindSel });
+      const reason = document.getElementById('returnReasonInput').value.trim();
+      if(!reason){
+        showMsg('من فضلك اكتب سبب المرتجع قبل الإضافة', 'error');
+        document.getElementById('returnReasonInput').focus();
+        return;
+      }
+      state.draftItems.push({ itemName: name, qty: qty, price: price, returnKind: kindSel, returnReason: reason });
     } else {
       state.draftItems.push({ itemName: name, qty: qty, price: price });
     }
@@ -2551,6 +2564,7 @@
     document.getElementById('qtyInput').value = '';
     document.getElementById('priceInput').value = '';
     document.getElementById('returnKindInput').value = '';
+    document.getElementById('returnReasonInput').value = '';
     renderItemsList();
   }
 
@@ -2584,6 +2598,7 @@
           '<div>' +
             '<div class="rName">' + escapeHtml(it.itemName) + escapeHtml(kindSuffix) + '</div>' +
             '<div class="rMeta">' + fmt(qty) + ' × ' + fmt(it.price) + '</div>' +
+            (isReturns && it.returnReason ? '<div class="rMeta">السبب: ' + escapeHtml(it.returnReason) + '</div>' : '') +
           '</div>' +
           '<div class="rTotal' + (rowTotal < 0 ? ' neg' : '') + '">' + fmt(rowTotal) + '</div>' +
         '</div>'
@@ -2661,7 +2676,15 @@
 
   function normalizeFinalResult_(result){
     result = result || {};
-    if(Array.isArray(result.items)) return result;
+    if(Array.isArray(result.items)){
+      // لو السيرفر نسخة قديمة مش بترجّع سبب المرتجع، ناخده من الأصناف اللي المندوب كتبها
+      if(state.screen === 'returns'){
+        result.items.forEach(function(it, i){
+          if(!it['سبب المرتجع'] && state.draftItems[i]) it['سبب المرتجع'] = state.draftItems[i].returnReason || '';
+        });
+      }
+      return result;
+    }
     const isReturns = (state.screen === 'returns');
     let total = 0;
     const items = state.draftItems.map(function(it){
@@ -2669,7 +2692,7 @@
       const rowTotal = q * Number(it.price);
       total += rowTotal;
       const o = { 'اسم الصنف': it.itemName, 'الكمية': q, 'السعر': Number(it.price), 'الاجمالي': rowTotal };
-      if(isReturns) o['نوع المرتجع'] = it.returnKind === 'تالف' ? 'تالف' : 'سليم';
+      if(isReturns){ o['نوع المرتجع'] = it.returnKind === 'تالف' ? 'تالف' : 'سليم'; o['سبب المرتجع'] = it.returnReason || ''; }
       return o;
     });
     const d = new Date();
@@ -2703,7 +2726,9 @@
     const label = isReturns ? 'مرتجع' : 'مبيعات';
     const rows = result.items.map(it => {
       const kindSuffix = (isReturns && it['نوع المرتجع'] === 'تالف') ? ' (تالف)' : '';
-      return [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
+      return isReturns
+        ? [it['اسم الصنف'] + kindSuffix, it['سبب المرتجع'] || '—', it['الكمية'], it['السعر'], it['الاجمالي']]
+        : [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
     });
     return {
       fileName: label + ' - ' + safeDateForFile(result.date) + ' - ' + state.user.name,
@@ -2714,7 +2739,7 @@
         ['التاريخ', result.date],
         ['نوع العملية', label],
       ],
-      headers: ['اسم الصنف', 'الكمية', 'السعر', 'الاجمالي'],
+      headers: isReturns ? ['اسم الصنف', 'سبب المرتجع', 'الكمية', 'السعر', 'الاجمالي'] : ['اسم الصنف', 'الكمية', 'السعر', 'الاجمالي'],
       rows: rows,
       totalsLabel: 'الإجمالي',
       totalsValue: result.total,
@@ -3879,7 +3904,7 @@
         if(typeof display === 'number'){
           display = isCurrencyCol[i] ? (display.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م') : display.toLocaleString('en-US');
         }
-        return '<td style="padding:12px 10px; font-size:19px; font-weight:800; color:#1a1a1a; text-align:' + align + '; border:1px solid ' + C_GRID + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
+        return '<td style="padding:12px 10px; font-size:19px; font-weight:800; color:#1a1a1a; text-align:' + align + ';' + (isNumericCol[i] ? ' white-space:nowrap;' : '') + ' border:1px solid ' + C_GRID + '; background:' + bg + ';">' + escapeHtml_(String(display)) + '</td>';
       }).join('');
       return '<tr>' + cells + '</tr>';
     }).join('');
@@ -3887,7 +3912,7 @@
     const totalsHtml = (opts.totalsLabel && isLastPage) ? (
       '<tr>' +
         '<td colspan="' + (headers.length - 1) + '" style="padding:13px 10px; font-size:19px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
-        '<td style="padding:13px 10px; font-size:20px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:center;">' +
+        '<td style="padding:13px 10px; font-size:20px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:center; white-space:nowrap;">' +
           (typeof opts.totalsValue === 'number'
             ? (opts.totalsIsCurrency === false ? opts.totalsValue.toLocaleString('en-US') : opts.totalsValue.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ج.م')
             : escapeHtml_(String(opts.totalsValue))) +
@@ -3940,8 +3965,11 @@
     for(let p = 0; p < pages; p++){
       const r = await buildInvoiceImageBlob(opts, { page: p + 1, pages: pages, start: p * per, rows: all.slice(p * per, (p + 1) * per), asCanvas: true });
       const H = W * r.canvas.height / r.canvas.width;
-      if(!pdf) pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: [W, H], compress: true });
-      else pdf.addPage([W, H], 'portrait');
+      // الاتجاه لازم يطابق مقاس الصفحة: لو الجرد أصنافه قليلة الصفحة بتبقى أعرض من طولها، ولو قلنا
+      // "portrait" المكتبة بتبدّل العرض بالطول لوحدها فالصورة بتتقص من الجنب
+      const orient = W > H ? 'landscape' : 'portrait';
+      if(!pdf) pdf = new window.jspdf.jsPDF({ orientation: orient, unit: 'mm', format: [W, H], compress: true });
+      else pdf.addPage([W, H], orient);
       pdf.addImage(r.canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, W, H, undefined, 'FAST');
     }
     return { blob: pdf.output('blob'), fileName: opts.fileName };
