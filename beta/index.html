@@ -539,6 +539,10 @@
     font-family:inherit; resize:vertical; min-height:110px;
   }
   textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
+  .jardCountRowInput.needFill{border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.22); background:#fffaf0;}
+  .jardMissRow{display:flex; justify-content:space-between; gap:10px; padding:9px 12px; border-radius:10px;
+    background:var(--card2); border:1px solid var(--border); margin-bottom:6px; font-size:14px; font-weight:700; color:var(--navy);}
+  .jardMissRow span:last-child{color:var(--gold-d); white-space:nowrap;}
   .inAppBanner{
     background:#fff6e0; border:1px solid var(--gold); color:#6b4a10; border-radius:13px;
     padding:12px 14px; margin-bottom:14px; font-size:13.5px; font-weight:700; line-height:1.7;
@@ -790,11 +794,11 @@
         <span class="badge" id="jardBadge">مندوب</span>
         <span class="badge locked" id="jardLockBadge" hidden>✔ تم الحفظ</span>
       </div>
-      <div class="cardTitle">اكتب العدد الموجود عندك لكل صنف — سيب أي صنف فاضي لو مش موجود عندك خالص</div>
+      <div class="cardTitle">اكتب العدد الموجود عندك لكل صنف — ولو الصنف خلصان عندك اكتب 0</div>
       <div id="jardItemsList"></div>
       <button class="finalize" id="saveJardBtn" onclick="handleSaveJard()">✔ حفظ الجرد</button>
       <div id="jardDownloadRow" hidden style="margin-top:10px;">
-        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareJardExcel()">📤 مشاركة صورة الجرد</button>
+        <button class="whatsapp" style="margin-top:0; width:100%;" onclick="shareJardExcel()">📤 مشاركة الجرد (PDF)</button>
         <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
       </div>
     </div>
@@ -1064,6 +1068,21 @@
     </div>
   </div>
 
+  <div id="jardMissingOverlay" class="alertOverlay" hidden>
+    <div class="alertModal" style="max-width:420px;">
+      <div class="alertIcon" style="background:var(--gold-bg); color:var(--gold-d);">!</div>
+      <div class="alertText" style="margin-bottom:10px;">الأصناف دي ليها <b>رصيد متوقع</b> عندك ومكتبتش عددها:</div>
+      <div id="jardMissingList" style="max-height:220px; overflow-y:auto; text-align:right; margin-bottom:12px;"></div>
+      <div style="color:var(--muted2); font-size:13.5px; font-weight:700; line-height:1.7; margin-bottom:16px;">
+        لو الصنف موجود معاك اكتب عدده، ولو خلصان اكتب <b>0</b> — لو سبته فاضي هيفضل رصيده زي آخر جرد.
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="ghost" style="margin-top:0; flex:1;" onclick="jardMissingSaveAnyway_()">احفظ كده</button>
+        <button class="finalize" style="margin-top:0; flex:1;" onclick="jardMissingGoBack_()">رجّعني أكتبهم</button>
+      </div>
+    </div>
+  </div>
+
   <div id="dupConfirmOverlay" class="alertOverlay" hidden>
     <div class="alertModal">
       <div class="alertIcon">!</div>
@@ -1109,7 +1128,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.6.1';
+  const APP_VERSION_ = 'v1.6.4';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -2243,11 +2262,9 @@
     callApi('getInvoiceDetails', [state.auth, sessionId])
       .then(async function(result){
         const opts = historyExcelOptsFromResult_(result);
-        const { blob, fileName } = await buildInvoiceImageBlob(opts);
+        const shared = await shareReport_(opts, result.type);
         showLoading(false);
-        const shared = await shareImageFile(blob, fileName, opts.fileName);
         if(!shared){
-          triggerImageDownload(blob, fileName);
           showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
         }
       })
@@ -2472,7 +2489,7 @@
   function renderItemsList(){
     const list = document.getElementById('itemsList');
     const isReturns = (state.screen === 'returns');
-    const source = state.finalized ? state.finalResult.items : state.draftItems;
+    const source = (state.finalized ? (state.finalResult && state.finalResult.items) : state.draftItems) || [];
 
     if(!source.length){
       list.innerHTML = '<div class="empty">لسه مفيش أصناف مضافة</div>';
@@ -2626,7 +2643,9 @@
         }
         state.finalizeInFlight = false;
         state.finalized = true;
-        state.finalResult = result;
+        // حماية: لو رد السيرفر وصل من غير قايمة الأصناف (نسخة سيرفر مختلفة مثلاً)، الفاتورة اتسجلت
+        // فعلاً — نعرضها من الأصناف اللي المندوب كتبها بدل ما الشاشة تقع بخطأ ويفتكر إنها متسجلتش
+        state.finalResult = normalizeFinalResult_(result);
         renderInvoice(state.screen); // بتخفي finalizeBtn خالص لما state.finalized=true
         showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
       })
@@ -2638,6 +2657,24 @@
         if(mainBtn) mainBtn.disabled = false; // الترحيل فشل فعلاً، رجّع الزرار يشتغل تاني
         onError(err);
       });
+  }
+
+  function normalizeFinalResult_(result){
+    result = result || {};
+    if(Array.isArray(result.items)) return result;
+    const isReturns = (state.screen === 'returns');
+    let total = 0;
+    const items = state.draftItems.map(function(it){
+      const q = isReturns ? -Number(it.qty) : Number(it.qty);
+      const rowTotal = q * Number(it.price);
+      total += rowTotal;
+      const o = { 'اسم الصنف': it.itemName, 'الكمية': q, 'السعر': Number(it.price), 'الاجمالي': rowTotal };
+      if(isReturns) o['نوع المرتجع'] = it.returnKind === 'تالف' ? 'تالف' : 'سليم';
+      return o;
+    });
+    const d = new Date();
+    const dmy = String(d.getDate()).padStart(2,'0') + '/' + String(d.getMonth()+1).padStart(2,'0') + '/' + d.getFullYear();
+    return Object.assign({ date: dmy, repName: state.user && state.user.name }, result, { items: items, total: result.total != null ? result.total : total });
   }
 
   // المندوب دوس "رجّعني اراجع" في تحذير التكرار — نرجّعه لشاشة المراجعة تاني من غير ما نترحّل حاجة
@@ -2693,12 +2730,10 @@
     clearMsg();
     showLoading(true);
     const opts = currentInvoiceExcelOpts_();
-    buildInvoiceImageBlob(opts)
-      .then(async function(r){
+    shareReportImages_(opts)
+      .then(function(shared){
         showLoading(false);
-        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
         if(!shared){
-          triggerImageDownload(r.blob, r.fileName);
           showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
         }
       })
@@ -2822,12 +2857,10 @@
     clearMsg();
     showLoading(true);
     const opts = tawridExcelOptsFromState_();
-    buildInvoiceImageBlob(opts)
-      .then(async function(r){
+    shareReportImages_(opts)
+      .then(function(shared){
         showLoading(false);
-        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
         if(!shared){
-          triggerImageDownload(r.blob, r.fileName);
           showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
         }
       })
@@ -2917,7 +2950,49 @@
       }
     });
     if(!items.length){ showMsg('اكتب عدد صنف واحد على الأقل قبل الحفظ', 'error'); return; }
+
+    // تذكير: أصناف ليها رصيد متوقع (أكبر من صفر) والمندوب ساب خانتها فاضية — ممكن يكون نسيها
+    const missing = [];
+    inputs.forEach(function(inp){
+      inp.classList.remove('needFill');
+      if(inp.value !== '') return;
+      const a = state.asnaf.find(function(x){ return x.name === inp.dataset.name; });
+      if(a && typeof a.expectedBalance === 'number' && a.expectedBalance > 0) missing.push({ inp: inp, name: a.name, expected: a.expectedBalance });
+    });
+    if(missing.length){
+      state.jardPending_ = { items: items, missing: missing };
+      document.getElementById('jardMissingList').innerHTML = missing.map(function(m){
+        return '<div class="jardMissRow"><span>' + escapeHtml(m.name) + '</span><span>📦 ' + fmt(m.expected) + '</span></div>';
+      }).join('');
+      document.getElementById('jardMissingOverlay').hidden = false;
+      return;
+    }
     if(!confirm('متأكد إنك عاوز تحفظ الجرد ده؟')) return;
+    doSaveJard_(items);
+  }
+
+  // "رجّعني أكتبهم": نعلّم الخانات الناقصة وننزل لأول واحدة
+  function jardMissingGoBack_(){
+    document.getElementById('jardMissingOverlay').hidden = true;
+    const p = state.jardPending_; state.jardPending_ = null;
+    if(!p) return;
+    p.missing.forEach(function(m){ m.inp.classList.add('needFill'); });
+    const first = p.missing[0].inp;
+    const hdr = document.querySelector('.header');
+    const top = first.getBoundingClientRect().top + window.scrollY - (hdr ? hdr.getBoundingClientRect().bottom : 0) - 80;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+    setTimeout(function(){ try{ first.focus({ preventScroll: true }); }catch(e){} }, 450);
+  }
+
+  // "احفظ كده": المندوب متأكد — الأصناف الفاضية هتفضل على رصيد آخر جرد
+  function jardMissingSaveAnyway_(){
+    document.getElementById('jardMissingOverlay').hidden = true;
+    const p = state.jardPending_; state.jardPending_ = null;
+    if(p) doSaveJard_(p.items);
+  }
+
+  function doSaveJard_(items){
+    if(state.jardSaveInFlight) return;
     state.jardSaveInFlight = true;
     const btn = document.getElementById('saveJardBtn');
     if(btn) btn.disabled = true; // يتقفل فورًا لحد ما الرد يوصل، عشان مايتحفظش مرتين
@@ -2967,12 +3042,10 @@
     clearMsg();
     showLoading(true);
     const opts = jardExcelOptsFromState_();
-    buildInvoiceImageBlob(opts)
-      .then(async function(r){
+    shareReport_(opts, 'جرد')
+      .then(function(shared){
         showLoading(false);
-        const shared = await shareImageFile(r.blob, r.fileName, opts.fileName);
         if(!shared){
-          triggerImageDownload(r.blob, r.fileName);
           showMsg('المشاركة المباشرة مش متاحة على المتصفح/الجهاز ده — تم تنزيل الملف بدل كده، ابعته من واتساب يدويًا', 'error');
         }
       })
@@ -3041,6 +3114,9 @@
       if(!pricesDirty_ && JSON.stringify(fresh) !== JSON.stringify(old)) renderPrices();
     });
   }
+  document.getElementById('jardItemsList').addEventListener('input', function(e){
+    if(e.target.classList && e.target.value !== '') e.target.classList.remove('needFill');
+  });
   let pricesDirty_ = false;
   document.getElementById('pricesList').addEventListener('input', function(){ pricesDirty_ = true; });
 
@@ -3720,10 +3796,53 @@
   // ملف الإكسل هنا بالظبط، فتطلع الصورة بنفس هوية الشكل تمامًا
   function argbToCss_(argb){ return '#' + argb.slice(2); }
 
-  async function buildInvoiceImageBlob(opts){
+  // ============ تقسيم الصورة لصفحات لو الأصناف كتير ============
+  // واتساب بيصغّر أي صورة طولها أكبر من ~1600 نقطة، فصورة فيها 40+ صنف بتوصل صغيرة ومش مقروءة. عشان كده
+  // لو الأصناف أكتر من MAX_ROWS_PER_IMAGE_ بنقسمها لكذا صورة متساوية تقريبًا (صفحة 1 من 3...)، كل صورة
+  // فيها بيانات المندوب/الفرع/التاريخ وترقيم الأصناف بيكمّل، والإجمالي في آخر صفحة — وكلهم بيتبعتوا
+  // في مشاركة واحدة. الفواتير الصغيرة (أقل من الحد) بتفضل صورة واحدة زي ما هي بالظبط.
+  const MAX_ROWS_PER_IMAGE_ = 18;
+
+  async function buildReportImages_(opts){
+    const all = opts.rows || [];
+    const pages = Math.max(1, Math.ceil(all.length / MAX_ROWS_PER_IMAGE_));
+    const per = Math.ceil(all.length / pages) || 1;
+    const out = [];
+    for(let p = 0; p < pages; p++){
+      const pageRows = all.slice(p * per, (p + 1) * per);
+      const r = await buildInvoiceImageBlob(opts, { page: p + 1, pages: pages, start: p * per, rows: pageRows });
+      out.push({ blob: r.blob, fileName: pages > 1 ? (opts.fileName + ' - صفحة ' + (p + 1) + ' من ' + pages) : opts.fileName });
+    }
+    return out;
+  }
+
+  // مشاركة كل الصور مرة واحدة (واتساب بيستقبلهم مع بعض)، ولو المشاركة مش متاحة بننزّلهم
+  async function shareReportImages_(opts){
+    const pages = await buildReportImages_(opts);
+    try{
+      const files = pages.map(function(pg){ return new File([pg.blob], pg.fileName + '.png', { type: 'image/png' }); });
+      if(navigator.canShare && navigator.canShare({ files: files })){
+        await navigator.share({ files: files, title: opts.fileName, text: opts.fileName });
+        return true;
+      }
+    }catch(e){
+      if(e && e.name === 'AbortError') return true;
+    }
+    pages.forEach(function(pg){ triggerImageDownload(pg.blob, pg.fileName); });
+    return false;
+  }
+
+  // page (اختياري): {page, pages, start, rows} — لما الصورة جزء من تقرير متقسم لصفحات
+  async function buildInvoiceImageBlob(opts, page){
     await ensureHtml2CanvasLoaded_();
-    const headers = opts.headers;
-    const rows = opts.rows;
+    const paged = !!(page && page.pages > 1);
+    const isLastPage = !page || page.page === page.pages;
+    const baseHeaders = opts.headers;
+    const allRows = opts.rows;
+    const headers = paged ? ['#'].concat(baseHeaders) : baseHeaders;
+    const rows = paged
+      ? page.rows.map(function(r, i){ return [page.start + i + 1].concat(r); })
+      : (page ? page.rows : allRows);
     const meta = opts.meta || [];
     // نفس ألوان "الأزرق الكوربوريتي" المستخدمة في ملف الإكسل بالظبط (BRAND_* فوق)
     const C_BANNER = argbToCss_(BRAND_BANNER);
@@ -3735,7 +3854,9 @@
     const C_FRAME = argbToCss_(BRAND_FRAME);
     const C_ACCENT = argbToCss_(BRAND_ACCENT);
 
-    const isNumericCol = headers.map(function(_, i){ return isNumericCol_(rows.map(function(r){ return r[i]; })); });
+    const isNumericCol = paged
+      ? [true].concat(baseHeaders.map(function(_, i){ return isNumericCol_(allRows.map(function(r){ return r[i]; })); }))
+      : headers.map(function(_, i){ return isNumericCol_(rows.map(function(r){ return r[i]; })); });
     const isCurrencyCol = headers.map(function(h, i){ return isNumericCol[i] && isCurrencyHeader_(h); });
 
     const metaHtml = meta.map(function(pair, i){
@@ -3763,7 +3884,7 @@
       return '<tr>' + cells + '</tr>';
     }).join('');
 
-    const totalsHtml = opts.totalsLabel ? (
+    const totalsHtml = (opts.totalsLabel && isLastPage) ? (
       '<tr>' +
         '<td colspan="' + (headers.length - 1) + '" style="padding:13px 10px; font-size:19px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:right;">' + escapeHtml_(opts.totalsLabel) + '</td>' +
         '<td style="padding:13px 10px; font-size:20px; font-weight:800; color:#fff; background:' + C_BANNER + '; border:1px solid ' + C_FRAME + '; text-align:center;">' +
@@ -3783,21 +3904,68 @@
     container.innerHTML =
       '<div style="padding:24px;">' +
         '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; font-size:20px; font-weight:900; padding:16px;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
-        '<div style="background:' + C_SUBTITLE + '; color:#fff; text-align:center; font-size:14.5px; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + '</div>' +
+        '<div style="background:' + C_SUBTITLE + '; color:#fff; text-align:center; font-size:' + (paged ? '17px' : '14.5px') + '; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + (paged ? ' — صفحة ' + page.page + ' من ' + page.pages : '') + '</div>' +
         '<div style="border:2px solid ' + C_ACCENT + '; border-top:none; margin-bottom:14px;">' + metaHtml + '</div>' +
         '<table style="width:100%; border-collapse:collapse; border:2px solid ' + C_FRAME + ';"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
+        (paged && !isLastPage ? '<div style="text-align:center; font-size:17px; font-weight:800; color:' + C_BANNER + '; margin-top:12px;">يتبع في الصفحة ' + (page.page + 1) + ' ←</div>' : '') +
         '<div style="text-align:center; font-size:11px; color:#9a9a9a; font-style:italic; margin-top:14px;">تم إنشاء الملف تلقائيًا بتاريخ ' + stamp + '</div>' +
       '</div>';
     document.body.appendChild(container);
 
-    let blob;
+    let blob, canvas;
     try{
-      const canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      if(page && page.asCanvas) return { canvas: canvas };
       blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
     } finally {
       document.body.removeChild(container);
     }
     return { blob: blob, fileName: opts.fileName };
+  }
+
+  // ============ تقرير PDF (للجرد) ============
+  // نفس صفحات الصورة بالظبط (المتصفح هو اللي بيرسم العربي، فبيطلع سليم 100%)، بس متجمعة في ملف PDF واحد
+  // — واتساب مش بيصغّر المستندات، فالكلام بيفضل واضح مهما كان عدد الأصناف. مكتبة jsPDF بتتحمّل أول
+  // مرة بس المندوب يشارك جرد، مش مع فتح التطبيق.
+  function ensureJsPdfLoaded_(){
+    return loadScriptOnce_('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  }
+  async function buildReportPdf_(opts){
+    await Promise.all([ensureJsPdfLoaded_(), ensureHtml2CanvasLoaded_()]);
+    const all = opts.rows || [];
+    const pages = Math.max(1, Math.ceil(all.length / MAX_ROWS_PER_IMAGE_));
+    const per = Math.ceil(all.length / pages) || 1;
+    const W = 210; // عرض A4 بالمللي، والطول على قد محتوى الصفحة
+    let pdf = null;
+    for(let p = 0; p < pages; p++){
+      const r = await buildInvoiceImageBlob(opts, { page: p + 1, pages: pages, start: p * per, rows: all.slice(p * per, (p + 1) * per), asCanvas: true });
+      const H = W * r.canvas.height / r.canvas.width;
+      if(!pdf) pdf = new window.jspdf.jsPDF({ orientation: 'portrait', unit: 'mm', format: [W, H], compress: true });
+      else pdf.addPage([W, H], 'portrait');
+      pdf.addImage(r.canvas.toDataURL('image/jpeg', 0.92), 'JPEG', 0, 0, W, H, undefined, 'FAST');
+    }
+    return { blob: pdf.output('blob'), fileName: opts.fileName };
+  }
+  async function shareReportPdf_(opts){
+    const r = await buildReportPdf_(opts);
+    try{
+      const file = new File([r.blob], r.fileName + '.pdf', { type: 'application/pdf' });
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        await navigator.share({ files: [file], title: r.fileName, text: r.fileName });
+        return true;
+      }
+    }catch(e){
+      if(e && e.name === 'AbortError') return true;
+    }
+    const url = URL.createObjectURL(r.blob);
+    const a = document.createElement('a'); a.href = url; a.download = r.fileName + '.pdf';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 4000);
+    return false;
+  }
+  // الجرد → PDF، أي نوع تاني → صور
+  function shareReport_(opts, type){
+    return type === 'جرد' ? shareReportPdf_(opts) : shareReportImages_(opts);
   }
 
   // نفس escapeHtml بالظبط (كانت نسخة مكررة منها)
@@ -3812,20 +3980,6 @@
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-  }
-
-  // بيتفتح بيه شاشة "مشاركة" الجهاز (واتساب وغيره)
-  async function shareImageFile(blob, fileName, shareText){
-    try{
-      const file = new File([blob], fileName + '.png', { type: 'image/png' });
-      if(navigator.canShare && navigator.canShare({ files: [file] })){
-        await navigator.share({ files: [file], title: fileName, text: shareText || '' });
-        return true;
-      }
-    }catch(e){
-      if(e && e.name === 'AbortError') return true;
-    }
-    return false;
   }
 
   // ============ تسجيل الـ Service Worker + اكتشاف التحديثات تلقائيًا ============
