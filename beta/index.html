@@ -439,6 +439,12 @@
     max-height:calc(100vh - 36px); display:flex; flex-direction:column; overflow:hidden;
     box-shadow:0 10px 40px rgba(0,0,0,.35);
   }
+  .pkBigBtn{ display:flex; align-items:center; justify-content:center; gap:10px; font-size:17px; padding:16px; }
+  .pkBigBtn .pkIcon{ font-size:22px; }
+  .pkProfileBox{ margin-top:18px; padding-top:14px; border-top:1px dashed var(--border); }
+  .pkProfileTitle{ font-weight:800; font-size:15px; margin-bottom:4px; }
+  .pkProfileStatus{ font-size:13.5px; color:var(--muted2); font-weight:700; line-height:1.7; }
+  button.ghost.pkClearBtn{ margin-top:6px; font-size:13px; color:var(--red); border-color:var(--red-bg); background:transparent; }
   .alertOverlay{
     position:fixed; inset:0; background:rgba(10,15,30,.65); z-index:600;
     display:flex; align-items:center; justify-content:center; padding:20px;
@@ -539,6 +545,23 @@
     font-family:inherit; resize:vertical; min-height:110px;
   }
   textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
+  /* ============ نبض البيع اليومي + نمط الأسبوع (شاشة مبيعاتي) ============ */
+  .pulseNote{font-size:12.5px; color:var(--muted2); font-weight:700; margin:-4px 0 12px;}
+  .calHead, .calGrid, .wkGrid{display:grid; grid-template-columns:repeat(7, 1fr); gap:5px;}
+  .calHead div{font-size:10.5px; font-weight:800; color:var(--muted2); text-align:center; padding-bottom:2px;}
+  .calCell, .wkCell{background:#fff; border:1px solid var(--border); border-radius:10px; padding:6px 2px 7px; text-align:center; min-width:0;}
+  .calCell.none{border-style:dashed; background:var(--card2);}
+  .calCell.pad{visibility:hidden;}
+  .calCell .dt, .wkCell .dt{font-size:10px; color:var(--muted); font-weight:700;}
+  .calCell .amt, .wkCell .amt{font-size:11.5px; font-weight:900; color:var(--navy); margin:3px 0 5px; white-space:nowrap; overflow:hidden; text-overflow:clip; letter-spacing:-.2px;}
+  .calCell.none .amt{color:var(--muted);}
+  .calCell .amt.neg{color:var(--red);}
+  .pBar{height:4px; border-radius:4px; background:#eceae3; margin:0 4px; overflow:hidden;}
+  .pBar i{display:block; height:100%; border-radius:4px; margin-inline-start:auto;}
+  .pBar i.b{background:var(--blue);} .pBar i.g{background:var(--green);} .pBar i.o{background:#c77b1e;}
+  .wkCell .nm{font-size:11px; font-weight:800; color:var(--navy);}
+  .wkCell .weak{font-size:10px; font-weight:800; color:var(--red); margin-top:4px;}
+  .pulseFoot{font-size:11.5px; color:var(--muted); margin-top:10px; line-height:1.6;}
   .jardCountRowInput.needFill{border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.22); background:#fffaf0;}
   .jardMissRow{display:flex; justify-content:space-between; gap:10px; padding:9px 12px; border-radius:10px;
     background:var(--card2); border:1px solid var(--border); margin-bottom:6px; font-size:14px; font-weight:700; color:var(--navy);}
@@ -615,10 +638,16 @@
     <div class="card">
       <div class="cardTitle">تأكيد الدخول</div>
       <div id="otpHint" style="margin-bottom:10px; color:#666; font-size:14px;">بعتنالك كود تأكيد على إيميلك</div>
-      <label>الكود اللي وصلك على الإيميل</label>
-      <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="6" placeholder="مثال: 123456">
-      <button class="primary" id="otpBtn" onclick="handleVerifyOtp()">تأكيد ودخول</button>
-      <button class="ghost" id="otpResendBtn" onclick="handleResendOtp()" style="margin-top:8px;">إعادة إرسال الكود</button>
+      <div id="otpPkBox" hidden>
+        <button class="primary pkBigBtn" id="pkLoginBtn" onclick="handlePasskeyLogin_()"><span class="pkIcon">🔐</span>ادخل ببصمة الوجه / الإصبع</button>
+        <button class="ghost" onclick="handleUseEmailInstead_()" style="margin-top:8px;">✉ ابعتلي كود على الإيميل بدل كده</button>
+      </div>
+      <div id="otpEmailBox">
+        <label>الكود اللي وصلك على الإيميل</label>
+        <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="6" placeholder="مثال: 123456">
+        <button class="primary" id="otpBtn" onclick="handleVerifyOtp()">تأكيد ودخول</button>
+        <button class="ghost" id="otpResendBtn" onclick="handleResendOtp()" style="margin-top:8px;">إعادة إرسال الكود</button>
+      </div>
       <button class="ghost" onclick="handleOtpBack()" style="margin-top:8px;">رجوع لتسجيل الدخول</button>
     </div>
   </div>
@@ -848,6 +877,18 @@
       </div>
       <div style="color:var(--muted); font-size:13px; margin-top:8px; text-align:center;" id="statsTargetPct"></div>
     </div>
+    <div class="card" id="pulseCard" hidden>
+      <div class="cardTitle">نبض البيع اليومي</div>
+      <div class="pulseNote">الأيام المتقطعة = مفيش بيع · <span style="color:var(--green)">■</span> أعلى يوم · <span style="color:#c77b1e">■</span> أقل من المعتاد</div>
+      <div class="calHead" id="pulseHead"></div>
+      <div class="calGrid" id="pulseGrid"></div>
+    </div>
+    <div class="card" id="weekCard" hidden>
+      <div class="cardTitle">نمط الأسبوع</div>
+      <div class="pulseNote" id="weekNote"></div>
+      <div class="wkGrid" id="weekGrid"></div>
+      <div class="pulseFoot" id="weekFoot"></div>
+    </div>
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">الأرقام دي صافي بعد خصم أي مرتجعات — شاشة مشاهدة فقط، مفيش أي تعديل من هنا</div>
   </div>
 
@@ -1018,6 +1059,12 @@
       <label>الإجازة الأسبوعية (تقدر تختار أكتر من يوم)</label>
       <div class="dayChipsWrap" id="weeklyOffChipsWrap"></div>
       <button class="finalize" id="saveProfileBtn" onclick="handleSaveProfile()">✔ حفظ بياناتي</button>
+      <div id="pkProfileBox" class="pkProfileBox" hidden>
+        <div class="pkProfileTitle">🔐 الدخول بالبصمة</div>
+        <div id="pkProfileStatus" class="pkProfileStatus"></div>
+        <button class="ghost" id="pkProfileBtn" style="margin-top:8px;" onclick="openPasskeyOffer_(true)">فعّل الدخول بالبصمة على الجهاز ده</button>
+        <button class="ghost pkClearBtn" id="pkClearBtn" hidden onclick="handlePasskeyClear_()">مسح كل البصمات المتسجلة على حسابي</button>
+      </div>
       <div class="appVersionNote" id="appVersionNote"></div>
     </div>
   </div>
@@ -1085,6 +1132,20 @@
     </div>
   </div>
 
+  <div id="pkOfferOverlay" class="alertOverlay" hidden>
+    <div class="alertModal" style="max-width:400px;">
+      <div class="alertIcon" style="background:var(--gold-bg); color:var(--gold-d); font-size:26px;">🔐</div>
+      <div class="alertText" style="margin-bottom:8px;">تحب تدخل <b>ببصمة الوجه أو الإصبع</b> بدل كود الإيميل؟</div>
+      <div style="color:var(--muted2); font-size:13.5px; font-weight:700; line-height:1.7; margin-bottom:16px;">
+        لو التطبيق طلب منك تأكيد تاني (موبايل جديد، مسحت البيانات، متصفح تاني)، هتحط بصمتك وتدخل على طول من غير ما تستنى إيميل. البصمة بتفضل على موبايلك وماحدش بيشوفها.
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="ghost" style="margin-top:0; flex:1;" onclick="closePasskeyOffer_()">بعدين</button>
+        <button class="finalize" id="pkOfferBtn" style="margin-top:0; flex:1;" onclick="doRegisterPasskey_()" disabled>فعّل دلوقتي</button>
+      </div>
+    </div>
+  </div>
+
   <div id="dupConfirmOverlay" class="alertOverlay" hidden>
     <div class="alertModal">
       <div class="alertIcon">!</div>
@@ -1130,7 +1191,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.6.6';
+  const APP_VERSION_ = 'v1.6.8';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -1335,6 +1396,8 @@
     document.getElementById('pageSub').textContent = state.user ? state.user.name : '';
     setView('viewHome');
     prefetchCatalogSoon_();
+    // مرة واحدة: نعرض على المندوب اللي داخل من قبل كده يفعّل البصمة
+    if(!_pkOfferShownThisSession_) setTimeout(function(){ maybeOfferPasskey_(false); }, 2500);
   }
 
   // ============ تخزين بيانات الدخول محليًا في المتصفح عشان المندوب ميدخلش كل مرة ============
@@ -1595,8 +1658,8 @@
     if(!name){ showMsg('اختر اسمك الأول', 'error'); return; }
     if(!pin){ showMsg('اكتب كود الدخول', 'error'); return; }
     showLoading(true);
-    loadDeviceTokenAsync_()
-      .then(function(deviceToken){ return callApi('login', [name, pin, deviceToken]); })
+    Promise.all([loadDeviceTokenAsync_(), pkSupported_()])
+      .then(function(v){ return callApi('login', [name, pin, v[0], { passkey: v[1] }]); })
       .then(function(data){
         showLoading(false);
         if(data.auth){
@@ -1609,8 +1672,14 @@
           return;
         }
         state.pendingOtpEmail = data.email;
+        state.pendingOtpName = data.name;
+        state.pendingPasskey = data.passkey || null;
         document.getElementById('otpInput').value = '';
-        document.getElementById('otpHint').textContent = 'بعتنالك كود تأكيد على إيميل ' + data.name + ' المسجل — اكتبه هنا عشان تكمل الدخول';
+        if(data.passkey){
+          showOtpMode_('passkey');
+        } else {
+          showOtpMode_('email');
+        }
         setView('viewOtp');
       })
       .catch(onError);
@@ -1623,17 +1692,24 @@
     if(!state.pendingOtpEmail){ showMsg('حصل خطأ، سجل الدخول تاني', 'error'); setView('viewLogin'); return; }
     showLoading(true);
     callApi('verifyLoginOtp', [state.pendingOtpEmail, otp])
-      .then(function(data){
-        state.auth = data.auth;
-        saveAuth(data.auth);
-        saveDeviceToken(data.deviceToken);
-        requestPersistentStorage_();
-        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
-        state.pendingOtpEmail = null;
-        showLoading(false);
-        goHome();
-      })
+      .then(function(data){ onNewDeviceLogin_(data, 'email'); })
       .catch(onError);
+  }
+
+  // نهاية الدخول على جهاز جديد (بكود الإيميل أو بالبصمة)
+  function onNewDeviceLogin_(data, via){
+    state.auth = data.auth;
+    saveAuth(data.auth);
+    saveDeviceToken(data.deviceToken);
+    requestPersistentStorage_();
+    applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
+    state.pendingOtpEmail = null;
+    state.pendingPasskey = null;
+    showLoading(false);
+    if(via === 'passkey') pkMarkLocal_(data.user.email, true);
+    goHome();
+    // دخل بكود الإيميل؟ نعرض عليه يفعّل البصمة عشان المرة الجاية تبقى أسهل
+    if(via === 'email') setTimeout(function(){ maybeOfferPasskey_(true); }, 700);
   }
 
   function handleResendOtp(){
@@ -1651,8 +1727,275 @@
   function handleOtpBack(){
     clearMsg();
     state.pendingOtpEmail = null;
+    state.pendingPasskey = null;
     document.getElementById('loginPinInput').value = '';
     setView('viewLogin');
+  }
+
+  // ================== الدخول بالبصمة (Passkey) بدل كود الإيميل ==================
+  // أول مرة على الجهاز: كود الإيميل. بعدها المندوب يفعّل البصمة، والمرة الجاية اللي التطبيق يطلب فيها
+  // تأكيد، بيحط بصمته بدل ما يستنى الإيميل. السيرفر بيتأكد من التوقيع — البصمة نفسها مابتطلعش من الموبايل.
+  var _pkSupported_ = null;
+  function pkSupported_(){
+    if(_pkSupported_) return _pkSupported_;
+    _pkSupported_ = new Promise(function(resolve){
+      try{
+        if(!window.PublicKeyCredential || !navigator.credentials || !window.isSecureContext ||
+           typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable !== 'function'){ resolve(false); return; }
+        const timer = setTimeout(function(){ resolve(false); }, 1200);
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+          .then(function(ok){ clearTimeout(timer); resolve(!!ok); })
+          .catch(function(){ clearTimeout(timer); resolve(false); });
+      }catch(e){ resolve(false); }
+    });
+    return _pkSupported_;
+  }
+  function pkB64uToBuf_(s){
+    s = String(s).replace(/-/g, '+').replace(/_/g, '/');
+    while(s.length % 4) s += '=';
+    const bin = atob(s), out = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
+  function pkBufToB64u_(buf){
+    const b = new Uint8Array(buf); let s = '';
+    for(let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function pkHex_(u8){ return Array.prototype.map.call(u8, function(b){ return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  // فك CBOR بسيط (كفاية لـ attestationObject والمفتاح العام COSE)
+  function pkCbor_(bytes){
+    let i = 0;
+    function len(ai){
+      if(ai < 24) return ai;
+      if(ai === 24) return bytes[i++];
+      if(ai === 25){ const v = (bytes[i] << 8) | bytes[i + 1]; i += 2; return v; }
+      if(ai === 26){ const v = ((bytes[i] << 24) >>> 0) + (bytes[i + 1] << 16) + (bytes[i + 2] << 8) + bytes[i + 3]; i += 4; return v; }
+      throw new Error('cbor');
+    }
+    function item(){
+      const ib = bytes[i++], mt = ib >> 5, ai = ib & 31;
+      if(mt === 7){ if(ai === 20) return false; if(ai === 21) return true; if(ai === 22) return null; throw new Error('cbor'); }
+      const n = len(ai);
+      if(mt === 0) return n;
+      if(mt === 1) return -1 - n;
+      if(mt === 2){ const v = bytes.slice(i, i + n); i += n; return v; }
+      if(mt === 3){ const v = new TextDecoder().decode(bytes.slice(i, i + n)); i += n; return v; }
+      if(mt === 4){ const a = []; for(let k = 0; k < n; k++) a.push(item()); return a; }
+      if(mt === 5){ const m = new Map(); for(let k = 0; k < n; k++){ const key = item(); m.set(key, item()); } return m; }
+      throw new Error('cbor');
+    }
+    const v = item();
+    return { value: v, end: i };
+  }
+  function pkLocalKey_(email){ return 'tz_pk_on:' + String(email || '').toLowerCase(); }
+  function pkMarkLocal_(email, on){
+    try{ if(on) localStorage.setItem(pkLocalKey_(email), '1'); else localStorage.removeItem(pkLocalKey_(email)); }catch(e){}
+  }
+  function pkIsLocal_(email){ try{ return localStorage.getItem(pkLocalKey_(email)) === '1'; }catch(e){ return false; } }
+  function pkDeviceLabel_(){
+    const ua = navigator.userAgent || '';
+    if(/iPhone/i.test(ua)) return 'iPhone';
+    if(/iPad/i.test(ua)) return 'iPad';
+    if(/Android/i.test(ua)){ const m = ua.match(/Android[^;]*;\s*([^;)]+)/); return 'Android' + (m ? ' - ' + m[1].trim().slice(0, 25) : ''); }
+    if(/Windows/i.test(ua)) return 'Windows';
+    if(/Mac/i.test(ua)) return 'Mac';
+    return 'جهاز';
+  }
+
+  function showOtpMode_(mode){
+    const name = state.pendingOtpName || '';
+    document.getElementById('otpPkBox').hidden = mode !== 'passkey';
+    document.getElementById('otpEmailBox').hidden = mode === 'passkey';
+    document.getElementById('otpHint').textContent = mode === 'passkey'
+      ? 'أكّد إنك ' + name + ' ببصمة الوجه أو الإصبع (أو قفل شاشة الموبايل) — من غير ما تستنى إيميل'
+      : 'بعتنالك كود تأكيد على إيميل ' + name + ' المسجل — اكتبه هنا عشان تكمل الدخول';
+  }
+
+  function handlePasskeyLogin_(){
+    clearMsg();
+    const pk = state.pendingPasskey;
+    if(!pk || !state.pendingOtpEmail){ showMsg('حصل خطأ، سجل الدخول تاني', 'error'); setView('viewLogin'); return; }
+    let getP;
+    try{
+      getP = navigator.credentials.get({ publicKey: {
+        challenge: pkB64uToBuf_(pk.challenge),
+        allowCredentials: pk.ids.map(function(id){ return { type: 'public-key', id: pkB64uToBuf_(id) }; }),
+        userVerification: 'required',
+        timeout: 60000,
+      }});
+    }catch(e){ getP = Promise.reject(e); }
+    getP
+      .then(function(cred){
+        if(!cred) throw new Error('cancel');
+        showLoading(true);
+        return callApi('verifyLoginPasskey', [state.pendingOtpEmail, {
+          id: cred.id,
+          clientDataJSON: pkBufToB64u_(cred.response.clientDataJSON),
+          authenticatorData: pkBufToB64u_(cred.response.authenticatorData),
+          signature: pkBufToB64u_(cred.response.signature),
+        }]);
+      })
+      .then(function(data){ onNewDeviceLogin_(data, 'passkey'); })
+      .catch(function(err){
+        showLoading(false);
+        const n = (typeof DOMException !== 'undefined' && err instanceof DOMException) ? err.name : '';
+        if(n === 'NotAllowedError' || n === 'AbortError' || (err && err.message === 'cancel')){
+          showMsg('البصمة اتلغت أو ماتعرفتش — جرّب تاني، أو اطلب كود على الإيميل', 'error');
+        } else if(err && err.message && !n){
+          onError(err);
+        } else {
+          showMsg('البصمة مش متاحة هنا — اطلب كود على الإيميل', 'error');
+        }
+      });
+  }
+
+  function handleUseEmailInstead_(){
+    clearMsg();
+    if(!state.pendingOtpEmail){ showMsg('حصل خطأ، سجل الدخول تاني', 'error'); setView('viewLogin'); return; }
+    showLoading(true);
+    callApi('resendLoginOtp', [state.pendingOtpEmail])
+      .then(function(){
+        showLoading(false);
+        showOtpMode_('email');
+        showMsg('اتبعت كود على إيميلك', 'success');
+        try{ document.getElementById('otpInput').focus(); }catch(e){}
+      })
+      .catch(onError);
+  }
+
+  // ---------- تفعيل البصمة ----------
+  var _pkReg_ = null;
+  var _pkOfferShownThisSession_ = false;
+  function maybeOfferPasskey_(afterEmailLogin){
+    if(!state.auth || !state.user) return;
+    const email = state.user.email;
+    if(pkIsLocal_(email)) return;
+    let asked = false;
+    try{ asked = !!localStorage.getItem('tz_pk_asked:' + email); }catch(e){}
+    if(asked && !afterEmailLogin) return;
+    if(_pkOfferShownThisSession_) return;
+    pkSupported_().then(function(ok){
+      if(!ok) return;
+      if(document.getElementById('viewHome').hidden) return; // مانقاطعش شاشة شغال فيها
+      const busy = document.querySelector('.alertOverlay:not([hidden])');
+      if(busy) return;
+      _pkOfferShownThisSession_ = true;
+      try{ localStorage.setItem('tz_pk_asked:' + email, '1'); }catch(e){}
+      openPasskeyOffer_(false);
+    });
+  }
+  // بنجيب الـ challenge من السيرفر قبل ما المندوب يدوس "فعّل" — عشان الآيفون بيطلب إن البصمة تتفتح
+  // مباشرة من الضغطة (من غير انتظار نت في النص)
+  function openPasskeyOffer_(fromProfile){
+    clearMsg();
+    const btn = document.getElementById('pkOfferBtn');
+    btn.disabled = true;
+    btn.textContent = 'لحظة...';
+    document.getElementById('pkOfferOverlay').hidden = false;
+    _pkReg_ = null;
+    callApi('passkeyRegisterStart', [state.auth])
+      .then(function(r){
+        if(!r || !r.supported){ closePasskeyOffer_(); if(fromProfile) showMsg('السيرفر مش جاهز للبصمة — حدّث الكود (Code.gs)', 'error'); return; }
+        _pkReg_ = r;
+        btn.disabled = false;
+        btn.textContent = 'فعّل دلوقتي';
+      })
+      .catch(function(err){ closePasskeyOffer_(); if(fromProfile) onError(err); });
+  }
+  function closePasskeyOffer_(){
+    document.getElementById('pkOfferOverlay').hidden = true;
+  }
+  function doRegisterPasskey_(){
+    const r = _pkReg_;
+    if(!r) return;
+    _pkReg_ = null;
+    const btn = document.getElementById('pkOfferBtn');
+    btn.disabled = true;
+    const email = state.user.email;
+    let createP;
+    try{
+      createP = navigator.credentials.create({ publicKey: {
+        challenge: pkB64uToBuf_(r.challenge),
+        rp: { name: 'تاتش الزنوكي' },
+        user: { id: pkB64uToBuf_(r.userId), name: r.userName, displayName: r.displayName || r.userName },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
+        excludeCredentials: (r.exclude || []).map(function(id){ return { type: 'public-key', id: pkB64uToBuf_(id) }; }),
+        attestation: 'none',
+        timeout: 60000,
+      }});
+    }catch(e){ createP = Promise.reject(e); }
+    createP
+      .then(function(cred){
+        if(!cred) throw new Error('cancel');
+        const att = pkCbor_(new Uint8Array(cred.response.attestationObject)).value;
+        const authData = att.get('authData');
+        const credIdLen = (authData[53] << 8) | authData[54];
+        const cose = pkCbor_(authData.slice(55 + credIdLen)).value;
+        const alg = cose.get(3);
+        const payload = {
+          id: cred.id,
+          clientDataJSON: pkBufToB64u_(cred.response.clientDataJSON),
+          authData: pkBufToB64u_(authData),
+          alg: alg,
+          label: pkDeviceLabel_(),
+        };
+        if(alg === -7){ payload.x = pkHex_(cose.get(-2)); payload.y = pkHex_(cose.get(-3)); }
+        else if(alg === -257){ payload.n = pkHex_(cose.get(-1)); payload.e = pkHex_(cose.get(-2)); }
+        showLoading(true);
+        return callApi('passkeyRegisterFinish', [state.auth, payload]);
+      })
+      .then(function(){
+        showLoading(false);
+        closePasskeyOffer_();
+        pkMarkLocal_(email, true);
+        refreshPasskeyProfile_();
+        showAlertModal_('تمام ✔ اتفعّل الدخول بالبصمة على الجهاز ده — المرة الجاية اللي التطبيق يطلب تأكيد، حط بصمتك بدل كود الإيميل', 'success');
+      })
+      .catch(function(err){
+        showLoading(false);
+        closePasskeyOffer_();
+        const n = (typeof DOMException !== 'undefined' && err instanceof DOMException) ? err.name : '';
+        if(n === 'InvalidStateError'){ // البصمة متسجلة على الجهاز ده أصلاً
+          pkMarkLocal_(email, true);
+          refreshPasskeyProfile_();
+          showMsg('البصمة متفعّلة على الجهاز ده أصلاً ✔', 'success');
+        } else if(n === 'NotAllowedError' || n === 'AbortError' || (err && err.message === 'cancel')){
+          showMsg('اتلغى تفعيل البصمة — تقدر تفعّلها بعدين من إعداداتي', 'error');
+        } else if(err && err.message && !n){
+          onError(err);
+        } else {
+          showMsg('الجهاز ده مش بيدعم الدخول بالبصمة من المتصفح ده', 'error');
+        }
+      });
+  }
+  function refreshPasskeyProfile_(){
+    const box = document.getElementById('pkProfileBox');
+    if(!box || !state.user) return;
+    pkSupported_().then(function(ok){
+      const on = pkIsLocal_(state.user.email);
+      box.hidden = !ok && !on;
+      document.getElementById('pkProfileStatus').textContent = on
+        ? 'مفعّل على الجهاز ده ✔ — لو التطبيق طلب تأكيد هتدخل ببصمتك بدل كود الإيميل'
+        : 'مش مفعّل — فعّله عشان تدخل ببصمة الوجه أو الإصبع بدل كود الإيميل';
+      const btn = document.getElementById('pkProfileBtn');
+      btn.hidden = !ok;
+      btn.textContent = on ? 'سجّل البصمة تاني على الجهاز ده' : 'فعّل الدخول بالبصمة على الجهاز ده';
+      document.getElementById('pkClearBtn').hidden = !on;
+    });
+  }
+  function handlePasskeyClear_(){
+    if(!confirm('هتمسح كل البصمات المتسجلة على حسابك (على كل الأجهزة)، والتأكيد هيرجع بكود الإيميل. متأكد؟')) return;
+    showLoading(true);
+    callApi('passkeyClearMine', [state.auth])
+      .then(function(){
+        showLoading(false);
+        pkMarkLocal_(state.user.email, false);
+        refreshPasskeyProfile_();
+        showMsg('اتمسحت البصمات — التأكيد هيرجع بكود الإيميل', 'success');
+      })
+      .catch(onError);
   }
 
   const HADITH_LIST_ = [
@@ -1945,9 +2288,69 @@
           targetCard.hidden = true;
         }
 
+        renderPulse_(data.pulse);
         setView('viewMyStats');
       })
       .catch(onError);
+  }
+
+  // ============ نبض البيع اليومي + نمط الأسبوع ============
+  const WD_NAMES_ = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+  const WD_SHORT_ = ['أحد', 'اثنين', 'ثلاثاء', 'أربعاء', 'خميس', 'جمعة', 'سبت'];
+  const WD_ORDER_ = [6, 0, 1, 2, 3, 4, 5]; // الأسبوع بيبدأ السبت
+  function renderPulse_(p){
+    const pulseCard = document.getElementById('pulseCard');
+    const weekCard = document.getElementById('weekCard');
+    if(!p || !p.daily || !p.daily.length){ pulseCard.hidden = true; weekCard.hidden = true; return; }
+    const pad2 = function(n){ return String(n).padStart(2, '0'); };
+    const mm = pad2(p.month);
+
+    // --- التقويم ---
+    document.getElementById('pulseHead').innerHTML = WD_ORDER_.map(function(wd){ return '<div>' + WD_SHORT_[wd] + '</div>'; }).join('');
+    const sold = p.daily.filter(function(d){ return d.sold && d.total > 0; });
+    const max = sold.reduce(function(m, d){ return Math.max(m, d.total); }, 0);
+    const avg = sold.length ? sold.reduce(function(s, d){ return s + d.total; }, 0) / sold.length : 0;
+    let html = '';
+    for(let i = 0; i < WD_ORDER_.indexOf(p.daily[0].wd); i++) html += '<div class="calCell pad"></div>';
+    p.daily.forEach(function(d){
+      const dt = pad2(d.d) + '/' + mm;
+      if(!d.sold){
+        html += '<div class="calCell none"><div class="dt">' + dt + '</div><div class="amt">—</div><div class="pBar"></div></div>';
+        return;
+      }
+      const cls = (d.total >= max && max > 0) ? 'g' : (d.total < avg * 0.75 ? 'o' : 'b');
+      const w = max > 0 && d.total > 0 ? Math.max(6, Math.round(d.total / max * 100)) : 0;
+      html += '<div class="calCell"><div class="dt">' + dt + '</div>' +
+        '<div class="amt' + (d.total < 0 ? ' neg' : '') + '">' + fmt(Math.round(d.total)) + '</div>' +
+        '<div class="pBar"><i class="' + cls + '" style="width:' + w + '%"></i></div></div>';
+    });
+    document.getElementById('pulseGrid').innerHTML = html;
+    pulseCard.hidden = false;
+
+    // --- نمط الأسبوع ---
+    const wk = {}; (p.weekdays || []).forEach(function(w){ wk[w.wd] = w; });
+    const vals = WD_ORDER_.map(function(wd){ return wk[wd] && wk[wd].avg != null ? wk[wd].avg : null; });
+    const known = vals.filter(function(v){ return v != null; });
+    const wMax = known.reduce(function(m, v){ return Math.max(m, v); }, 0);
+    const wAvg = known.length ? known.reduce(function(s, v){ return s + v; }, 0) / known.length : 0;
+    const wMin = known.length > 1 ? Math.min.apply(null, known) : null;
+    let weakName = '';
+    document.getElementById('weekGrid').innerHTML = WD_ORDER_.map(function(wd, i){
+      const v = vals[i];
+      if(v == null) return '<div class="wkCell"><div class="nm">' + WD_SHORT_[wd] + '</div><div class="amt">—</div><div class="pBar"></div></div>';
+      const isWeak = wMin != null && v === wMin && !weakName;
+      if(isWeak) weakName = WD_NAMES_[wd];
+      const w = wMax > 0 ? Math.max(v > 0 ? 6 : 0, Math.round(v / wMax * 100)) : 0;
+      return '<div class="wkCell"><div class="nm">' + WD_SHORT_[wd] + '</div><div class="amt">' + fmt(v) + '</div>' +
+        '<div class="pBar"><i class="' + (v >= wAvg ? 'g' : 'b') + '" style="width:' + w + '%"></i></div>' +
+        (isWeak ? '<div class="weak">الأضعف</div>' : '') + '</div>';
+    }).join('');
+    document.getElementById('weekNote').innerHTML = weakName
+      ? 'أضعف يوم بيع: <b style="color:var(--navy)">' + weakName + '</b> بمتوسط ' + fmt(wMin) + ' ج — يفيد في جدولة الزيارات والعروض'
+      : 'متوسط مبيعات كل يوم في الأسبوع';
+    const lastD = p.daily[p.daily.length - 1].d;
+    document.getElementById('weekFoot').textContent = 'المتوسط محسوب من أيام الشغل الفعلية للشركة من ' + '01/' + mm + ' لحد ' + pad2(lastD) + '/' + mm + ' (' + (p.companyDays || 0) + ' يوم شغل).';
+    weekCard.hidden = false;
   }
 
   // ============ مبيعات الأصناف الشهرية (تجميع لكل صنف بفلتر شهر) ============
@@ -3243,6 +3646,7 @@
         showLoading(false);
         renderProfile(data);
         document.getElementById('appVersionNote').textContent = 'إصدار التطبيق: ' + APP_VERSION_;
+        refreshPasskeyProfile_();
         setView('viewProfile');
       })
       .catch(onError);
