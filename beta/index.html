@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -595,6 +595,21 @@
   }
   .inAppBanner button.inAppClose{flex:0 0 42px; color:var(--muted2); border-color:var(--border);}
   /* الأجهزة اللي صاحبها مفعّل "تقليل الحركة" من إعدادات الموبايل: من غير أنيميشن الحديث/البلور */
+  /* ============ مندوب ماسك أكتر من فرع ============ */
+  .branchChip{
+    display:inline-flex; align-items:center; gap:6px; margin-top:9px; padding:5px 13px; border-radius:20px; cursor:pointer;
+    background:rgba(217,172,82,.16); border:1px solid rgba(217,172,82,.6); color:#fff; font-size:13px; font-weight:800; position:relative;
+  }
+  .branchPickList button{
+    display:block; width:100%; margin-top:9px; padding:14px; border-radius:12px; border:1px solid var(--gold);
+    background:#fff; color:var(--navy); font-family:inherit; font-size:16px; font-weight:800; cursor:pointer;
+  }
+  .branchPickList button.on{background:var(--gold-bg);}
+  .branchPickList button.on::after{content:'  ✔'; color:var(--gold-d);}
+  .branchSplit{margin-top:10px; border-top:1px dashed var(--border); padding-top:8px;}
+  .branchSplit div{display:flex; justify-content:space-between; font-size:14px; font-weight:700; color:var(--navy); padding:3px 0;}
+  .branchSplit div span:last-child{color:var(--gold-d); font-weight:900;}
+
   /* ============ إعلان منتج جديد (الشكل الليلي الفخم) ============ */
   .adOverlay{
     position:fixed; inset:0; z-index:550; display:flex; align-items:center; justify-content:center; padding:16px;
@@ -748,6 +763,7 @@
           <div class="wText">
             <div class="hi">أهلاً بيك</div>
             <div class="name" id="homeUserName"></div>
+            <div class="branchChip" id="branchChip" hidden onclick="openBranchPicker_()"><span>📍</span><span id="branchChipName"></span><span>▾</span></div>
           </div>
         </div>
         <div class="targetProgressWrap" id="targetProgressWrap" hidden>
@@ -944,6 +960,7 @@
         <span class="val" id="statsTodayTotal">0</span>
       </div>
       <div style="color:var(--muted); font-size:13px; margin-top:8px;" id="statsTodayCount"></div>
+      <div class="branchSplit" id="statsTodayBranches" hidden></div>
     </div>
     <div class="card">
       <div class="cardTitle">إجمالي المبيعات من أول الشهر</div>
@@ -952,6 +969,7 @@
         <span class="val" id="statsMonthTotal">0</span>
       </div>
       <div style="color:var(--muted); font-size:13px; margin-top:8px;" id="statsMonthCount"></div>
+      <div class="branchSplit" id="statsMonthBranches" hidden></div>
     </div>
     <div class="card" id="statsTargetCard" hidden>
       <div class="cardTitle">تارجت الشهر</div>
@@ -1026,6 +1044,10 @@
 
   <!-- ============ شاشة أرصدتي (رصيد كل صنف لحظيًا) ============ -->
   <div id="viewBalances" hidden>
+    <div class="card" id="balancesBranchPickerCard" hidden>
+      <div class="cardTitle">اختار الفرع</div>
+      <select id="balancesBranchSelect" onchange="loadBalances(state.balancesRep_ || '', this.value)"></select>
+    </div>
     <div class="card" id="balancesRepPickerCard" hidden>
       <div class="cardTitle">اختار المندوب</div>
       <select id="balancesRepSelect" onchange="loadBalances(this.value)"></select>
@@ -1236,6 +1258,17 @@
     </div>
   </div>
 
+  <div id="branchPickerOverlay" class="alertOverlay" hidden>
+    <div class="alertModal">
+      <div class="alertIcon" style="background:var(--gold-bg); color:var(--gold-d); font-size:24px;">📍</div>
+      <div class="alertText" style="margin-bottom:6px;">انت النهارده في أنهي فرع؟</div>
+      <div style="color:var(--muted2); font-size:13px; font-weight:700; line-height:1.7; margin-bottom:6px;">
+        كل اللي هتسجله (بيع، مرتجع، توريد، جرد) هيتحسب على الفرع ده — وتقدر تغيّره من الرئيسية في أي وقت
+      </div>
+      <div id="branchPickerList" class="branchPickList"></div>
+    </div>
+  </div>
+
   <div id="dupConfirmOverlay" class="alertOverlay" hidden>
     <div class="alertModal">
       <div class="alertIcon">!</div>
@@ -1281,7 +1314,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.7.2';
+  const APP_VERSION_ = 'v1.8.0';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -1486,6 +1519,7 @@
     document.getElementById('pageSub').textContent = state.user ? state.user.name : '';
     setView('viewHome');
     prefetchCatalogSoon_();
+    maybeAskBranch_();
     // مرة واحدة: نعرض على المندوب اللي داخل من قبل كده يفعّل البصمة
     if(!_pkOfferShownThisSession_) setTimeout(function(){ maybeOfferPasskey_(false); }, 2500);
   }
@@ -1648,6 +1682,8 @@
     document.getElementById('adminLink').hidden = !state.isOwner;
     renderHomeBadgeIcon(user.photoUrl);
     renderTargetProgress_(targetProgress);
+    restoreChosenBranch_();
+    renderBranchChip_();
 
     // المشرف مش مندوب بيسجّل مبيعات — شغله إنه يتابع ويشرف بس، فبنخفي عنه شاشات الإدخال دي
     // (بيع/مرتجع/توريد/جرد/أسعاري). إدارة المناديب والمشرفين بقت مقصورة على صاحب الحساب
@@ -2357,6 +2393,8 @@
         document.getElementById('statsMonthLabel').textContent = 'شهر ' + data.month.monthLabel;
         document.getElementById('statsMonthTotal').textContent = fmt(data.month.total);
         document.getElementById('statsMonthCount').textContent = data.month.linesCount + ' صنف/بند من أول الشهر';
+        renderBranchSplit_('statsTodayBranches', data.today.byBranch);
+        renderBranchSplit_('statsMonthBranches', data.month.byBranch);
 
         var pickerCard = document.getElementById('statsRepPickerCard');
         if (data.reps && data.reps.length){
@@ -2386,6 +2424,14 @@
         setView('viewMyStats');
       })
       .catch(onError);
+  }
+
+  // مبيعات كل فرع لوحده (للمندوب اللي ماسك أكتر من فرع)
+  function renderBranchSplit_(id, list){
+    const el = document.getElementById(id);
+    if(!list || list.length < 2){ el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    el.innerHTML = list.map(function(x){ return '<div><span>📍 ' + escapeHtml(x.branch) + '</span><span>' + fmt(x.total) + '</span></div>'; }).join('');
   }
 
   // ============ نبض البيع اليومي + نمط الأسبوع ============
@@ -2575,15 +2621,25 @@
   // ============ صفحة أرصدتي (رصيد كل صنف لحظيًا) ============
   // لأي مندوب: بتوري رصيده هو بس من غير اختيار. للمشرف: بتوري قايمة اختيار مندوب فوق (نفس منطق
   // تقييد الفروع بتاع مبيعاتي/الرواكد بالظبط)، وأي اختيار جديد بيعمل تحميل تاني لنفس الشاشة.
-  function loadBalances(repName){
+  function loadBalances(repName, branch){
     document.getElementById('pageTitle').textContent = state.isAdmin ? 'أرصدة المندوبين' : 'أرصدتي';
     document.getElementById('pageSub').textContent = state.user.name;
     showLoading(true);
-    callApi('bootstrapBalances', [state.auth, repName || ''])
+    callApi('bootstrapBalances', [state.auth, repName || '', branch || ''])
       .then(function(data){
         showLoading(false);
         if(data.blocked){ renderStaleBlockScreen_(data, 'balances', repName || ''); return; }
-        document.getElementById('pageSub').textContent = data.repName || state.user.name;
+        state.balancesRep_ = data.reps && data.reps.length ? data.repName : '';
+        const multiB = data.repBranches && data.repBranches.length > 1;
+        document.getElementById('pageSub').textContent = (data.repName || state.user.name) + (multiB ? ' — ' + data.branch : '');
+        // مندوب ماسك أكتر من فرع: اختيار الفرع فوق الأرصدة
+        const bCard = document.getElementById('balancesBranchPickerCard');
+        bCard.hidden = !multiB;
+        if(multiB){
+          document.getElementById('balancesBranchSelect').innerHTML = data.repBranches.map(function(b){
+            return '<option value="' + escapeHtml(b) + '"' + (b === data.branch ? ' selected' : '') + '>' + escapeHtml(b) + '</option>';
+          }).join('');
+        }
 
         var pickerCard = document.getElementById('balancesRepPickerCard');
         if (data.reps && data.reps.length){
@@ -2599,7 +2655,7 @@
 
         var items = data.balances || [];
         // بنحتفظ بالبيانات اللي وصلت فعلاً عشان زرار "تصدير إكسل" يستخدمها على طول من غير أي طلب جديد للسيرفر
-        state.balancesExportData_ = { items: items, repName: data.repName || state.user.name };
+        state.balancesExportData_ = { items: items, repName: data.repName || state.user.name, branch: data.branch || '' };
         var list = document.getElementById('balancesList');
         if(!items.length){
           list.innerHTML = '<div class="empty">مفيش أصناف مسجلة حاليًا</div>';
@@ -2640,11 +2696,11 @@
       return [it.name, Number(it.balance), it.hasBaseline ? 'بجرد رسمي' : 'من غير جرد رسمي'];
     });
     var opts = {
-      fileName: 'أرصدة - ' + data.repName,
+      fileName: 'أرصدة - ' + data.repName + (data.branch ? ' - ' + data.branch : ''),
       reportTitle: 'تقرير الأرصدة',
       meta: [
         ['اسم المندوب', data.repName],
-        ['الفرع', state.user.branch || '—'],
+        ['الفرع', data.branch || state.user.branch || '—'],
         ['التاريخ', new Date().toLocaleDateString('ar-EG')],
       ],
       headers: ['اسم الصنف', 'الرصيد', 'ملاحظة'],
@@ -2672,7 +2728,7 @@
     callApi('listMyInvoices', [state.auth, {}])
       .then(function(data){
         showLoading(false);
-        renderInvoiceHistory(data.invoices || []);
+        renderInvoiceHistory(data.invoices || [], !!data.multiBranch);
         setView('viewInvoiceHistory');
       })
       .catch(onError);
@@ -2686,7 +2742,7 @@
     'توريد': { label: 'توريد', neg: false },
   };
 
-  function renderInvoiceHistory(invoices){
+  function renderInvoiceHistory(invoices, multiBranch){
     const list = document.getElementById('invoiceHistoryList');
     if(!invoices.length){
       list.innerHTML = '<div class="empty">لسه مفيش حاجة متسجلة</div>';
@@ -2701,7 +2757,7 @@
       return (
         '<div class="itemRow' + (meta.neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:8px;">' +
           '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-            '<div class="name">' + escapeHtml(meta.label) + ' · ' + escapeHtml(inv.date) + '</div>' +
+            '<div class="name">' + escapeHtml(meta.label) + ' · ' + escapeHtml(inv.date) + (multiBranch && inv.branch ? ' <span style="color:var(--gold-d); font-size:13px;">📍 ' + escapeHtml(inv.branch) + '</span>' : '') + '</div>' +
             '<div class="total">' + valueLabel + '</div>' +
           '</div>' +
           '<div class="meta">' + inv.itemCount + ' صنف/بند</div>' +
@@ -2724,7 +2780,7 @@
       reportTitle: 'تقرير ' + result.type,
       meta: [
         ['اسم المندوب', result.repName || state.user.name],
-        ['الفرع', state.user.branch || '—'],
+        ['الفرع', result.branch || state.user.branch || '—'],
         ['التاريخ', result.date],
         ['عدد الأصناف', result.items.length],
       ],
@@ -3240,7 +3296,7 @@
       reportTitle: 'تقرير ' + label,
       meta: [
         ['اسم المندوب', state.user.name],
-        ['الفرع', state.user.branch || '—'],
+        ['الفرع', result.branch || state.user.branch || '—'],
         ['التاريخ', result.date],
         ['نوع العملية', label],
       ],
@@ -3870,6 +3926,61 @@
       .catch(onError);
   }
 
+  // ============ مندوب ماسك أكتر من فرع ============
+  // لو المندوب مكتوب له أكتر من فرع في تاب "المندوبين"، بيختار من الرئيسية هو النهارده في أنهي فرع (بيتسأل
+  // مرة كل يوم أول ما يفتح التطبيق). الفرع المختار بيتبعت مع كل طلب للسيرفر (auth.branch)، فكل اللي بيسجله
+  // بيتحسب على الفرع ده، والأرصدة والرواكد بتتعرض للفرع ده. مندوب ليه فرع واحد مش بيشوف أي حاجة من دي.
+  function userBranches_(){ return (state.user && state.user.branches) || []; }
+  function branchKey_(name){ return 'tz_branch_' + name + ':' + String((state.user && state.user.email) || '').toLowerCase(); }
+  function businessDayStr_(){ const d = new Date(Date.now() - 5 * 3600000); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  // بعد تسجيل دخول جديد (auth جديد من غير فرع)، نرجّع آخر فرع المندوب اختاره على الجهاز ده
+  function restoreChosenBranch_(){
+    const list = userBranches_();
+    if(list.length < 2 || !state.auth) return;
+    if(!state.auth.branch){
+      let saved = '';
+      try{ saved = localStorage.getItem(branchKey_('sel')) || ''; }catch(e){}
+      if(saved && list.indexOf(saved) !== -1){ state.auth.branch = saved; saveAuth(state.auth); }
+    }
+    if(state.auth.branch && list.indexOf(state.auth.branch) !== -1) state.user.branch = state.auth.branch;
+  }
+  function renderBranchChip_(){
+    const chip = document.getElementById('branchChip');
+    const list = userBranches_();
+    if(list.length < 2){ chip.hidden = true; return; }
+    chip.hidden = false;
+    document.getElementById('branchChipName').textContent = state.user.branch || list[0];
+  }
+  function maybeAskBranch_(){
+    if(userBranches_().length < 2) return;
+    let day = '';
+    try{ day = localStorage.getItem(branchKey_('day')) || ''; }catch(e){}
+    if(day === businessDayStr_() && state.auth && state.auth.branch) return;
+    openBranchPicker_();
+  }
+  function openBranchPicker_(){
+    const list = userBranches_();
+    if(list.length < 2) return;
+    document.getElementById('branchPickerList').innerHTML = list.map(function(b){
+      return '<button class="' + (b === state.user.branch ? 'on' : '') + '" data-b="' + escapeHtml(b) + '" onclick="chooseBranch_(this.dataset.b)">' + escapeHtml(b) + '</button>';
+    }).join('');
+    document.getElementById('branchPickerOverlay').hidden = false;
+  }
+  function chooseBranch_(b){
+    document.getElementById('branchPickerOverlay').hidden = true;
+    try{
+      localStorage.setItem(branchKey_('day'), businessDayStr_());
+      localStorage.setItem(branchKey_('sel'), b);
+    }catch(e){}
+    state.auth.branch = b;
+    saveAuth(state.auth);
+    state.user.branch = b;
+    saveHomeCache_();
+    renderBranchChip_();
+    showMsg('تمام ✔ انت دلوقتي في ' + b, 'success');
+    if(state.pendingAd_){ const ad = state.pendingAd_; state.pendingAd_ = null; maybeShowAd_(ad); }
+  }
+
   // ============ إعلان منتج جديد (بيظهر للمندوب 3 مرات بس لكل إعلان) ============
   // الإعلان بيجي من السيرفر مع فتح التطبيق. عدد المرات بيتحسب على الموبايل لكل مندوب ولكل إعلان —
   // ولو صاحب الحساب اختار منتج جديد (أو نفس المنتج تاني) بيبقى إعلان جديد وكل مندوب يشوفه 3 مرات تاني.
@@ -3886,7 +3997,7 @@
     setTimeout(function(){
       // بيظهر على الشاشة الرئيسية بس — لو المندوب دخل شاشة تانية أو في رسالة مفتوحة، منقاطعوش
       if(adShownThisSession_ || document.getElementById('viewHome').hidden) return;
-      if(document.querySelector('.alertOverlay:not([hidden])')) return;
+      if(document.querySelector('.alertOverlay:not([hidden])')){ state.pendingAd_ = ad; return; } // يستنى لحد ما المندوب يختار فرعه
       adShownThisSession_ = true;
       try{ localStorage.setItem(adSeenKey_(ad), String(adSeenCount_(ad) + 1)); }catch(e){}
       showAd_(ad);
