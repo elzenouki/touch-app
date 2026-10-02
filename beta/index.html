@@ -1191,7 +1191,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.6.8';
+  const APP_VERSION_ = 'v1.6.9';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -3065,7 +3065,11 @@
         // فعلاً — نعرضها من الأصناف اللي المندوب كتبها بدل ما الشاشة تقع بخطأ ويفتكر إنها متسجلتش
         state.finalResult = normalizeFinalResult_(result);
         renderInvoice(state.screen); // بتخفي finalizeBtn خالص لما state.finalized=true
-        showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
+        if(state.finalResult.duplicate){
+          showMsg('تم الترحيل ✔ — بس الفاتورة دي متطابقة ' + state.finalResult.duplicate.pct + '% مع فاتورة تانية النهارده', 'error');
+        } else {
+          showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
+        }
       })
       .catch(function(err){
         state.finalizeInFlight = false;
@@ -3134,7 +3138,9 @@
         : [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
     });
     return {
-      fileName: label + ' - ' + safeDateForFile(result.date) + ' - ' + state.user.name,
+      // لو الفاتورة متطابقة بنسبة كبيرة مع فاتورة تانية نفس اليوم — الصورة والإكسل بيطلعوا أحمر
+      duplicate: result.duplicate || null,
+      fileName: (result.duplicate ? 'مكررة - ' : '') + label + ' - ' + safeDateForFile(result.date) + ' - ' + state.user.name,
       reportTitle: 'تقرير ' + label,
       meta: [
         ['اسم المندوب', state.user.name],
@@ -3990,9 +3996,27 @@
   const BRAND_ZEBRA = 'FFEAF2FA';
   const BRAND_FRAME = 'FF1F4E79';
 
+  // ألوان التقرير: أزرق عادي، أو أحمر بالكامل لو الفاتورة مكررة (متطابقة بنسبة كبيرة مع فاتورة تانية نفس اليوم)
+  function brandPalette_(opts){
+    if(opts && opts.duplicate){
+      return { accent:'FFF4A6A6', banner:'FFB71C1C', subtitle:'FFD32F2F', metaBg:'FFFDECEC',
+               metaBorder:'FFF5C6C6', grid:'FFF5D0D0', zebra:'FFFDECEC', frame:'FFB71C1C' };
+    }
+    return { accent:BRAND_ACCENT, banner:BRAND_BANNER, subtitle:BRAND_SUBTITLE_BG, metaBg:BRAND_META_BG,
+             metaBorder:BRAND_META_BORDER, grid:BRAND_GRID, zebra:BRAND_ZEBRA, frame:BRAND_FRAME };
+  }
+  function dupWarningText_(d){
+    return '⚠ فاتورة مكررة — متطابقة بنسبة ' + d.pct + '% مع فاتورة تانية اتسجلت نفس اليوم' + (d.time ? ' الساعة ' + d.time : '');
+  }
+
   // ============ توليد ملف Excel منسّق (يُستخدم من شاشة "سجل فواتيري" بس) — بيرجع Blob بس من غير تنزيل ============
   async function buildExcelBlob(opts){
     await ensureExcelJsLoaded_();
+    // الألوان بتتحدد حسب الفاتورة (أزرق عادي / أحمر لو مكررة) — بتغطي على الثوابت العامة جوه الدالة دي بس
+    const pal = brandPalette_(opts);
+    const BRAND_ACCENT = pal.accent, BRAND_BANNER = pal.banner, BRAND_SUBTITLE_BG = pal.subtitle,
+          BRAND_META_BG = pal.metaBg, BRAND_META_BORDER = pal.metaBorder, BRAND_GRID = pal.grid,
+          BRAND_ZEBRA = pal.zebra, BRAND_FRAME = pal.frame;
     const headers = opts.headers;
     const rows = opts.rows;
     const meta = opts.meta || [];
@@ -4042,6 +4066,19 @@
     // الطويلة (زي اسم الفرع) لما يكون عدد أعمدة الجدول قليل — وده كمان أنضف وأوضح في القراءة
     // من اليمين للشمال (RTL) واللي احنا بنشتغل بيه، مع wrapText عشان أي نص طويل يلف بدل ما يتقطع
     let r = 3;
+    // شريط تحذير "فاتورة مكررة" تحت العنوان مباشرة (بس لو الفاتورة متطابقة مع فاتورة تانية نفس اليوم)
+    if(opts.duplicate){
+      ws.mergeCells(r, 1, r, colCount);
+      const w = ws.getCell(r, 1);
+      w.value = dupWarningText_(opts.duplicate);
+      w.font = { name: numFont, bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+      w.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      for(let c = 1; c <= colCount; c++){
+        ws.getCell(r, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F0000' } };
+      }
+      ws.getRow(r).height = 32;
+      r++;
+    }
     const metaFirstRow = r;
     meta.forEach(function(pair){
       ws.mergeCells(r, 1, r, colCount);
@@ -4273,15 +4310,16 @@
       ? page.rows.map(function(r, i){ return [page.start + i + 1].concat(r); })
       : (page ? page.rows : allRows);
     const meta = opts.meta || [];
-    // نفس ألوان "الأزرق الكوربوريتي" المستخدمة في ملف الإكسل بالظبط (BRAND_* فوق)
-    const C_BANNER = argbToCss_(BRAND_BANNER);
-    const C_SUBTITLE = argbToCss_(BRAND_SUBTITLE_BG);
-    const C_META_BG = argbToCss_(BRAND_META_BG);
-    const C_META_BORDER = argbToCss_(BRAND_META_BORDER);
-    const C_GRID = argbToCss_(BRAND_GRID);
-    const C_ZEBRA = argbToCss_(BRAND_ZEBRA);
-    const C_FRAME = argbToCss_(BRAND_FRAME);
-    const C_ACCENT = argbToCss_(BRAND_ACCENT);
+    // ألوان التقرير: نفس "الأزرق الكوربوريتي" بتاع ملف الإكسل، أو أحمر بالكامل لو الفاتورة مكررة
+    const pal = brandPalette_(opts);
+    const C_BANNER = argbToCss_(pal.banner);
+    const C_SUBTITLE = argbToCss_(pal.subtitle);
+    const C_META_BG = argbToCss_(pal.metaBg);
+    const C_META_BORDER = argbToCss_(pal.metaBorder);
+    const C_GRID = argbToCss_(pal.grid);
+    const C_ZEBRA = argbToCss_(pal.zebra);
+    const C_FRAME = argbToCss_(pal.frame);
+    const C_ACCENT = argbToCss_(pal.accent);
 
     const isNumericCol = paged
       ? [true].concat(baseHeaders.map(function(_, i){ return isNumericCol_(allRows.map(function(r){ return r[i]; })); }))
@@ -4334,6 +4372,7 @@
       '<div style="padding:24px;">' +
         '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; font-size:20px; font-weight:900; padding:16px;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
         '<div style="background:' + C_SUBTITLE + '; color:#fff; text-align:center; font-size:' + (paged ? '17px' : '14.5px') + '; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + (paged ? ' — صفحة ' + page.page + ' من ' + page.pages : '') + '</div>' +
+        (opts.duplicate ? '<div style="background:#7f0000; color:#fff; text-align:center; font-size:19px; font-weight:900; padding:13px; line-height:1.6;">' + escapeHtml_(dupWarningText_(opts.duplicate)) + '</div>' : '') +
         '<div style="border:2px solid ' + C_ACCENT + '; border-top:none; margin-bottom:14px;">' + metaHtml + '</div>' +
         '<table style="width:100%; border-collapse:collapse; border:2px solid ' + C_FRAME + ';"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
         (paged && !isLastPage ? '<div style="text-align:center; font-size:17px; font-weight:800; color:' + C_BANNER + '; margin-top:12px;">يتبع في الصفحة ' + (page.page + 1) + ' ←</div>' : '') +
