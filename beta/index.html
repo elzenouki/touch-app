@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -595,6 +595,11 @@
   }
   .inAppBanner button.inAppClose{flex:0 0 42px; color:var(--muted2); border-color:var(--border);}
   /* الأجهزة اللي صاحبها مفعّل "تقليل الحركة" من إعدادات الموبايل: من غير أنيميشن الحديث/البلور */
+  .speedBox{margin-top:18px; padding-top:14px; border-top:1px dashed var(--border);}
+  .speedRow{display:flex; justify-content:space-between; gap:8px; font-size:13px; font-weight:700; color:var(--navy); padding:6px 0; border-bottom:1px solid #f0ece2;}
+  .speedRow small{color:var(--muted); font-weight:700;}
+  .speedRow.slow b{color:var(--red);}
+
   /* ============ مندوب ماسك أكتر من فرع ============ */
   .branchChip{
     display:inline-flex; align-items:center; gap:6px; margin-top:9px; padding:5px 13px; border-radius:20px; cursor:pointer;
@@ -613,7 +618,7 @@
   /* ============ إعلان منتج جديد (الشكل الليلي الفخم) ============ */
   .adOverlay{
     position:fixed; inset:0; z-index:550; display:flex; align-items:center; justify-content:center; padding:16px;
-    background:rgba(6,10,22,.76); backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px); animation:adFade .35s ease both;
+    background:rgba(6,10,22,.82); animation:adFade .35s ease both;
   }
   .adOverlay.closing{animation:adFadeOut .3s ease both;}
   .adOverlay.closing .adCard{animation:adOut .3s ease both;}
@@ -628,7 +633,7 @@
     position:absolute; top:-40px; left:8px; width:46%; height:72%; pointer-events:none;
     background:linear-gradient(180deg, rgba(217,172,82,.55), rgba(217,172,82,0) 85%);
     clip-path:polygon(40% 0, 60% 0, 100% 100%, 0 100%); filter:blur(6px);
-    opacity:0; animation:adBeam 1.2s .3s forwards, adFlick 3s 1.5s infinite;
+    opacity:0; animation:adBeam 1.2s .3s forwards, adFlick 3s 1.5s 3;
   }
   .adX{
     position:absolute; top:12px; left:12px; z-index:5; width:32px; height:32px; border-radius:50%; border:none;
@@ -640,12 +645,12 @@
   .adName{color:#fff; font-size:25px; font-weight:900; line-height:1.3; margin-top:2px; animation:adUp .6s .55s both;}
   .adName span{
     background:linear-gradient(90deg, var(--gold-light), #fff3cf, var(--gold)); background-size:200%;
-    -webkit-background-clip:text; background-clip:text; color:transparent; animation:adShim 3s 1s linear infinite;
+    -webkit-background-clip:text; background-clip:text; color:transparent; animation:adShim 3s 1s linear 3;
   }
   .adTag{color:#aab4d4; font-size:12.5px; font-weight:700; margin-top:2px; animation:adUp .5s .7s both;}
   .adMid{position:relative; flex:1; min-height:0; margin-top:10px;}
   .adProd{position:absolute; left:10px; top:0; bottom:8px; width:46%; animation:adRise 1s .35s cubic-bezier(.2,1,.3,1) both;}
-  .adProd img{width:100%; height:100%; object-fit:contain; object-position:bottom center; animation:adFloat 4.5s 1.4s ease-in-out infinite;}
+  .adProd img{width:100%; height:100%; object-fit:contain; object-position:bottom center; animation:adFloat 4.5s 1.4s ease-in-out 4;}
   .adNoPhoto{height:100%; display:flex; align-items:center; justify-content:center; font-size:70px; animation:adFloat 4.5s 1.4s ease-in-out infinite;}
   .adFloor{position:absolute; left:18px; bottom:0; width:40%; height:16px; border-radius:50%; background:radial-gradient(rgba(217,172,82,.6), transparent 70%); animation:adFade 1s 1s both;}
   .adSpecs{position:absolute; right:14px; top:4px; width:48%; max-height:100%; overflow:hidden; list-style:none; margin:0; padding:0;}
@@ -654,7 +659,7 @@
   .adCta{
     margin:12px 16px 20px; border:none; border-radius:14px; padding:14px; font-family:inherit; font-weight:900; font-size:15.5px;
     color:var(--navy); background:linear-gradient(135deg, var(--gold-light), var(--gold)); cursor:pointer;
-    animation:adUp .5s 1.5s both, adGlow 2s 2s infinite;
+    animation:adUp .5s 1.5s both, adGlow 2s 2s 4;
   }
   .productCard.adFlash{animation:adFlash 1.6s ease 2;}
   .adOnBadge{display:inline-flex; align-items:center; font-size:13px; font-weight:800; padding:6px 12px; border-radius:9px; background:var(--gold-bg); color:var(--gold-d); border:1px solid var(--gold);}
@@ -1178,6 +1183,11 @@
         <button class="ghost" id="pkProfileBtn" style="margin-top:8px;" onclick="openPasskeyOffer_(true)">فعّل الدخول بالبصمة على الجهاز ده</button>
         <button class="ghost pkClearBtn" id="pkClearBtn" hidden onclick="handlePasskeyClear_()">مسح كل البصمات المتسجلة على حسابي</button>
       </div>
+      <div class="speedBox">
+        <div class="pkProfileTitle">⏱ سرعة التطبيق</div>
+        <div class="pkProfileStatus">آخر العمليات: الوقت الكلي، ومنه كام ثانية على سيرفر جوجل (الباقي = النت)</div>
+        <div id="speedLogList"></div>
+      </div>
       <div class="appVersionNote" id="appVersionNote"></div>
     </div>
   </div>
@@ -1314,9 +1324,27 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.8.0';
+  const APP_VERSION_ = 'v1.8.2';
 
+  // ============ عدّاد سرعة التطبيق ============
+  // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
+  // بيتعرض في "إعداداتي ← سرعة التطبيق" عشان نعرف التقل جاي من فين بالظبط.
+  const SPEED_LOG_KEY_ = 'tz_speed_log';
+  function logSpeed_(action, totalMs, serverMs, ok){
+    try{
+      const log = JSON.parse(localStorage.getItem(SPEED_LOG_KEY_) || '[]');
+      log.unshift({ a: action, t: Math.round(totalMs), s: serverMs == null ? null : serverMs, ok: ok, at: Date.now() });
+      localStorage.setItem(SPEED_LOG_KEY_, JSON.stringify(log.slice(0, 25)));
+    }catch(e){}
+  }
   function callApi(action, args){
+    const t0 = performance.now();
+    let serverMs = null;
+    return callApiRaw_(action, args)
+      .then(function(r){ logSpeed_(action, performance.now() - t0, r.ms, true); return r.result; })
+      .catch(function(err){ logSpeed_(action, performance.now() - t0, serverMs, false); throw err; });
+  }
+  function callApiRaw_(action, args){
     return fetch(WEBAPP_URL, {
       method: 'POST',
       // text/plain مهم عشان المتصفح ميبعتش طلب OPTIONS (preflight) قبل الطلب الحقيقي —
@@ -1329,7 +1357,7 @@
         if(!data || data.ok !== true){
           throw new Error((data && data.error) || 'حصل خطأ غير متوقع، حاول تاني');
         }
-        return data.result;
+        return { result: data.result, ms: data.ms };
       })
       .catch(function(err){
         if(err instanceof TypeError){
@@ -2299,7 +2327,7 @@
       const daysEl = document.createElement('div');
       daysEl.className = 'total';
       daysEl.style.color = '#c73e3e';
-      daysEl.textContent = it.days >= 0 ? ('واقف من ' + it.days + ' يوم') : 'مبيعش خالص لحد دلوقتي';
+      daysEl.textContent = it.neverSold ? ('ما اتباعش خالص من ' + it.days + ' يوم') : it.days >= 0 ? ('واقف من ' + it.days + ' يوم') : 'مبيعش خالص لحد دلوقتي';
       top.appendChild(nameEl);
       top.appendChild(daysEl);
 
@@ -2592,7 +2620,7 @@
           emptyMsg.hidden = true;
           var html = '';
           items.forEach(function (it) {
-            var daysLabel = (it.days < 0) ? 'لم يباع نهائيًا' : 'واقف من ' + it.days + ' يوم';
+            var daysLabel = it.neverSold ? ('ما اتباعش خالص من ' + it.days + ' يوم') : (it.days < 0) ? 'لم يباع نهائيًا' : 'واقف من ' + it.days + ' يوم';
             var lastSupplyLabel = it.lastSupply ? it.lastSupply : 'لسه ما اتوردش';
             var stockLabel = it.stockKnown ? fmt(it.stock) : 'غير معروف (مفيش جرد مسجل)';
             html +=
@@ -3804,6 +3832,7 @@
         showLoading(false);
         renderProfile(data);
         document.getElementById('appVersionNote').textContent = 'إصدار التطبيق: ' + APP_VERSION_;
+        renderSpeedLog_();
         refreshPasskeyProfile_();
         setView('viewProfile');
       })
@@ -3924,6 +3953,25 @@
         showMsg('تم إرسال اقتراحك بنجاح، شكرًا ليك ✔', 'success');
       })
       .catch(onError);
+  }
+
+  const SPEED_NAMES_ = { bootstrapHome:'فتح التطبيق', bootstrapInvoice:'تحميل الأصناف', finalizeInvoice:'ترحيل فاتورة', bootstrapJard:'فتح الجرد',
+    saveJard:'حفظ الجرد', bootstrapTawrid:'فتح التوريد', saveTawrid:'حفظ التوريد', bootstrapMyStats:'مبيعاتي', bootstrapBalances:'أرصدتي',
+    bootstrapStale:'الرواكد', listMyInvoices:'سجل فواتيري', getInvoiceDetails:'تفاصيل فاتورة', bootstrapItemSalesReport:'مبيعات الأصناف',
+    listProductDescriptions:'وصف المنتجات', bootstrapAdmin:'شاشة الإدارة', bootstrapProfile:'إعداداتي', login:'تسجيل الدخول' };
+  function renderSpeedLog_(){
+    const el = document.getElementById('speedLogList');
+    let log = [];
+    try{ log = JSON.parse(localStorage.getItem(SPEED_LOG_KEY_) || '[]'); }catch(e){}
+    if(!log.length){ el.innerHTML = '<div class="meta" style="margin-top:6px;">لسه مفيش عمليات متسجلة</div>'; return; }
+    const sec = function(ms){ return (ms / 1000).toFixed(1) + ' ث'; };
+    el.innerHTML = log.map(function(x){
+      const slow = x.t > 4000 ? ' slow' : '';
+      const d = new Date(x.at);
+      const tm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      return '<div class="speedRow' + slow + '"><span>' + escapeHtml(SPEED_NAMES_[x.a] || x.a) + ' <small>' + tm + (x.ok ? '' : ' ✖') + '</small></span>' +
+        '<span><b>' + sec(x.t) + '</b>' + (x.s != null ? ' <small>(السيرفر ' + sec(x.s) + ')</small>' : '') + '</span></div>';
+    }).join('');
   }
 
   // ============ مندوب ماسك أكتر من فرع ============
