@@ -1324,7 +1324,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.8.3';
+  const APP_VERSION_ = 'v1.8.4';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -2323,7 +2323,7 @@
       top.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
       const nameEl = document.createElement('div');
       nameEl.className = 'name';
-      nameEl.textContent = it.name;
+      nameEl.textContent = it.name + ((state.user.branches || []).length > 1 && it.branch ? ' — ' + it.branch : '');
       const daysEl = document.createElement('div');
       daysEl.className = 'total';
       daysEl.style.color = '#c73e3e';
@@ -2338,7 +2338,7 @@
       const btn = document.createElement('button');
       btn.className = 'finalize';
       btn.textContent = '✔ إرسال السبب';
-      btn.onclick = function(){ handleSubmitStaleReason_(it.code, row, ta); };
+      btn.onclick = function(){ handleSubmitStaleReason_(it.code, row, ta, it.branch); };
 
       row.appendChild(top);
       row.appendChild(ta);
@@ -2349,11 +2349,11 @@
     setView('viewStaleBlock');
   }
 
-  function handleSubmitStaleReason_(code, row, textareaEl){
+  function handleSubmitStaleReason_(code, row, textareaEl, branch){
     const reason = (textareaEl.value || '').trim();
     if(!reason){ showMsg('من فضلك اكتب السبب الأول', 'error'); return; }
     showLoading(true);
-    callApi('saveStaleReason', [state.auth, code, reason])
+    callApi('saveStaleReason', [state.auth, code, reason, branch || ''])
       .then(function(){
         showLoading(false);
         row.remove();
@@ -3503,6 +3503,7 @@
     callApi('bootstrapJard', [state.auth])
       .then(function(data){
         state.asnaf = data.asnaf;
+        state.jardBalancesHidden_ = !!data.balancesHidden;
         showLoading(false);
         renderJard();
       })
@@ -3548,7 +3549,10 @@
     // كل صنف بيتعرض ومعاه (لو معروف) "رصيدك المتوقع" — نفس الرقم المحسوب في شاشة "أرصدتي" —
     // كـ badge دهبي واضح فوق خانة الإدخال مباشرة، وكمان كـ placeholder جوه الخانة نفسها،
     // عشان يسهّل على المندوب يقارن بسرعة وهو بيعدّ فعليًا بدل ما يدوّر في شاشة تانية.
-    list.innerHTML = state.asnaf.map(function(a){
+    const hiddenNote = state.jardBalancesHidden_
+      ? '<div class="inAppBanner" style="margin-bottom:14px;">🔒 الرصيد المتوقع مخفي لحد ما تكتب سبب ركود الأصناف الراكدة (من شاشة "أرصدتي" أو "مبيعاتي"). تقدر تجرد عادي.</div>'
+      : '';
+    list.innerHTML = hiddenNote + state.asnaf.map(function(a){
       const hasExpected = typeof a.expectedBalance === 'number' && !isNaN(a.expectedBalance);
       const expectedHtml = hasExpected
         ? '<div style="display:inline-flex; align-items:center; gap:6px; background:var(--gold-bg); border:1px solid var(--gold); color:var(--gold-d); font-weight:800; font-size:13.5px; padding:5px 12px; border-radius:20px; margin:4px 0 8px;">📦 رصيدك المتوقع: ' + fmt(a.expectedBalance) + '</div>'
@@ -3583,12 +3587,12 @@
       inp.classList.remove('needFill');
       if(inp.value !== '') return;
       const a = state.asnaf.find(function(x){ return x.name === inp.dataset.name; });
-      if(a && typeof a.expectedBalance === 'number' && a.expectedBalance > 0) missing.push({ inp: inp, name: a.name, expected: a.expectedBalance });
+      if(a && ((typeof a.expectedBalance === 'number' && a.expectedBalance > 0) || a.hasStock)) missing.push({ inp: inp, name: a.name, expected: a.expectedBalance });
     });
     if(missing.length){
       state.jardPending_ = { items: items, missing: missing };
       document.getElementById('jardMissingList').innerHTML = missing.map(function(m){
-        return '<div class="jardMissRow"><span>' + escapeHtml(m.name) + '</span><span>📦 ' + fmt(m.expected) + '</span></div>';
+        return '<div class="jardMissRow"><span>' + escapeHtml(m.name) + '</span><span>' + (typeof m.expected === 'number' ? '📦 ' + fmt(m.expected) : '📦') + '</span></div>';
       }).join('');
       document.getElementById('jardMissingOverlay').hidden = false;
       return;
