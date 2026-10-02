@@ -1324,7 +1324,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.8.2';
+  const APP_VERSION_ = 'v1.8.3';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -2756,7 +2756,7 @@
     callApi('listMyInvoices', [state.auth, {}])
       .then(function(data){
         showLoading(false);
-        renderInvoiceHistory(data.invoices || [], !!data.multiBranch);
+        renderInvoiceHistory(data.invoices || [], !!(data.multiBranch || data.showBranch));
         setView('viewInvoiceHistory');
       })
       .catch(onError);
@@ -2776,7 +2776,18 @@
       list.innerHTML = '<div class="empty">لسه مفيش حاجة متسجلة</div>';
       return;
     }
+    // عنوان لكل شهر (أكتوبر 2026 / سبتمبر 2026...) عشان يبان كل فاتورة تبع أنهي شهر
+    const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    let lastMonth = '';
     list.innerHTML = invoices.map(function(inv){
+      const mParts = String(inv.date || '').split('/');
+      const mKey = mParts.length === 3 ? mParts[1] + '/' + mParts[2] : '';
+      let monthHead = '';
+      if(mKey && mKey !== lastMonth){
+        lastMonth = mKey;
+        monthHead = '<div class="sectionLabel" style="margin:14px 0 8px;">' + MONTHS_AR[Number(mParts[1]) - 1] + ' ' + mParts[2] + '</div>';
+      }
+      return monthHead + (function(){
       const meta = HISTORY_TYPE_META[inv.type] || { label: inv.type, neg: false };
       const sidAttr = escapeHtml(inv.sessionId).replace(/'/g, "\\'");
       // بيع/مرتجع بيعرضوا إجمالي مبلغ، جرد/توريد بيعرضوا إجمالي كمية — حسب النوع
@@ -2795,6 +2806,7 @@
           '</div>' +
         '</div>'
       );
+      })();
     }).join('');
   }
 
@@ -2808,7 +2820,7 @@
       reportTitle: 'تقرير ' + result.type,
       meta: [
         ['اسم المندوب', result.repName || state.user.name],
-        ['الفرع', result.branch || state.user.branch || '—'],
+        ['الفرع', ('branch' in result) ? (result.branch || '—') : (state.user.branch || '—')],
         ['التاريخ', result.date],
         ['عدد الأصناف', result.items.length],
       ],
@@ -3324,7 +3336,7 @@
       reportTitle: 'تقرير ' + label,
       meta: [
         ['اسم المندوب', state.user.name],
-        ['الفرع', result.branch || state.user.branch || '—'],
+        ['الفرع', ('branch' in result) ? (result.branch || '—') : (state.user.branch || '—')],
         ['التاريخ', result.date],
         ['نوع العملية', label],
       ],
