@@ -508,18 +508,34 @@
     width:110px; height:110px; border-radius:50%; background:var(--card2); border:2px dashed var(--border);
     display:flex; align-items:center; justify-content:center; font-size:34px; color:var(--muted);
   }
+  /* ============ كارت المنتج (الشكل الفاتح): صورة كاملة فوق + مربعات للأرقام + مميزات ============ */
   .productCard{
-    background:var(--card2); border:1px solid var(--border); border-radius:13px;
-    padding:14px 16px; margin-bottom:12px;
+    background:#fff; border:1px solid var(--border); border-radius:20px; overflow:hidden;
+    margin-bottom:16px; box-shadow:0 6px 18px rgba(15,28,61,.07);
   }
-  .productCard .pTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:10px;}
-  .productPhotos{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
-  .productPhotos img{
-    width:84px; height:84px; object-fit:cover; border-radius:10px;
-    border:1px solid var(--border); cursor:pointer; background:#fff;
-  }
-  .pSpecsList{margin:0; padding-inline-start:20px; font-size:14.5px; color:var(--text); font-weight:600; line-height:1.8;}
-  .pSpecsList li{margin-bottom:4px;}
+  .pMedia{position:relative; height:280px; background:radial-gradient(circle at 50% 60%, #fff 0%, #f6efe0 60%, #eadcbc 100%);}
+  .pSlides{display:flex; height:100%; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; direction:ltr;}
+  .pSlides::-webkit-scrollbar{display:none;}
+  .pSlide{flex:0 0 100%; height:100%; scroll-snap-align:center; display:flex; align-items:center; justify-content:center; padding:14px 14px 28px;}
+  .pSlide img{max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in; filter:drop-shadow(0 10px 12px rgba(0,0,0,.16));}
+  .pNoPhoto{height:100%; display:flex; align-items:center; justify-content:center; font-size:58px; opacity:.5;}
+  .pNew{position:absolute; top:12px; right:12px; z-index:2; background:linear-gradient(135deg, var(--gold-light), var(--gold)); color:#fff; font-size:12px; font-weight:900; padding:4px 12px; border-radius:14px; box-shadow:0 4px 10px rgba(138,98,24,.3);}
+  .pDots{position:absolute; bottom:10px; left:0; right:0; direction:ltr; display:flex; justify-content:center; gap:5px; pointer-events:none;}
+  .pDots i{width:6px; height:6px; border-radius:50%; background:#d9cfb6; transition:all .3s;}
+  .pDots i.on{width:16px; border-radius:4px; background:var(--gold);}
+  .pBody{padding:15px 15px 16px;}
+  .productCard .pTitle{font-size:20px; font-weight:900; color:var(--navy); line-height:1.35;}
+  .pTag{font-size:13.5px; font-weight:700; color:var(--gold-d); margin-top:1px;}
+  .pTiles{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0 4px;}
+  .pTile{background:var(--gold-bg); border:1px solid rgba(182,134,47,.3); border-radius:13px; padding:9px 11px; min-width:0;}
+  .pTile b{display:block; font-size:18px; font-weight:900; color:var(--navy); line-height:1.25;}
+  .pTile span{font-size:12px; font-weight:700; color:var(--gold-d);}
+  .pTile.wide{grid-column:1 / -1;}
+  .pSec{font-size:12.5px; font-weight:900; color:var(--muted); margin:12px 0 7px;}
+  .pFeats{display:flex; flex-wrap:wrap; gap:6px;}
+  .pFeats span{font-size:12.5px; font-weight:700; color:var(--text); background:#f4f2ec; border:1px solid var(--border); border-radius:16px; padding:4px 11px;}
+  .pFeats span::before{content:'✓ '; color:var(--green); font-weight:900;}
+  .pAdminRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);}
   .productPhotoPicker{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
   .productPhotoPicker .thumb{position:relative; width:76px; height:76px;}
   .productPhotoPicker .thumb img{width:100%; height:100%; object-fit:cover; border-radius:10px; border:1px solid var(--border);}
@@ -1154,8 +1170,7 @@
 
   <!-- ============ شاشة وصف المنتجات ============ -->
   <div id="viewProducts" hidden>
-    <div class="card">
-      <div class="cardTitle">وصف المنتجات</div>
+    <div>
       <div id="productsList"><div class="empty">جاري التحميل...</div></div>
     </div>
   </div>
@@ -1264,7 +1279,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.7.0';
+  const APP_VERSION_ = 'v1.7.1';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -4004,6 +4019,25 @@
       .catch(onError);
   }
 
+  // بيقسم مواصفات المنتج: سطر بـ * = جملة تحت الاسم، "قيمة | وصف" = مربع رقم، وأي سطر تاني = ميزة بعلامة ✓
+  function parseProductSpecs_(specs){
+    const out = { tagline: '', tiles: [], feats: [] };
+    String(specs || '').split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean).forEach(function(l){
+      if(/^[*★]/.test(l)){ if(!out.tagline) out.tagline = l.replace(/^[*★]+/, '').trim(); return; }
+      const parts = l.split('|');
+      if(parts.length > 1) out.tiles.push({ v: parts[0].trim(), t: parts.slice(1).join(' ').trim() });
+      else out.feats.push(l);
+    });
+    return out;
+  }
+  // منتج اتضاف من أقل من 30 يوم = "منتج جديد"
+  function isNewProduct_(dmy){
+    const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(dmy || ''));
+    if(!m) return false;
+    const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    return (Date.now() - d.getTime()) < 30 * 86400000;
+  }
+
   function renderProductsList(products, containerId, adminMode){
     const el = document.getElementById(containerId);
     if(!products || !products.length){
@@ -4014,37 +4048,61 @@
     el.innerHTML = products.map(function(p){
       const pidAttr = String(p.id).replace(/'/g, "\\'");
       const isAd = !!(state.activeAd_ && state.activeAd_.productId === p.id);
-      const delBtn = adminMode
-        ? '<div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">' +
+      const adminRow = adminMode
+        ? '<div class="pAdminRow">' +
             '<button class="delBtn" onclick="handleDeleteProduct(\'' + pidAttr + '\')">🗑 حذف</button>' +
             (isAd
               ? '<span class="adOnBadge">📣 معروض كإعلان دلوقتي</span>'
               : '<button class="delBtn adSetBtn" onclick="handleSetAdProduct_(\'' + pidAttr + '\')">📣 اعرضه كإعلان</button>') +
           '</div>'
         : '';
-      const photosHtml = (p.photos && p.photos.length)
-        ? '<div class="productPhotos">' + p.photos.map(function(url){
-            return '<img src="' + escapeHtml(url) + '" loading="lazy" onclick="window.open(\'' + escapeHtml(url).replace(/'/g, "\\'") + '\', \'_blank\')">';
+      const photos = p.photos || [];
+      // الصورة بتتعرض كاملة (contain) — وبنجرب الرابط الأصلي من Drive الأول عشان الخلفية الشفافة تفضل شفافة
+      const slides = photos.length
+        ? photos.map(function(url){
+            return '<div class="pSlide"><img src="' + escapeHtml(adPhotoUrl_(url)) + '" data-fallback="' + escapeHtml(url) + '" loading="lazy" alt=""' +
+              ' onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback=\'\';}"' +
+              ' onclick="window.open(\'' + escapeHtml(url).replace(/'/g, "\\'") + '\', \'_blank\')"></div>';
+          }).join('')
+        : '<div class="pSlide"><div class="pNoPhoto">📦</div></div>';
+      const dots = photos.length > 1
+        ? '<div class="pDots">' + photos.map(function(_, i){ return '<i class="' + (i === 0 ? 'on' : '') + '"></i>'; }).join('') + '</div>'
+        : '';
+      const s = parseProductSpecs_(p.specs);
+      const tilesHtml = s.tiles.length
+        ? '<div class="pTiles">' + s.tiles.map(function(t, i){
+            const wide = (i === s.tiles.length - 1 && s.tiles.length % 2 === 1);
+            return '<div class="pTile' + (wide ? ' wide' : '') + '"><b><bdi dir="' + numDir_(t.v) + '">' + escapeHtml(t.v) + '</bdi></b><span>' + escapeHtml(t.t) + '</span></div>';
           }).join('') + '</div>'
         : '';
-      const lines = String(p.specs || '').split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
-      const specsHtml = lines.length
-        ? '<ul class="pSpecsList">' + lines.map(function(l){
-            if(/^[*★]/.test(l)) return '<li style="list-style:none; color:var(--gold-d);">' + escapeHtml(l.replace(/^[*★]+/, '').trim()) + '</li>';
-            const parts = l.split('|');
-            if(parts.length > 1) return '<li><b><bdi dir="' + numDir_(parts[0]) + '">' + escapeHtml(parts[0].trim()) + '</bdi></b> — ' + escapeHtml(parts.slice(1).join(' ').trim()) + '</li>';
-            return '<li>' + escapeHtml(l) + '</li>';
-          }).join('') + '</ul>'
+      const featsHtml = s.feats.length
+        ? (s.tiles.length ? '<div class="pSec">مميزات تانية</div>' : '<div style="height:10px"></div>') +
+          '<div class="pFeats">' + s.feats.map(function(f){ return '<span>' + escapeHtml(f) + '</span>'; }).join('') + '</div>'
         : '';
       return (
         '<div class="productCard" data-pid="' + escapeHtml(p.id) + '">' +
-          '<div class="pTitle">' + escapeHtml(p.name) + '</div>' +
-          photosHtml +
-          specsHtml +
-          delBtn +
+          '<div class="pMedia">' +
+            (isNewProduct_(p.date) ? '<span class="pNew">منتج جديد</span>' : '') +
+            '<div class="pSlides" onscroll="productSlidesScrolled_(this)">' + slides + '</div>' +
+            dots +
+          '</div>' +
+          '<div class="pBody">' +
+            '<div class="pTitle">' + escapeHtml(p.name) + '</div>' +
+            (s.tagline ? '<div class="pTag">' + escapeHtml(s.tagline) + '</div>' : '') +
+            tilesHtml +
+            featsHtml +
+            adminRow +
+          '</div>' +
         '</div>'
       );
     }).join('');
+  }
+  // النقط تحت الصور بتتحرك مع سحب الصور
+  function productSlidesScrolled_(el){
+    const dots = el.parentNode.querySelectorAll('.pDots i');
+    if(!dots.length) return;
+    const idx = Math.round(Math.abs(el.scrollLeft) / Math.max(1, el.clientWidth));
+    dots.forEach(function(d, i){ d.classList.toggle('on', i === idx); });
   }
 
   // ============ اختيار صور المنتج (قبل الإضافة) — بتتصغّر بالمتصفح زي صورة البروفايل بالظبط ============
