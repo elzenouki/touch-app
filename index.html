@@ -439,6 +439,12 @@
     max-height:calc(100vh - 36px); display:flex; flex-direction:column; overflow:hidden;
     box-shadow:0 10px 40px rgba(0,0,0,.35);
   }
+  .pkBigBtn{ display:flex; align-items:center; justify-content:center; gap:10px; font-size:17px; padding:16px; }
+  .pkBigBtn .pkIcon{ font-size:22px; }
+  .pkProfileBox{ margin-top:18px; padding-top:14px; border-top:1px dashed var(--border); }
+  .pkProfileTitle{ font-weight:800; font-size:15px; margin-bottom:4px; }
+  .pkProfileStatus{ font-size:13.5px; color:var(--muted2); font-weight:700; line-height:1.7; }
+  button.ghost.pkClearBtn{ margin-top:6px; font-size:13px; color:var(--red); border-color:var(--red-bg); background:transparent; }
   .alertOverlay{
     position:fixed; inset:0; background:rgba(10,15,30,.65); z-index:600;
     display:flex; align-items:center; justify-content:center; padding:20px;
@@ -502,18 +508,36 @@
     width:110px; height:110px; border-radius:50%; background:var(--card2); border:2px dashed var(--border);
     display:flex; align-items:center; justify-content:center; font-size:34px; color:var(--muted);
   }
+  /* ============ كارت المنتج (الشكل الفاتح): صورة كاملة فوق + مربعات للأرقام + مميزات ============ */
   .productCard{
-    background:var(--card2); border:1px solid var(--border); border-radius:13px;
-    padding:14px 16px; margin-bottom:12px;
+    background:#fff; border:1px solid var(--border); border-radius:20px; overflow:hidden;
+    margin-bottom:16px; box-shadow:0 6px 18px rgba(15,28,61,.07);
   }
-  .productCard .pTitle{font-weight:800; font-size:15.5px; color:var(--navy); margin-bottom:10px;}
-  .productPhotos{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px;}
-  .productPhotos img{
-    width:84px; height:84px; object-fit:cover; border-radius:10px;
-    border:1px solid var(--border); cursor:pointer; background:#fff;
-  }
-  .pSpecsList{margin:0; padding-inline-start:20px; font-size:14.5px; color:var(--text); font-weight:600; line-height:1.8;}
-  .pSpecsList li{margin-bottom:4px;}
+  .pMedia{position:relative; height:280px; background:radial-gradient(circle at 50% 60%, #fff 0%, #f6efe0 60%, #eadcbc 100%);}
+  .pSlides{display:flex; height:100%; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; direction:ltr;}
+  .pSlides::-webkit-scrollbar{display:none;}
+  .pSlide{flex:0 0 100%; height:100%; scroll-snap-align:center; display:flex; align-items:center; justify-content:center; padding:14px 14px 28px;}
+  /* multiply: أي خلفية بيضا في صورة المنتج بتختفي وتندمج مع خلفية الكارت (الصور الشفافة مش بتتأثر) */
+  .pSlide img{max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in; mix-blend-mode:multiply;}
+  .pMedia::after{content:''; position:absolute; left:50%; bottom:18px; width:46%; height:14px; margin-left:-23%; border-radius:50%; background:radial-gradient(rgba(0,0,0,.18), transparent 70%); pointer-events:none;}
+  .pNoPhoto{height:100%; display:flex; align-items:center; justify-content:center; font-size:58px; opacity:.5;}
+  .pNew{position:absolute; top:12px; right:12px; z-index:2; background:linear-gradient(135deg, var(--gold-light), var(--gold)); color:#fff; font-size:12px; font-weight:900; padding:4px 12px; border-radius:14px; box-shadow:0 4px 10px rgba(138,98,24,.3);}
+  .pDots{position:absolute; bottom:10px; left:0; right:0; direction:ltr; display:flex; justify-content:center; gap:5px; pointer-events:none;}
+  .pDots i{width:6px; height:6px; border-radius:50%; background:#d9cfb6; transition:all .3s;}
+  .pDots i.on{width:16px; border-radius:4px; background:var(--gold);}
+  .pBody{padding:15px 15px 16px;}
+  .productCard .pTitle{font-size:20px; font-weight:900; color:var(--navy); line-height:1.35;}
+  .pTag{font-size:13.5px; font-weight:700; color:var(--gold-d); margin-top:1px;}
+  .pTiles{display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0 4px;}
+  .pTile{background:var(--gold-bg); border:1px solid rgba(182,134,47,.3); border-radius:13px; padding:9px 11px; min-width:0;}
+  .pTile b{display:block; font-size:18px; font-weight:900; color:var(--navy); line-height:1.25;}
+  .pTile span{font-size:12px; font-weight:700; color:var(--gold-d);}
+  .pTile.wide{grid-column:1 / -1;}
+  .pSec{font-size:12.5px; font-weight:900; color:var(--muted); margin:12px 0 7px;}
+  .pFeats{display:flex; flex-wrap:wrap; gap:6px;}
+  .pFeats span{font-size:12.5px; font-weight:700; color:var(--text); background:#f4f2ec; border:1px solid var(--border); border-radius:16px; padding:4px 11px;}
+  .pFeats span::before{content:'✓ '; color:var(--green); font-weight:900;}
+  .pAdminRow{display:flex; gap:8px; flex-wrap:wrap; margin-top:14px; padding-top:12px; border-top:1px dashed var(--border);}
   .productPhotoPicker{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
   .productPhotoPicker .thumb{position:relative; width:76px; height:76px;}
   .productPhotoPicker .thumb img{width:100%; height:100%; object-fit:cover; border-radius:10px; border:1px solid var(--border);}
@@ -571,6 +595,95 @@
   }
   .inAppBanner button.inAppClose{flex:0 0 42px; color:var(--muted2); border-color:var(--border);}
   /* الأجهزة اللي صاحبها مفعّل "تقليل الحركة" من إعدادات الموبايل: من غير أنيميشن الحديث/البلور */
+  .speedBox{margin-top:18px; padding-top:14px; border-top:1px dashed var(--border);}
+  .speedRow{display:flex; justify-content:space-between; gap:8px; font-size:13px; font-weight:700; color:var(--navy); padding:6px 0; border-bottom:1px solid #f0ece2;}
+  .speedRow small{color:var(--muted); font-weight:700;}
+  .speedRow.slow b{color:var(--red);}
+
+  /* ============ مندوب ماسك أكتر من فرع ============ */
+  .branchChip{
+    display:inline-flex; align-items:center; gap:6px; margin-top:9px; padding:5px 13px; border-radius:20px; cursor:pointer;
+    background:rgba(217,172,82,.16); border:1px solid rgba(217,172,82,.6); color:#fff; font-size:13px; font-weight:800; position:relative;
+  }
+  .branchPickList button{
+    display:block; width:100%; margin-top:9px; padding:14px; border-radius:12px; border:1px solid var(--gold);
+    background:#fff; color:var(--navy); font-family:inherit; font-size:16px; font-weight:800; cursor:pointer;
+  }
+  .branchPickList button.on{background:var(--gold-bg);}
+  .branchPickList button.on::after{content:'  ✔'; color:var(--gold-d);}
+  .branchSplit{margin-top:10px; border-top:1px dashed var(--border); padding-top:8px;}
+  .branchSplit div{display:flex; justify-content:space-between; font-size:14px; font-weight:700; color:var(--navy); padding:3px 0;}
+  .branchSplit div span:last-child{color:var(--gold-d); font-weight:900;}
+
+  /* ============ إعلان منتج جديد (الشكل الليلي الفخم) ============ */
+  .adOverlay{
+    position:fixed; inset:0; z-index:550; display:flex; align-items:center; justify-content:center; padding:16px;
+    background:rgba(6,10,22,.82); animation:adFade .35s ease both;
+  }
+  .adOverlay.closing{animation:adFadeOut .3s ease both;}
+  .adOverlay.closing .adCard{animation:adOut .3s ease both;}
+  .adCard{
+    position:relative; display:flex; flex-direction:column; overflow:hidden;
+    width:min(340px, 92vw); height:min(600px, 86vh); min-height:470px; border-radius:26px;
+    background:radial-gradient(120% 70% at 50% 0%, #1d2d5c 0%, #0a1226 60%, #050914 100%);
+    box-shadow:0 30px 70px rgba(0,0,0,.5), 0 0 0 1px rgba(217,172,82,.35);
+    animation:adPop .8s cubic-bezier(.2,1.2,.4,1) both;
+  }
+  .adBeam{
+    position:absolute; top:-40px; left:8px; width:46%; height:72%; pointer-events:none;
+    background:linear-gradient(180deg, rgba(217,172,82,.55), rgba(217,172,82,0) 85%);
+    clip-path:polygon(40% 0, 60% 0, 100% 100%, 0 100%); filter:blur(6px);
+    opacity:0; animation:adBeam 1.2s .3s forwards, adFlick 3s 1.5s 3;
+  }
+  .adX{
+    position:absolute; top:12px; left:12px; z-index:5; width:32px; height:32px; border-radius:50%; border:none;
+    background:rgba(255,255,255,.92); color:var(--navy); font-size:15px; font-weight:900; cursor:pointer;
+    opacity:0; animation:adFade .4s 1.1s forwards;
+  }
+  .adHead{position:relative; padding:24px 18px 0 54px; text-align:right;}
+  .adKick{display:inline-block; color:var(--gold-light); font-size:13px; font-weight:900; letter-spacing:1px; animation:adUp .5s .4s both;}
+  .adName{color:#fff; font-size:25px; font-weight:900; line-height:1.3; margin-top:2px; animation:adUp .6s .55s both;}
+  .adName span{
+    background:linear-gradient(90deg, var(--gold-light), #fff3cf, var(--gold)); background-size:200%;
+    -webkit-background-clip:text; background-clip:text; color:transparent; animation:adShim 3s 1s linear 3;
+  }
+  .adTag{color:#aab4d4; font-size:12.5px; font-weight:700; margin-top:2px; animation:adUp .5s .7s both;}
+  .adMid{position:relative; flex:1; min-height:0; margin-top:10px;}
+  .adProd{position:absolute; left:10px; top:0; bottom:8px; width:46%; animation:adRise 1s .35s cubic-bezier(.2,1,.3,1) both;}
+  .adProd img{width:100%; height:100%; object-fit:contain; object-position:bottom center; animation:adFloat 4.5s 1.4s ease-in-out 4;}
+  .adNoPhoto{height:100%; display:flex; align-items:center; justify-content:center; font-size:70px; animation:adFloat 4.5s 1.4s ease-in-out infinite;}
+  .adFloor{position:absolute; left:18px; bottom:0; width:40%; height:16px; border-radius:50%; background:radial-gradient(rgba(217,172,82,.6), transparent 70%); animation:adFade 1s 1s both;}
+  .adSpecs{position:absolute; right:14px; top:4px; width:48%; max-height:100%; overflow:hidden; list-style:none; margin:0; padding:0;}
+  .adSpecs li{color:#e9e2cf; font-size:12px; font-weight:800; line-height:1.4; padding:8px 0; border-bottom:1px solid rgba(217,172,82,.22); animation:adSlide .45s both;}
+  .adSpecs li b{display:block; color:var(--gold-light); font-size:17px; font-weight:900;}
+  .adCta{
+    margin:12px 16px 20px; border:none; border-radius:14px; padding:14px; font-family:inherit; font-weight:900; font-size:15.5px;
+    color:var(--navy); background:linear-gradient(135deg, var(--gold-light), var(--gold)); cursor:pointer;
+    animation:adUp .5s 1.5s both, adGlow 2s 2s 4;
+  }
+  .productCard.adFlash{animation:adFlash 1.6s ease 2;}
+  .adOnBadge{display:inline-flex; align-items:center; font-size:13px; font-weight:800; padding:6px 12px; border-radius:9px; background:var(--gold-bg); color:var(--gold-d); border:1px solid var(--gold);}
+  .delBtn.adSetBtn{color:var(--gold-d); font-size:14px; font-weight:800; font-family:inherit;}
+  .adAdminBox{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap; background:var(--gold-bg); border:1px solid var(--gold);
+    border-radius:13px; padding:12px 14px; margin-bottom:12px; font-size:14px; font-weight:700; color:var(--navy);}
+  .adAdminBox .meta{font-size:12px; color:var(--muted); margin-top:2px;}
+  @keyframes adFade{from{opacity:0} to{opacity:1}}
+  @keyframes adFadeOut{to{opacity:0}}
+  @keyframes adPop{from{opacity:0; transform:scale(.88)} to{opacity:1; transform:none}}
+  @keyframes adOut{to{opacity:0; transform:scale(.9) translateY(20px)}}
+  @keyframes adBeam{to{opacity:1}}
+  @keyframes adFlick{0%,100%{opacity:1} 50%{opacity:.7}}
+  @keyframes adUp{from{opacity:0; transform:translateY(18px)} to{opacity:1; transform:none}}
+  @keyframes adShim{to{background-position:-200% 0}}
+  @keyframes adRise{from{opacity:0; transform:translateY(80px)} to{opacity:1; transform:none}}
+  @keyframes adFloat{0%,100%{transform:translateY(0)} 50%{transform:translateY(-7px)}}
+  @keyframes adSlide{from{opacity:0; transform:translateX(-30px)} to{opacity:1; transform:none}}
+  @keyframes adGlow{50%{box-shadow:0 0 24px rgba(217,172,82,.75)}}
+  @keyframes adFlash{50%{box-shadow:0 0 0 3px var(--gold), 0 0 24px rgba(182,134,47,.5)}}
+  @media (prefers-reduced-motion: reduce){
+    .adOverlay, .adOverlay *{animation:none !important; opacity:1;}
+  }
+
   @media (prefers-reduced-motion: reduce){
     .hadithBox .hadithText .word{ animation:none; opacity:1; transform:none; }
     .spinnerOverlay{ backdrop-filter:none; }
@@ -632,10 +745,16 @@
     <div class="card">
       <div class="cardTitle">تأكيد الدخول</div>
       <div id="otpHint" style="margin-bottom:10px; color:#666; font-size:14px;">بعتنالك كود تأكيد على إيميلك</div>
-      <label>الكود اللي وصلك على الإيميل</label>
-      <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="6" placeholder="مثال: 123456">
-      <button class="primary" id="otpBtn" onclick="handleVerifyOtp()">تأكيد ودخول</button>
-      <button class="ghost" id="otpResendBtn" onclick="handleResendOtp()" style="margin-top:8px;">إعادة إرسال الكود</button>
+      <div id="otpPkBox" hidden>
+        <button class="primary pkBigBtn" id="pkLoginBtn" onclick="handlePasskeyLogin_()"><span class="pkIcon">🔐</span>ادخل ببصمة الوجه / الإصبع</button>
+        <button class="ghost" onclick="handleUseEmailInstead_()" style="margin-top:8px;">✉ ابعتلي كود على الإيميل بدل كده</button>
+      </div>
+      <div id="otpEmailBox">
+        <label>الكود اللي وصلك على الإيميل</label>
+        <input type="text" id="otpInput" class="ltrNum" inputmode="numeric" autocomplete="one-time-code" dir="ltr" maxlength="6" placeholder="مثال: 123456">
+        <button class="primary" id="otpBtn" onclick="handleVerifyOtp()">تأكيد ودخول</button>
+        <button class="ghost" id="otpResendBtn" onclick="handleResendOtp()" style="margin-top:8px;">إعادة إرسال الكود</button>
+      </div>
       <button class="ghost" onclick="handleOtpBack()" style="margin-top:8px;">رجوع لتسجيل الدخول</button>
     </div>
   </div>
@@ -649,6 +768,7 @@
           <div class="wText">
             <div class="hi">أهلاً بيك</div>
             <div class="name" id="homeUserName"></div>
+            <div class="branchChip" id="branchChip" hidden onclick="openBranchPicker_()"><span>📍</span><span id="branchChipName"></span><span>▾</span></div>
           </div>
         </div>
         <div class="targetProgressWrap" id="targetProgressWrap" hidden>
@@ -845,6 +965,7 @@
         <span class="val" id="statsTodayTotal">0</span>
       </div>
       <div style="color:var(--muted); font-size:13px; margin-top:8px;" id="statsTodayCount"></div>
+      <div class="branchSplit" id="statsTodayBranches" hidden></div>
     </div>
     <div class="card">
       <div class="cardTitle">إجمالي المبيعات من أول الشهر</div>
@@ -853,6 +974,7 @@
         <span class="val" id="statsMonthTotal">0</span>
       </div>
       <div style="color:var(--muted); font-size:13px; margin-top:8px;" id="statsMonthCount"></div>
+      <div class="branchSplit" id="statsMonthBranches" hidden></div>
     </div>
     <div class="card" id="statsTargetCard" hidden>
       <div class="cardTitle">تارجت الشهر</div>
@@ -927,6 +1049,10 @@
 
   <!-- ============ شاشة أرصدتي (رصيد كل صنف لحظيًا) ============ -->
   <div id="viewBalances" hidden>
+    <div class="card" id="balancesBranchPickerCard" hidden>
+      <div class="cardTitle">اختار الفرع</div>
+      <select id="balancesBranchSelect" onchange="loadBalances(state.balancesRep_ || '', this.value)"></select>
+    </div>
     <div class="card" id="balancesRepPickerCard" hidden>
       <div class="cardTitle">اختار المندوب</div>
       <select id="balancesRepSelect" onchange="loadBalances(this.value)"></select>
@@ -1016,7 +1142,10 @@
       <label>اسم المنتج</label>
       <input type="text" id="productNameInput" placeholder="مثال: خلاط انسباير 600">
       <label>المواصفات (اكتب كل ميزة في سطر لوحدها)</label>
-      <textarea id="productSpecsInput" placeholder="مثال:&#10;3000 وات&#10;قاعدة من السيراميك&#10;خاصية الاغلاق الذاتي"></textarea>
+      <textarea id="productSpecsInput" placeholder="مثال:&#10;* تبريد ذكي · تسخين فوري&#10;5–8° | تبريد تربو&#10;95° | تسخين قوي&#10;قفل أمان للأطفال"></textarea>
+      <div style="color:var(--muted); font-size:12.5px; font-weight:700; line-height:1.8; margin:-6px 0 14px;">
+        للإعلان: سطر بيبدأ بـ <b>*</b> = الجملة اللي تحت الاسم · <b>قيمة | وصف</b> = رقم دهبي كبير ووصفه تحته
+      </div>
       <label>صور المنتج (اختياري، حد أقصى 5 صور)</label>
       <div class="productPhotoPicker" id="productPhotoPicker">
         <button type="button" class="productPhotoAddBtn" onclick="document.getElementById('productPhotoInput').click()">+</button>
@@ -1026,6 +1155,7 @@
     </div>
     <div class="card">
       <div class="cardTitle">المنتجات الحالية</div>
+      <div id="adAdminBox"></div>
       <div id="productsAdminList"><div class="empty">جاري التحميل...</div></div>
     </div>
   </div>
@@ -1047,6 +1177,17 @@
       <label>الإجازة الأسبوعية (تقدر تختار أكتر من يوم)</label>
       <div class="dayChipsWrap" id="weeklyOffChipsWrap"></div>
       <button class="finalize" id="saveProfileBtn" onclick="handleSaveProfile()">✔ حفظ بياناتي</button>
+      <div id="pkProfileBox" class="pkProfileBox" hidden>
+        <div class="pkProfileTitle">🔐 الدخول بالبصمة</div>
+        <div id="pkProfileStatus" class="pkProfileStatus"></div>
+        <button class="ghost" id="pkProfileBtn" style="margin-top:8px;" onclick="openPasskeyOffer_(true)">فعّل الدخول بالبصمة على الجهاز ده</button>
+        <button class="ghost pkClearBtn" id="pkClearBtn" hidden onclick="handlePasskeyClear_()">مسح كل البصمات المتسجلة على حسابي</button>
+      </div>
+      <div class="speedBox">
+        <div class="pkProfileTitle">⏱ سرعة التطبيق</div>
+        <div class="pkProfileStatus">آخر العمليات: الوقت الكلي، ومنه كام ثانية على سيرفر جوجل (الباقي = النت)</div>
+        <div id="speedLogList"></div>
+      </div>
       <div class="appVersionNote" id="appVersionNote"></div>
     </div>
   </div>
@@ -1063,8 +1204,7 @@
 
   <!-- ============ شاشة وصف المنتجات ============ -->
   <div id="viewProducts" hidden>
-    <div class="card">
-      <div class="cardTitle">وصف المنتجات</div>
+    <div>
       <div id="productsList"><div class="empty">جاري التحميل...</div></div>
     </div>
   </div>
@@ -1114,6 +1254,31 @@
     </div>
   </div>
 
+  <div id="pkOfferOverlay" class="alertOverlay" hidden>
+    <div class="alertModal" style="max-width:400px;">
+      <div class="alertIcon" style="background:var(--gold-bg); color:var(--gold-d); font-size:26px;">🔐</div>
+      <div class="alertText" style="margin-bottom:8px;">تحب تدخل <b>ببصمة الوجه أو الإصبع</b> بدل كود الإيميل؟</div>
+      <div style="color:var(--muted2); font-size:13.5px; font-weight:700; line-height:1.7; margin-bottom:16px;">
+        لو التطبيق طلب منك تأكيد تاني (موبايل جديد، مسحت البيانات، متصفح تاني)، هتحط بصمتك وتدخل على طول من غير ما تستنى إيميل. البصمة بتفضل على موبايلك وماحدش بيشوفها.
+      </div>
+      <div style="display:flex; gap:10px;">
+        <button class="ghost" style="margin-top:0; flex:1;" onclick="closePasskeyOffer_()">بعدين</button>
+        <button class="finalize" id="pkOfferBtn" style="margin-top:0; flex:1;" onclick="doRegisterPasskey_()" disabled>فعّل دلوقتي</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="branchPickerOverlay" class="alertOverlay" hidden>
+    <div class="alertModal">
+      <div class="alertIcon" style="background:var(--gold-bg); color:var(--gold-d); font-size:24px;">📍</div>
+      <div class="alertText" style="margin-bottom:6px;">انت النهارده في أنهي فرع؟</div>
+      <div style="color:var(--muted2); font-size:13px; font-weight:700; line-height:1.7; margin-bottom:6px;">
+        كل اللي هتسجله (بيع، مرتجع، توريد، جرد) هيتحسب على الفرع ده — وتقدر تغيّره من الرئيسية في أي وقت
+      </div>
+      <div id="branchPickerList" class="branchPickList"></div>
+    </div>
+  </div>
+
   <div id="dupConfirmOverlay" class="alertOverlay" hidden>
     <div class="alertModal">
       <div class="alertIcon">!</div>
@@ -1159,9 +1324,27 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.6.7';
+  const APP_VERSION_ = 'v1.8.5';
 
+  // ============ عدّاد سرعة التطبيق ============
+  // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
+  // بيتعرض في "إعداداتي ← سرعة التطبيق" عشان نعرف التقل جاي من فين بالظبط.
+  const SPEED_LOG_KEY_ = 'tz_speed_log';
+  function logSpeed_(action, totalMs, serverMs, ok){
+    try{
+      const log = JSON.parse(localStorage.getItem(SPEED_LOG_KEY_) || '[]');
+      log.unshift({ a: action, t: Math.round(totalMs), s: serverMs == null ? null : serverMs, ok: ok, at: Date.now() });
+      localStorage.setItem(SPEED_LOG_KEY_, JSON.stringify(log.slice(0, 25)));
+    }catch(e){}
+  }
   function callApi(action, args){
+    const t0 = performance.now();
+    let serverMs = null;
+    return callApiRaw_(action, args)
+      .then(function(r){ logSpeed_(action, performance.now() - t0, r.ms, true); return r.result; })
+      .catch(function(err){ logSpeed_(action, performance.now() - t0, serverMs, false); throw err; });
+  }
+  function callApiRaw_(action, args){
     return fetch(WEBAPP_URL, {
       method: 'POST',
       // text/plain مهم عشان المتصفح ميبعتش طلب OPTIONS (preflight) قبل الطلب الحقيقي —
@@ -1174,7 +1357,7 @@
         if(!data || data.ok !== true){
           throw new Error((data && data.error) || 'حصل خطأ غير متوقع، حاول تاني');
         }
-        return data.result;
+        return { result: data.result, ms: data.ms };
       })
       .catch(function(err){
         if(err instanceof TypeError){
@@ -1364,6 +1547,9 @@
     document.getElementById('pageSub').textContent = state.user ? state.user.name : '';
     setView('viewHome');
     prefetchCatalogSoon_();
+    maybeAskBranch_();
+    // مرة واحدة: نعرض على المندوب اللي داخل من قبل كده يفعّل البصمة
+    if(!_pkOfferShownThisSession_) setTimeout(function(){ maybeOfferPasskey_(false); }, 2500);
   }
 
   // ============ تخزين بيانات الدخول محليًا في المتصفح عشان المندوب ميدخلش كل مرة ============
@@ -1524,6 +1710,8 @@
     document.getElementById('adminLink').hidden = !state.isOwner;
     renderHomeBadgeIcon(user.photoUrl);
     renderTargetProgress_(targetProgress);
+    restoreChosenBranch_();
+    renderBranchChip_();
 
     // المشرف مش مندوب بيسجّل مبيعات — شغله إنه يتابع ويشرف بس، فبنخفي عنه شاشات الإدخال دي
     // (بيع/مرتجع/توريد/جرد/أسعاري). إدارة المناديب والمشرفين بقت مقصورة على صاحب الحساب
@@ -1624,8 +1812,8 @@
     if(!name){ showMsg('اختر اسمك الأول', 'error'); return; }
     if(!pin){ showMsg('اكتب كود الدخول', 'error'); return; }
     showLoading(true);
-    loadDeviceTokenAsync_()
-      .then(function(deviceToken){ return callApi('login', [name, pin, deviceToken]); })
+    Promise.all([loadDeviceTokenAsync_(), pkSupported_()])
+      .then(function(v){ return callApi('login', [name, pin, v[0], { passkey: v[1] }]); })
       .then(function(data){
         showLoading(false);
         if(data.auth){
@@ -1635,11 +1823,18 @@
           saveAuth(data.auth);
           applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
           goHome();
+          maybeShowAd_(data.ad);
           return;
         }
         state.pendingOtpEmail = data.email;
+        state.pendingOtpName = data.name;
+        state.pendingPasskey = data.passkey || null;
         document.getElementById('otpInput').value = '';
-        document.getElementById('otpHint').textContent = 'بعتنالك كود تأكيد على إيميل ' + data.name + ' المسجل — اكتبه هنا عشان تكمل الدخول';
+        if(data.passkey){
+          showOtpMode_('passkey');
+        } else {
+          showOtpMode_('email');
+        }
         setView('viewOtp');
       })
       .catch(onError);
@@ -1652,17 +1847,26 @@
     if(!state.pendingOtpEmail){ showMsg('حصل خطأ، سجل الدخول تاني', 'error'); setView('viewLogin'); return; }
     showLoading(true);
     callApi('verifyLoginOtp', [state.pendingOtpEmail, otp])
-      .then(function(data){
-        state.auth = data.auth;
-        saveAuth(data.auth);
-        saveDeviceToken(data.deviceToken);
-        requestPersistentStorage_();
-        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
-        state.pendingOtpEmail = null;
-        showLoading(false);
-        goHome();
-      })
+      .then(function(data){ onNewDeviceLogin_(data, 'email'); })
       .catch(onError);
+  }
+
+  // نهاية الدخول على جهاز جديد (بكود الإيميل أو بالبصمة)
+  function onNewDeviceLogin_(data, via){
+    state.auth = data.auth;
+    saveAuth(data.auth);
+    saveDeviceToken(data.deviceToken);
+    requestPersistentStorage_();
+    applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
+    state.pendingOtpEmail = null;
+    state.pendingPasskey = null;
+    showLoading(false);
+    if(via === 'passkey') pkMarkLocal_(data.user.email, true);
+    goHome();
+    // أول دخول بكود الإيميل بيعرض تفعيل البصمة — الإعلان يستنى لحد فتحة التطبيق الجاية عشان مايتزاحموش
+    if(via !== 'email') maybeShowAd_(data.ad);
+    // دخل بكود الإيميل؟ نعرض عليه يفعّل البصمة عشان المرة الجاية تبقى أسهل
+    if(via === 'email') setTimeout(function(){ maybeOfferPasskey_(true); }, 700);
   }
 
   function handleResendOtp(){
@@ -1680,8 +1884,275 @@
   function handleOtpBack(){
     clearMsg();
     state.pendingOtpEmail = null;
+    state.pendingPasskey = null;
     document.getElementById('loginPinInput').value = '';
     setView('viewLogin');
+  }
+
+  // ================== الدخول بالبصمة (Passkey) بدل كود الإيميل ==================
+  // أول مرة على الجهاز: كود الإيميل. بعدها المندوب يفعّل البصمة، والمرة الجاية اللي التطبيق يطلب فيها
+  // تأكيد، بيحط بصمته بدل ما يستنى الإيميل. السيرفر بيتأكد من التوقيع — البصمة نفسها مابتطلعش من الموبايل.
+  var _pkSupported_ = null;
+  function pkSupported_(){
+    if(_pkSupported_) return _pkSupported_;
+    _pkSupported_ = new Promise(function(resolve){
+      try{
+        if(!window.PublicKeyCredential || !navigator.credentials || !window.isSecureContext ||
+           typeof PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable !== 'function'){ resolve(false); return; }
+        const timer = setTimeout(function(){ resolve(false); }, 1200);
+        PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+          .then(function(ok){ clearTimeout(timer); resolve(!!ok); })
+          .catch(function(){ clearTimeout(timer); resolve(false); });
+      }catch(e){ resolve(false); }
+    });
+    return _pkSupported_;
+  }
+  function pkB64uToBuf_(s){
+    s = String(s).replace(/-/g, '+').replace(/_/g, '/');
+    while(s.length % 4) s += '=';
+    const bin = atob(s), out = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+    return out.buffer;
+  }
+  function pkBufToB64u_(buf){
+    const b = new Uint8Array(buf); let s = '';
+    for(let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]);
+    return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function pkHex_(u8){ return Array.prototype.map.call(u8, function(b){ return ('0' + b.toString(16)).slice(-2); }).join(''); }
+  // فك CBOR بسيط (كفاية لـ attestationObject والمفتاح العام COSE)
+  function pkCbor_(bytes){
+    let i = 0;
+    function len(ai){
+      if(ai < 24) return ai;
+      if(ai === 24) return bytes[i++];
+      if(ai === 25){ const v = (bytes[i] << 8) | bytes[i + 1]; i += 2; return v; }
+      if(ai === 26){ const v = ((bytes[i] << 24) >>> 0) + (bytes[i + 1] << 16) + (bytes[i + 2] << 8) + bytes[i + 3]; i += 4; return v; }
+      throw new Error('cbor');
+    }
+    function item(){
+      const ib = bytes[i++], mt = ib >> 5, ai = ib & 31;
+      if(mt === 7){ if(ai === 20) return false; if(ai === 21) return true; if(ai === 22) return null; throw new Error('cbor'); }
+      const n = len(ai);
+      if(mt === 0) return n;
+      if(mt === 1) return -1 - n;
+      if(mt === 2){ const v = bytes.slice(i, i + n); i += n; return v; }
+      if(mt === 3){ const v = new TextDecoder().decode(bytes.slice(i, i + n)); i += n; return v; }
+      if(mt === 4){ const a = []; for(let k = 0; k < n; k++) a.push(item()); return a; }
+      if(mt === 5){ const m = new Map(); for(let k = 0; k < n; k++){ const key = item(); m.set(key, item()); } return m; }
+      throw new Error('cbor');
+    }
+    const v = item();
+    return { value: v, end: i };
+  }
+  function pkLocalKey_(email){ return 'tz_pk_on:' + String(email || '').toLowerCase(); }
+  function pkMarkLocal_(email, on){
+    try{ if(on) localStorage.setItem(pkLocalKey_(email), '1'); else localStorage.removeItem(pkLocalKey_(email)); }catch(e){}
+  }
+  function pkIsLocal_(email){ try{ return localStorage.getItem(pkLocalKey_(email)) === '1'; }catch(e){ return false; } }
+  function pkDeviceLabel_(){
+    const ua = navigator.userAgent || '';
+    if(/iPhone/i.test(ua)) return 'iPhone';
+    if(/iPad/i.test(ua)) return 'iPad';
+    if(/Android/i.test(ua)){ const m = ua.match(/Android[^;]*;\s*([^;)]+)/); return 'Android' + (m ? ' - ' + m[1].trim().slice(0, 25) : ''); }
+    if(/Windows/i.test(ua)) return 'Windows';
+    if(/Mac/i.test(ua)) return 'Mac';
+    return 'جهاز';
+  }
+
+  function showOtpMode_(mode){
+    const name = state.pendingOtpName || '';
+    document.getElementById('otpPkBox').hidden = mode !== 'passkey';
+    document.getElementById('otpEmailBox').hidden = mode === 'passkey';
+    document.getElementById('otpHint').textContent = mode === 'passkey'
+      ? 'أكّد إنك ' + name + ' ببصمة الوجه أو الإصبع (أو قفل شاشة الموبايل) — من غير ما تستنى إيميل'
+      : 'بعتنالك كود تأكيد على إيميل ' + name + ' المسجل — اكتبه هنا عشان تكمل الدخول';
+  }
+
+  function handlePasskeyLogin_(){
+    clearMsg();
+    const pk = state.pendingPasskey;
+    if(!pk || !state.pendingOtpEmail){ showMsg('حصل خطأ، سجل الدخول تاني', 'error'); setView('viewLogin'); return; }
+    let getP;
+    try{
+      getP = navigator.credentials.get({ publicKey: {
+        challenge: pkB64uToBuf_(pk.challenge),
+        allowCredentials: pk.ids.map(function(id){ return { type: 'public-key', id: pkB64uToBuf_(id) }; }),
+        userVerification: 'required',
+        timeout: 60000,
+      }});
+    }catch(e){ getP = Promise.reject(e); }
+    getP
+      .then(function(cred){
+        if(!cred) throw new Error('cancel');
+        showLoading(true);
+        return callApi('verifyLoginPasskey', [state.pendingOtpEmail, {
+          id: cred.id,
+          clientDataJSON: pkBufToB64u_(cred.response.clientDataJSON),
+          authenticatorData: pkBufToB64u_(cred.response.authenticatorData),
+          signature: pkBufToB64u_(cred.response.signature),
+        }]);
+      })
+      .then(function(data){ onNewDeviceLogin_(data, 'passkey'); })
+      .catch(function(err){
+        showLoading(false);
+        const n = (typeof DOMException !== 'undefined' && err instanceof DOMException) ? err.name : '';
+        if(n === 'NotAllowedError' || n === 'AbortError' || (err && err.message === 'cancel')){
+          showMsg('البصمة اتلغت أو ماتعرفتش — جرّب تاني، أو اطلب كود على الإيميل', 'error');
+        } else if(err && err.message && !n){
+          onError(err);
+        } else {
+          showMsg('البصمة مش متاحة هنا — اطلب كود على الإيميل', 'error');
+        }
+      });
+  }
+
+  function handleUseEmailInstead_(){
+    clearMsg();
+    if(!state.pendingOtpEmail){ showMsg('حصل خطأ، سجل الدخول تاني', 'error'); setView('viewLogin'); return; }
+    showLoading(true);
+    callApi('resendLoginOtp', [state.pendingOtpEmail])
+      .then(function(){
+        showLoading(false);
+        showOtpMode_('email');
+        showMsg('اتبعت كود على إيميلك', 'success');
+        try{ document.getElementById('otpInput').focus(); }catch(e){}
+      })
+      .catch(onError);
+  }
+
+  // ---------- تفعيل البصمة ----------
+  var _pkReg_ = null;
+  var _pkOfferShownThisSession_ = false;
+  function maybeOfferPasskey_(afterEmailLogin){
+    if(!state.auth || !state.user) return;
+    const email = state.user.email;
+    if(pkIsLocal_(email)) return;
+    let asked = false;
+    try{ asked = !!localStorage.getItem('tz_pk_asked:' + email); }catch(e){}
+    if(asked && !afterEmailLogin) return;
+    if(_pkOfferShownThisSession_) return;
+    pkSupported_().then(function(ok){
+      if(!ok) return;
+      if(document.getElementById('viewHome').hidden) return; // مانقاطعش شاشة شغال فيها
+      const busy = document.querySelector('.alertOverlay:not([hidden]), .adOverlay:not([hidden])');
+      if(busy) return;
+      _pkOfferShownThisSession_ = true;
+      try{ localStorage.setItem('tz_pk_asked:' + email, '1'); }catch(e){}
+      openPasskeyOffer_(false);
+    });
+  }
+  // بنجيب الـ challenge من السيرفر قبل ما المندوب يدوس "فعّل" — عشان الآيفون بيطلب إن البصمة تتفتح
+  // مباشرة من الضغطة (من غير انتظار نت في النص)
+  function openPasskeyOffer_(fromProfile){
+    clearMsg();
+    const btn = document.getElementById('pkOfferBtn');
+    btn.disabled = true;
+    btn.textContent = 'لحظة...';
+    document.getElementById('pkOfferOverlay').hidden = false;
+    _pkReg_ = null;
+    callApi('passkeyRegisterStart', [state.auth])
+      .then(function(r){
+        if(!r || !r.supported){ closePasskeyOffer_(); if(fromProfile) showMsg('السيرفر مش جاهز للبصمة — حدّث الكود (Code.gs)', 'error'); return; }
+        _pkReg_ = r;
+        btn.disabled = false;
+        btn.textContent = 'فعّل دلوقتي';
+      })
+      .catch(function(err){ closePasskeyOffer_(); if(fromProfile) onError(err); });
+  }
+  function closePasskeyOffer_(){
+    document.getElementById('pkOfferOverlay').hidden = true;
+  }
+  function doRegisterPasskey_(){
+    const r = _pkReg_;
+    if(!r) return;
+    _pkReg_ = null;
+    const btn = document.getElementById('pkOfferBtn');
+    btn.disabled = true;
+    const email = state.user.email;
+    let createP;
+    try{
+      createP = navigator.credentials.create({ publicKey: {
+        challenge: pkB64uToBuf_(r.challenge),
+        rp: { name: 'تاتش الزنوكي' },
+        user: { id: pkB64uToBuf_(r.userId), name: r.userName, displayName: r.displayName || r.userName },
+        pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
+        excludeCredentials: (r.exclude || []).map(function(id){ return { type: 'public-key', id: pkB64uToBuf_(id) }; }),
+        attestation: 'none',
+        timeout: 60000,
+      }});
+    }catch(e){ createP = Promise.reject(e); }
+    createP
+      .then(function(cred){
+        if(!cred) throw new Error('cancel');
+        const att = pkCbor_(new Uint8Array(cred.response.attestationObject)).value;
+        const authData = att.get('authData');
+        const credIdLen = (authData[53] << 8) | authData[54];
+        const cose = pkCbor_(authData.slice(55 + credIdLen)).value;
+        const alg = cose.get(3);
+        const payload = {
+          id: cred.id,
+          clientDataJSON: pkBufToB64u_(cred.response.clientDataJSON),
+          authData: pkBufToB64u_(authData),
+          alg: alg,
+          label: pkDeviceLabel_(),
+        };
+        if(alg === -7){ payload.x = pkHex_(cose.get(-2)); payload.y = pkHex_(cose.get(-3)); }
+        else if(alg === -257){ payload.n = pkHex_(cose.get(-1)); payload.e = pkHex_(cose.get(-2)); }
+        showLoading(true);
+        return callApi('passkeyRegisterFinish', [state.auth, payload]);
+      })
+      .then(function(){
+        showLoading(false);
+        closePasskeyOffer_();
+        pkMarkLocal_(email, true);
+        refreshPasskeyProfile_();
+        showAlertModal_('تمام ✔ اتفعّل الدخول بالبصمة على الجهاز ده — المرة الجاية اللي التطبيق يطلب تأكيد، حط بصمتك بدل كود الإيميل', 'success');
+      })
+      .catch(function(err){
+        showLoading(false);
+        closePasskeyOffer_();
+        const n = (typeof DOMException !== 'undefined' && err instanceof DOMException) ? err.name : '';
+        if(n === 'InvalidStateError'){ // البصمة متسجلة على الجهاز ده أصلاً
+          pkMarkLocal_(email, true);
+          refreshPasskeyProfile_();
+          showMsg('البصمة متفعّلة على الجهاز ده أصلاً ✔', 'success');
+        } else if(n === 'NotAllowedError' || n === 'AbortError' || (err && err.message === 'cancel')){
+          showMsg('اتلغى تفعيل البصمة — تقدر تفعّلها بعدين من إعداداتي', 'error');
+        } else if(err && err.message && !n){
+          onError(err);
+        } else {
+          showMsg('الجهاز ده مش بيدعم الدخول بالبصمة من المتصفح ده', 'error');
+        }
+      });
+  }
+  function refreshPasskeyProfile_(){
+    const box = document.getElementById('pkProfileBox');
+    if(!box || !state.user) return;
+    pkSupported_().then(function(ok){
+      const on = pkIsLocal_(state.user.email);
+      box.hidden = !ok && !on;
+      document.getElementById('pkProfileStatus').textContent = on
+        ? 'مفعّل على الجهاز ده ✔ — لو التطبيق طلب تأكيد هتدخل ببصمتك بدل كود الإيميل'
+        : 'مش مفعّل — فعّله عشان تدخل ببصمة الوجه أو الإصبع بدل كود الإيميل';
+      const btn = document.getElementById('pkProfileBtn');
+      btn.hidden = !ok;
+      btn.textContent = on ? 'سجّل البصمة تاني على الجهاز ده' : 'فعّل الدخول بالبصمة على الجهاز ده';
+      document.getElementById('pkClearBtn').hidden = !on;
+    });
+  }
+  function handlePasskeyClear_(){
+    if(!confirm('هتمسح كل البصمات المتسجلة على حسابك (على كل الأجهزة)، والتأكيد هيرجع بكود الإيميل. متأكد؟')) return;
+    showLoading(true);
+    callApi('passkeyClearMine', [state.auth])
+      .then(function(){
+        showLoading(false);
+        pkMarkLocal_(state.user.email, false);
+        refreshPasskeyProfile_();
+        showMsg('اتمسحت البصمات — التأكيد هيرجع بكود الإيميل', 'success');
+      })
+      .catch(onError);
   }
 
   const HADITH_LIST_ = [
@@ -1788,6 +2259,7 @@
         } else if(state.screen === null){
           document.getElementById('pageSub').textContent = state.user.name;
         }
+        maybeShowAd_(data.ad);
       })
       .catch(function(err){
         // النت فاصل بس والبيانات المحفوظة موجودة — نسيبه يكمّل (شريط "مفيش اتصال" بيظهر لوحده)
@@ -1851,11 +2323,11 @@
       top.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
       const nameEl = document.createElement('div');
       nameEl.className = 'name';
-      nameEl.textContent = it.name;
+      nameEl.textContent = it.name + ((state.user.branches || []).length > 1 && it.branch ? ' — ' + it.branch : '');
       const daysEl = document.createElement('div');
       daysEl.className = 'total';
       daysEl.style.color = '#c73e3e';
-      daysEl.textContent = it.days >= 0 ? ('واقف من ' + it.days + ' يوم') : 'مبيعش خالص لحد دلوقتي';
+      daysEl.textContent = it.neverSold ? ('ما اتباعش خالص من ' + it.days + ' يوم') : it.days >= 0 ? ('واقف من ' + it.days + ' يوم') : 'مبيعش خالص لحد دلوقتي';
       top.appendChild(nameEl);
       top.appendChild(daysEl);
 
@@ -1866,7 +2338,7 @@
       const btn = document.createElement('button');
       btn.className = 'finalize';
       btn.textContent = '✔ إرسال السبب';
-      btn.onclick = function(){ handleSubmitStaleReason_(it.code, row, ta); };
+      btn.onclick = function(){ handleSubmitStaleReason_(it.code, row, ta, it.branch); };
 
       row.appendChild(top);
       row.appendChild(ta);
@@ -1877,11 +2349,11 @@
     setView('viewStaleBlock');
   }
 
-  function handleSubmitStaleReason_(code, row, textareaEl){
+  function handleSubmitStaleReason_(code, row, textareaEl, branch){
     const reason = (textareaEl.value || '').trim();
     if(!reason){ showMsg('من فضلك اكتب السبب الأول', 'error'); return; }
     showLoading(true);
-    callApi('saveStaleReason', [state.auth, code, reason])
+    callApi('saveStaleReason', [state.auth, code, reason, branch || ''])
       .then(function(){
         showLoading(false);
         row.remove();
@@ -1949,6 +2421,8 @@
         document.getElementById('statsMonthLabel').textContent = 'شهر ' + data.month.monthLabel;
         document.getElementById('statsMonthTotal').textContent = fmt(data.month.total);
         document.getElementById('statsMonthCount').textContent = data.month.linesCount + ' صنف/بند من أول الشهر';
+        renderBranchSplit_('statsTodayBranches', data.today.byBranch);
+        renderBranchSplit_('statsMonthBranches', data.month.byBranch);
 
         var pickerCard = document.getElementById('statsRepPickerCard');
         if (data.reps && data.reps.length){
@@ -1978,6 +2452,14 @@
         setView('viewMyStats');
       })
       .catch(onError);
+  }
+
+  // مبيعات كل فرع لوحده (للمندوب اللي ماسك أكتر من فرع)
+  function renderBranchSplit_(id, list){
+    const el = document.getElementById(id);
+    if(!list || list.length < 2){ el.hidden = true; el.innerHTML = ''; return; }
+    el.hidden = false;
+    el.innerHTML = list.map(function(x){ return '<div><span>📍 ' + escapeHtml(x.branch) + '</span><span>' + fmt(x.total) + '</span></div>'; }).join('');
   }
 
   // ============ نبض البيع اليومي + نمط الأسبوع ============
@@ -2137,8 +2619,18 @@
         if (items.length){
           emptyMsg.hidden = true;
           var html = '';
+          // المسؤول الحالي عن الصنف — "استلمه راكد" لو الصنف قاعد في الفرع من قبل ما المندوب ده يمسكه
+          var holderLine = function (it) {
+            var h = it.holder;
+            if (!h || !h.rep) return '';
+            var inherited = h.days != null && it.days - h.days >= 7;
+            return '<div class="meta" style="color:var(--navy); font-weight:800;">👤 في عهدة ' + escapeHtml(h.rep) +
+              (h.since ? ' من ' + escapeHtml(h.since) + (h.days != null ? ' (' + h.days + ' يوم)' : '') : '') +
+              (inherited ? ' <span style="background:var(--gold-bg); color:var(--gold-d); border:1px solid var(--gold); border-radius:10px; padding:1px 8px; font-size:11.5px;">استلمه راكد</span>' : '') +
+              '</div>';
+          };
           items.forEach(function (it) {
-            var daysLabel = (it.days < 0) ? 'لم يباع نهائيًا' : 'واقف من ' + it.days + ' يوم';
+            var daysLabel = it.neverSold ? ('ما اتباعش خالص من ' + it.days + ' يوم') : (it.days < 0) ? 'لم يباع نهائيًا' : 'واقف من ' + it.days + ' يوم';
             var lastSupplyLabel = it.lastSupply ? it.lastSupply : 'لسه ما اتوردش';
             var stockLabel = it.stockKnown ? fmt(it.stock) : 'غير معروف (مفيش جرد مسجل)';
             html +=
@@ -2151,6 +2643,7 @@
                   ' · المخزون الفعلي: ' + stockLabel +
                   ' · آخر توريد: ' + escapeHtml(lastSupplyLabel) +
                 '</div>' +
+                holderLine(it) +
               '</div>';
           });
           document.getElementById('staleList').innerHTML = html;
@@ -2167,15 +2660,25 @@
   // ============ صفحة أرصدتي (رصيد كل صنف لحظيًا) ============
   // لأي مندوب: بتوري رصيده هو بس من غير اختيار. للمشرف: بتوري قايمة اختيار مندوب فوق (نفس منطق
   // تقييد الفروع بتاع مبيعاتي/الرواكد بالظبط)، وأي اختيار جديد بيعمل تحميل تاني لنفس الشاشة.
-  function loadBalances(repName){
+  function loadBalances(repName, branch){
     document.getElementById('pageTitle').textContent = state.isAdmin ? 'أرصدة المندوبين' : 'أرصدتي';
     document.getElementById('pageSub').textContent = state.user.name;
     showLoading(true);
-    callApi('bootstrapBalances', [state.auth, repName || ''])
+    callApi('bootstrapBalances', [state.auth, repName || '', branch || ''])
       .then(function(data){
         showLoading(false);
         if(data.blocked){ renderStaleBlockScreen_(data, 'balances', repName || ''); return; }
-        document.getElementById('pageSub').textContent = data.repName || state.user.name;
+        state.balancesRep_ = data.reps && data.reps.length ? data.repName : '';
+        const multiB = data.repBranches && data.repBranches.length > 1;
+        document.getElementById('pageSub').textContent = (data.repName || state.user.name) + (multiB ? ' — ' + data.branch : '');
+        // مندوب ماسك أكتر من فرع: اختيار الفرع فوق الأرصدة
+        const bCard = document.getElementById('balancesBranchPickerCard');
+        bCard.hidden = !multiB;
+        if(multiB){
+          document.getElementById('balancesBranchSelect').innerHTML = data.repBranches.map(function(b){
+            return '<option value="' + escapeHtml(b) + '"' + (b === data.branch ? ' selected' : '') + '>' + escapeHtml(b) + '</option>';
+          }).join('');
+        }
 
         var pickerCard = document.getElementById('balancesRepPickerCard');
         if (data.reps && data.reps.length){
@@ -2191,7 +2694,7 @@
 
         var items = data.balances || [];
         // بنحتفظ بالبيانات اللي وصلت فعلاً عشان زرار "تصدير إكسل" يستخدمها على طول من غير أي طلب جديد للسيرفر
-        state.balancesExportData_ = { items: items, repName: data.repName || state.user.name };
+        state.balancesExportData_ = { items: items, repName: data.repName || state.user.name, branch: data.branch || '' };
         var list = document.getElementById('balancesList');
         if(!items.length){
           list.innerHTML = '<div class="empty">مفيش أصناف مسجلة حاليًا</div>';
@@ -2232,11 +2735,11 @@
       return [it.name, Number(it.balance), it.hasBaseline ? 'بجرد رسمي' : 'من غير جرد رسمي'];
     });
     var opts = {
-      fileName: 'أرصدة - ' + data.repName,
+      fileName: 'أرصدة - ' + data.repName + (data.branch ? ' - ' + data.branch : ''),
       reportTitle: 'تقرير الأرصدة',
       meta: [
         ['اسم المندوب', data.repName],
-        ['الفرع', state.user.branch || '—'],
+        ['الفرع', data.branch || state.user.branch || '—'],
         ['التاريخ', new Date().toLocaleDateString('ar-EG')],
       ],
       headers: ['اسم الصنف', 'الرصيد', 'ملاحظة'],
@@ -2264,7 +2767,7 @@
     callApi('listMyInvoices', [state.auth, {}])
       .then(function(data){
         showLoading(false);
-        renderInvoiceHistory(data.invoices || []);
+        renderInvoiceHistory(data.invoices || [], !!(data.multiBranch || data.showBranch));
         setView('viewInvoiceHistory');
       })
       .catch(onError);
@@ -2278,13 +2781,24 @@
     'توريد': { label: 'توريد', neg: false },
   };
 
-  function renderInvoiceHistory(invoices){
+  function renderInvoiceHistory(invoices, multiBranch){
     const list = document.getElementById('invoiceHistoryList');
     if(!invoices.length){
       list.innerHTML = '<div class="empty">لسه مفيش حاجة متسجلة</div>';
       return;
     }
+    // عنوان لكل شهر (أكتوبر 2026 / سبتمبر 2026...) عشان يبان كل فاتورة تبع أنهي شهر
+    const MONTHS_AR = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+    let lastMonth = '';
     list.innerHTML = invoices.map(function(inv){
+      const mParts = String(inv.date || '').split('/');
+      const mKey = mParts.length === 3 ? mParts[1] + '/' + mParts[2] : '';
+      let monthHead = '';
+      if(mKey && mKey !== lastMonth){
+        lastMonth = mKey;
+        monthHead = '<div class="sectionLabel" style="margin:14px 0 8px;">' + MONTHS_AR[Number(mParts[1]) - 1] + ' ' + mParts[2] + '</div>';
+      }
+      return monthHead + (function(){
       const meta = HISTORY_TYPE_META[inv.type] || { label: inv.type, neg: false };
       const sidAttr = escapeHtml(inv.sessionId).replace(/'/g, "\\'");
       // بيع/مرتجع بيعرضوا إجمالي مبلغ، جرد/توريد بيعرضوا إجمالي كمية — حسب النوع
@@ -2293,7 +2807,7 @@
       return (
         '<div class="itemRow' + (meta.neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:8px;">' +
           '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-            '<div class="name">' + escapeHtml(meta.label) + ' · ' + escapeHtml(inv.date) + '</div>' +
+            '<div class="name">' + escapeHtml(meta.label) + ' · ' + escapeHtml(inv.date) + (multiBranch && inv.branch ? ' <span style="color:var(--gold-d); font-size:13px;">📍 ' + escapeHtml(inv.branch) + '</span>' : '') + '</div>' +
             '<div class="total">' + valueLabel + '</div>' +
           '</div>' +
           '<div class="meta">' + inv.itemCount + ' صنف/بند</div>' +
@@ -2303,6 +2817,7 @@
           '</div>' +
         '</div>'
       );
+      })();
     }).join('');
   }
 
@@ -2316,7 +2831,7 @@
       reportTitle: 'تقرير ' + result.type,
       meta: [
         ['اسم المندوب', result.repName || state.user.name],
-        ['الفرع', state.user.branch || '—'],
+        ['الفرع', ('branch' in result) ? (result.branch || '—') : (state.user.branch || '—')],
         ['التاريخ', result.date],
         ['عدد الأصناف', result.items.length],
       ],
@@ -2384,6 +2899,8 @@
         renderRepsList(data.reps);
         renderAsnafList(data.asnaf);
         renderSuggestionsAdminList(data.suggestions);
+        state.activeAd_ = data.activeAd || null;
+        renderAdAdminBox_();
         renderProductsList(data.products, 'productsAdminList', true);
       })
       .catch(function(err){
@@ -2751,7 +3268,11 @@
         // فعلاً — نعرضها من الأصناف اللي المندوب كتبها بدل ما الشاشة تقع بخطأ ويفتكر إنها متسجلتش
         state.finalResult = normalizeFinalResult_(result);
         renderInvoice(state.screen); // بتخفي finalizeBtn خالص لما state.finalized=true
-        showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
+        if(state.finalResult.duplicate){
+          showMsg('تم الترحيل ✔ — بس الفاتورة دي متطابقة ' + state.finalResult.duplicate.pct + '% مع فاتورة تانية النهارده', 'error');
+        } else {
+          showMsg('تم الترحيل وتسجيل الفاتورة بنجاح ✔', 'success');
+        }
       })
       .catch(function(err){
         state.finalizeInFlight = false;
@@ -2820,11 +3341,13 @@
         : [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
     });
     return {
-      fileName: label + ' - ' + safeDateForFile(result.date) + ' - ' + state.user.name,
+      // لو الفاتورة متطابقة بنسبة كبيرة مع فاتورة تانية نفس اليوم — الصورة والإكسل بيطلعوا أحمر
+      duplicate: result.duplicate || null,
+      fileName: (result.duplicate ? 'مكررة - ' : '') + label + ' - ' + safeDateForFile(result.date) + ' - ' + state.user.name,
       reportTitle: 'تقرير ' + label,
       meta: [
         ['اسم المندوب', state.user.name],
-        ['الفرع', state.user.branch || '—'],
+        ['الفرع', ('branch' in result) ? (result.branch || '—') : (state.user.branch || '—')],
         ['التاريخ', result.date],
         ['نوع العملية', label],
       ],
@@ -2991,6 +3514,7 @@
     callApi('bootstrapJard', [state.auth])
       .then(function(data){
         state.asnaf = data.asnaf;
+        state.jardBalancesHidden_ = !!data.balancesHidden;
         showLoading(false);
         renderJard();
       })
@@ -3036,7 +3560,10 @@
     // كل صنف بيتعرض ومعاه (لو معروف) "رصيدك المتوقع" — نفس الرقم المحسوب في شاشة "أرصدتي" —
     // كـ badge دهبي واضح فوق خانة الإدخال مباشرة، وكمان كـ placeholder جوه الخانة نفسها،
     // عشان يسهّل على المندوب يقارن بسرعة وهو بيعدّ فعليًا بدل ما يدوّر في شاشة تانية.
-    list.innerHTML = state.asnaf.map(function(a){
+    const hiddenNote = state.jardBalancesHidden_
+      ? '<div class="inAppBanner" style="margin-bottom:14px;">🔒 الرصيد المتوقع مخفي لحد ما تكتب سبب ركود الأصناف الراكدة (من شاشة "أرصدتي" أو "مبيعاتي"). تقدر تجرد عادي.</div>'
+      : '';
+    list.innerHTML = hiddenNote + state.asnaf.map(function(a){
       const hasExpected = typeof a.expectedBalance === 'number' && !isNaN(a.expectedBalance);
       const expectedHtml = hasExpected
         ? '<div style="display:inline-flex; align-items:center; gap:6px; background:var(--gold-bg); border:1px solid var(--gold); color:var(--gold-d); font-weight:800; font-size:13.5px; padding:5px 12px; border-radius:20px; margin:4px 0 8px;">📦 رصيدك المتوقع: ' + fmt(a.expectedBalance) + '</div>'
@@ -3071,12 +3598,12 @@
       inp.classList.remove('needFill');
       if(inp.value !== '') return;
       const a = state.asnaf.find(function(x){ return x.name === inp.dataset.name; });
-      if(a && typeof a.expectedBalance === 'number' && a.expectedBalance > 0) missing.push({ inp: inp, name: a.name, expected: a.expectedBalance });
+      if(a && ((typeof a.expectedBalance === 'number' && a.expectedBalance > 0) || a.hasStock)) missing.push({ inp: inp, name: a.name, expected: a.expectedBalance });
     });
     if(missing.length){
       state.jardPending_ = { items: items, missing: missing };
       document.getElementById('jardMissingList').innerHTML = missing.map(function(m){
-        return '<div class="jardMissRow"><span>' + escapeHtml(m.name) + '</span><span>📦 ' + fmt(m.expected) + '</span></div>';
+        return '<div class="jardMissRow"><span>' + escapeHtml(m.name) + '</span><span>' + (typeof m.expected === 'number' ? '📦 ' + fmt(m.expected) : '📦') + '</span></div>';
       }).join('');
       document.getElementById('jardMissingOverlay').hidden = false;
       return;
@@ -3332,6 +3859,8 @@
         showLoading(false);
         renderProfile(data);
         document.getElementById('appVersionNote').textContent = 'إصدار التطبيق: ' + APP_VERSION_;
+        renderSpeedLog_();
+        refreshPasskeyProfile_();
         setView('viewProfile');
       })
       .catch(onError);
@@ -3453,6 +3982,216 @@
       .catch(onError);
   }
 
+  const SPEED_NAMES_ = { bootstrapHome:'فتح التطبيق', bootstrapInvoice:'تحميل الأصناف', finalizeInvoice:'ترحيل فاتورة', bootstrapJard:'فتح الجرد',
+    saveJard:'حفظ الجرد', bootstrapTawrid:'فتح التوريد', saveTawrid:'حفظ التوريد', bootstrapMyStats:'مبيعاتي', bootstrapBalances:'أرصدتي',
+    bootstrapStale:'الرواكد', listMyInvoices:'سجل فواتيري', getInvoiceDetails:'تفاصيل فاتورة', bootstrapItemSalesReport:'مبيعات الأصناف',
+    listProductDescriptions:'وصف المنتجات', bootstrapAdmin:'شاشة الإدارة', bootstrapProfile:'إعداداتي', login:'تسجيل الدخول' };
+  function renderSpeedLog_(){
+    const el = document.getElementById('speedLogList');
+    let log = [];
+    try{ log = JSON.parse(localStorage.getItem(SPEED_LOG_KEY_) || '[]'); }catch(e){}
+    if(!log.length){ el.innerHTML = '<div class="meta" style="margin-top:6px;">لسه مفيش عمليات متسجلة</div>'; return; }
+    const sec = function(ms){ return (ms / 1000).toFixed(1) + ' ث'; };
+    el.innerHTML = log.map(function(x){
+      const slow = x.t > 4000 ? ' slow' : '';
+      const d = new Date(x.at);
+      const tm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+      return '<div class="speedRow' + slow + '"><span>' + escapeHtml(SPEED_NAMES_[x.a] || x.a) + ' <small>' + tm + (x.ok ? '' : ' ✖') + '</small></span>' +
+        '<span><b>' + sec(x.t) + '</b>' + (x.s != null ? ' <small>(السيرفر ' + sec(x.s) + ')</small>' : '') + '</span></div>';
+    }).join('');
+  }
+
+  // ============ مندوب ماسك أكتر من فرع ============
+  // لو المندوب مكتوب له أكتر من فرع في تاب "المندوبين"، بيختار من الرئيسية هو النهارده في أنهي فرع (بيتسأل
+  // مرة كل يوم أول ما يفتح التطبيق). الفرع المختار بيتبعت مع كل طلب للسيرفر (auth.branch)، فكل اللي بيسجله
+  // بيتحسب على الفرع ده، والأرصدة والرواكد بتتعرض للفرع ده. مندوب ليه فرع واحد مش بيشوف أي حاجة من دي.
+  function userBranches_(){ return (state.user && state.user.branches) || []; }
+  function branchKey_(name){ return 'tz_branch_' + name + ':' + String((state.user && state.user.email) || '').toLowerCase(); }
+  function businessDayStr_(){ const d = new Date(Date.now() - 5 * 3600000); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+  // بعد تسجيل دخول جديد (auth جديد من غير فرع)، نرجّع آخر فرع المندوب اختاره على الجهاز ده
+  function restoreChosenBranch_(){
+    const list = userBranches_();
+    if(list.length < 2 || !state.auth) return;
+    if(!state.auth.branch){
+      let saved = '';
+      try{ saved = localStorage.getItem(branchKey_('sel')) || ''; }catch(e){}
+      if(saved && list.indexOf(saved) !== -1){ state.auth.branch = saved; saveAuth(state.auth); }
+    }
+    if(state.auth.branch && list.indexOf(state.auth.branch) !== -1) state.user.branch = state.auth.branch;
+  }
+  function renderBranchChip_(){
+    const chip = document.getElementById('branchChip');
+    const list = userBranches_();
+    if(list.length < 2){ chip.hidden = true; return; }
+    chip.hidden = false;
+    document.getElementById('branchChipName').textContent = state.user.branch || list[0];
+  }
+  function maybeAskBranch_(){
+    if(userBranches_().length < 2) return;
+    let day = '';
+    try{ day = localStorage.getItem(branchKey_('day')) || ''; }catch(e){}
+    if(day === businessDayStr_() && state.auth && state.auth.branch) return;
+    openBranchPicker_();
+  }
+  function openBranchPicker_(){
+    const list = userBranches_();
+    if(list.length < 2) return;
+    document.getElementById('branchPickerList').innerHTML = list.map(function(b){
+      return '<button class="' + (b === state.user.branch ? 'on' : '') + '" data-b="' + escapeHtml(b) + '" onclick="chooseBranch_(this.dataset.b)">' + escapeHtml(b) + '</button>';
+    }).join('');
+    document.getElementById('branchPickerOverlay').hidden = false;
+  }
+  function chooseBranch_(b){
+    document.getElementById('branchPickerOverlay').hidden = true;
+    try{
+      localStorage.setItem(branchKey_('day'), businessDayStr_());
+      localStorage.setItem(branchKey_('sel'), b);
+    }catch(e){}
+    state.auth.branch = b;
+    saveAuth(state.auth);
+    state.user.branch = b;
+    saveHomeCache_();
+    renderBranchChip_();
+    showMsg('تمام ✔ انت دلوقتي في ' + b, 'success');
+    if(state.pendingAd_){ const ad = state.pendingAd_; state.pendingAd_ = null; maybeShowAd_(ad); }
+  }
+
+  // ============ إعلان منتج جديد (بيظهر للمندوب 3 مرات بس لكل إعلان) ============
+  // الإعلان بيجي من السيرفر مع فتح التطبيق. عدد المرات بيتحسب على الموبايل لكل مندوب ولكل إعلان —
+  // ولو صاحب الحساب اختار منتج جديد (أو نفس المنتج تاني) بيبقى إعلان جديد وكل مندوب يشوفه 3 مرات تاني.
+  const AD_MAX_VIEWS_ = 3;
+  let adShownThisSession_ = false;
+  function adSeenKey_(ad){ return 'tz_ad_seen:' + String((state.user && state.user.email) || '').toLowerCase() + ':' + ad.id; }
+  function adSeenCount_(ad){
+    try{ return Number(localStorage.getItem(adSeenKey_(ad))) || 0; }
+    catch(e){ return AD_MAX_VIEWS_; } // لو التخزين مش شغال، منزعجش المندوب بالإعلان كل مرة
+  }
+  function maybeShowAd_(ad){
+    if(!ad || !ad.id || adShownThisSession_) return; // بيظهر للجميع: مناديب ومشرفين وصاحب الحساب
+    if(adSeenCount_(ad) >= AD_MAX_VIEWS_) return;
+    setTimeout(function(){
+      // بيظهر على الشاشة الرئيسية بس — لو المندوب دخل شاشة تانية أو في رسالة مفتوحة، منقاطعوش
+      if(adShownThisSession_ || document.getElementById('viewHome').hidden) return;
+      if(document.querySelector('.alertOverlay:not([hidden])')){ state.pendingAd_ = ad; return; } // يستنى لحد ما المندوب يختار فرعه
+      adShownThisSession_ = true;
+      try{ localStorage.setItem(adSeenKey_(ad), String(adSeenCount_(ad) + 1)); }catch(e){}
+      showAd_(ad);
+    }, 700);
+  }
+  // صورة الإعلان: الرابط الأصلي للملف من Drive (بيحافظ على الخلفية الشفافة)، ولو فشل بنرجع لرابط الصورة العادي
+  function adPhotoUrl_(url){
+    const m = /[?&]id=([^&]+)/.exec(String(url || ''));
+    return m ? 'https://lh3.googleusercontent.com/d/' + m[1] : url;
+  }
+  function showAd_(ad){
+    closeAd_(true);
+    state.adShowing_ = ad;
+    const words = String(ad.name || '').trim().split(/\s+/);
+    const nameHtml = words.length > 1
+      ? escapeHtml(words.slice(0, -1).join(' ')) + ' <span>' + escapeHtml(words[words.length - 1]) + '</span>'
+      : '<span>' + escapeHtml(ad.name || '') + '</span>';
+    // توافق مع إعلان اتعمل بنسخة سيرفر قديمة (lines بدل specs)
+    const specs = (ad.specs || (ad.lines || []).map(function(t){ return { v:'', t:t }; })).slice(0, 5);
+    const photo = ad.photos && ad.photos[0];
+    const ov = document.createElement('div');
+    ov.className = 'adOverlay';
+    ov.id = 'adOverlay';
+    ov.onclick = function(e){ if(e.target === ov) closeAd_(); };
+    ov.innerHTML =
+      '<div class="adCard">' +
+        '<div class="adBeam"></div>' +
+        '<button class="adX" onclick="closeAd_()">✕</button>' +
+        '<div class="adHead">' +
+          '<div class="adKick">✦ منتج جديد</div>' +
+          '<div class="adName">' + nameHtml + '</div>' +
+          (ad.tagline ? '<div class="adTag">' + escapeHtml(ad.tagline) + '</div>' : '') +
+        '</div>' +
+        '<div class="adMid">' +
+          '<div class="adFloor"></div>' +
+          '<div class="adProd">' + (photo
+            ? '<img src="' + escapeHtml(adPhotoUrl_(photo)) + '" data-fallback="' + escapeHtml(photo) + '" onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback=\'\';}" alt="">'
+            : '<div class="adNoPhoto">📦</div>') +
+          '</div>' +
+          '<ul class="adSpecs">' + specs.map(function(s, i){
+            return '<li style="animation-delay:' + (0.9 + i * 0.12).toFixed(2) + 's">' +
+              (s.v ? '<b><bdi dir="' + numDir_(s.v) + '">' + escapeHtml(s.v) + '</bdi></b>' : '') + escapeHtml(s.t || '') + '</li>';
+          }).join('') + '</ul>' +
+        '</div>' +
+        '<button class="adCta" onclick="openAdProduct_()">شوف التفاصيل ←</button>' +
+      '</div>';
+    document.body.appendChild(ov);
+  }
+  // قيمة زي "5–8°" (أرقام بس) لازم تتكتب من الشمال لليمين وإلا بتتقلب "°8–5" — وقيمة فيها عربي زي "3.2 لتر" تفضل يمين لشمال
+  function numDir_(v){ return /[\u0600-\u06FF]/.test(String(v)) ? 'rtl' : 'ltr'; }
+  function closeAd_(instant){
+    const ov = document.getElementById('adOverlay');
+    if(!ov) return;
+    if(instant === true){ ov.remove(); return; }
+    ov.classList.add('closing');
+    setTimeout(function(){ ov.remove(); }, 300);
+  }
+  function openAdProduct_(){
+    const ad = state.adShowing_;
+    closeAd_(true);
+    if(!ad) return;
+    state.adFocusPid_ = ad.productId;
+    openScreen('products');
+  }
+  // لما المندوب يفتح وصف المنتجات من الإعلان، بننزل على المنتج ده ونلمّعه
+  function focusAdProductCard_(){
+    const pid = state.adFocusPid_;
+    state.adFocusPid_ = null;
+    if(!pid) return;
+    const card = Array.prototype.find.call(document.querySelectorAll('#productsList .productCard'), function(c){ return c.dataset.pid === pid; });
+    if(!card) return;
+    setTimeout(function(){
+      card.scrollIntoView({ behavior:'smooth', block:'center' });
+      card.classList.add('adFlash');
+      setTimeout(function(){ card.classList.remove('adFlash'); }, 3400);
+    }, 150);
+  }
+
+  // ---------- إدارة الإعلان (صاحب الحساب بس، من شاشة الإدارة) ----------
+  function renderAdAdminBox_(){
+    const box = document.getElementById('adAdminBox');
+    if(!box) return;
+    const ad = state.activeAd_;
+    box.innerHTML = ad
+      ? '<div class="adAdminBox"><div>📣 الإعلان الحالي: <b>' + escapeHtml(ad.name) + '</b><div class="meta">بيظهر لكل مستخدمي التطبيق ' + AD_MAX_VIEWS_ + ' مرات أول ما يفتحوه</div></div>' +
+          '<div style="display:flex; gap:8px;"><button class="adminToggleBtn" onclick="previewAd_()">👁 معاينة</button>' +
+          '<button class="adminToggleBtn isAdminBtn" onclick="handleClearAd_()">إيقاف</button></div></div>'
+      : '<div class="adAdminBox"><div>📣 مفيش إعلان شغال<div class="meta">دوس "اعرضه كإعلان" على أي منتج تحت</div></div></div>';
+  }
+  function previewAd_(){ if(state.activeAd_) showAd_(state.activeAd_); }
+  function handleSetAdProduct_(productId){
+    clearMsg();
+    if(!confirm('المنتج ده هيظهر كإعلان لكل مستخدمي التطبيق ' + AD_MAX_VIEWS_ + ' مرات أول ما يفتحوا التطبيق. موافق؟')) return;
+    showLoading(true);
+    callApi('setAdProduct', [state.auth, productId])
+      .then(function(r){
+        showLoading(false);
+        state.activeAd_ = r.ad;
+        renderAdAdminBox_();
+        renderProductsList(state.adminProducts_ || [], 'productsAdminList', true);
+        showAd_(r.ad); // معاينة فورية بنفس الشكل اللي المناديب هيشوفوه
+      })
+      .catch(onError);
+  }
+  function handleClearAd_(){
+    clearMsg();
+    if(!confirm('متأكد إنك عاوز توقف الإعلان؟')) return;
+    showLoading(true);
+    callApi('clearAd', [state.auth])
+      .then(function(){
+        showLoading(false);
+        state.activeAd_ = null;
+        renderAdAdminBox_();
+        renderProductsList(state.adminProducts_ || [], 'productsAdminList', true);
+        showMsg('تم إيقاف الإعلان ✔', 'success');
+      })
+      .catch(onError);
+  }
+
   // ============ وصف المنتجات ============
   function loadProductsScreen(){
     document.getElementById('pageTitle').textContent = 'وصف المنتجات';
@@ -3463,8 +4202,31 @@
         showLoading(false);
         renderProductsList(products, 'productsList', false);
         setView('viewProducts');
+        focusAdProductCard_();
       })
       .catch(onError);
+  }
+
+  // بيقسم مواصفات المنتج: سطر بـ * = جملة تحت الاسم، "قيمة | وصف" = مربع رقم، وأي سطر تاني = ميزة بعلامة ✓
+  function parseProductSpecs_(specs){
+    const out = { tagline: '', tiles: [], feats: [] };
+    String(specs || '').split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean).forEach(function(l){
+      if(/^[*★]/.test(l)){ if(!out.tagline) out.tagline = l.replace(/^[*★]+/, '').trim(); return; }
+      const parts = l.split('|');
+      if(parts.length > 1) out.tiles.push({ v: parts[0].trim(), t: parts.slice(1).join(' ').trim() });
+      else {
+        const f = l.replace(/^[•·▪◦●○■□◆◇►▶➤✓✔✅\-–—]+\s*/, '').trim(); // نشيل أي نقطة أو علامة في أول السطر — الكارت بيحط ✓ لوحده
+        if(f) out.feats.push(f);
+      }
+    });
+    return out;
+  }
+  // منتج اتضاف من أقل من 30 يوم = "منتج جديد"
+  function isNewProduct_(dmy){
+    const m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(dmy || ''));
+    if(!m) return false;
+    const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
+    return (Date.now() - d.getTime()) < 30 * 86400000;
   }
 
   function renderProductsList(products, containerId, adminMode){
@@ -3473,28 +4235,65 @@
       el.innerHTML = '<div class="empty">لسه مفيش منتجات متضافة</div>';
       return;
     }
+    if(adminMode) state.adminProducts_ = products;
     el.innerHTML = products.map(function(p){
-      const delBtn = adminMode
-        ? '<button class="delBtn" style="margin-top:8px;" onclick="handleDeleteProduct(\'' + String(p.id).replace(/'/g, "\\'") + '\')">🗑 حذف</button>'
+      const pidAttr = String(p.id).replace(/'/g, "\\'");
+      const isAd = !!(state.activeAd_ && state.activeAd_.productId === p.id);
+      const adminRow = adminMode
+        ? '<div class="pAdminRow">' +
+            '<button class="delBtn" onclick="handleDeleteProduct(\'' + pidAttr + '\')">🗑 حذف</button>' +
+            (isAd
+              ? '<span class="adOnBadge">📣 معروض كإعلان دلوقتي</span>'
+              : '<button class="delBtn adSetBtn" onclick="handleSetAdProduct_(\'' + pidAttr + '\')">📣 اعرضه كإعلان</button>') +
+          '</div>'
         : '';
-      const photosHtml = (p.photos && p.photos.length)
-        ? '<div class="productPhotos">' + p.photos.map(function(url){
-            return '<img src="' + escapeHtml(url) + '" loading="lazy" onclick="window.open(\'' + escapeHtml(url).replace(/'/g, "\\'") + '\', \'_blank\')">';
+      const photos = p.photos || [];
+      // الصورة بتتعرض كاملة (contain) — وبنجرب الرابط الأصلي من Drive الأول عشان الخلفية الشفافة تفضل شفافة
+      const slides = photos.length
+        ? photos.map(function(url){
+            return '<div class="pSlide"><img src="' + escapeHtml(adPhotoUrl_(url)) + '" data-fallback="' + escapeHtml(url) + '" loading="lazy" alt=""' +
+              ' onerror="if(this.dataset.fallback){this.src=this.dataset.fallback;this.dataset.fallback=\'\';}"' +
+              ' onclick="window.open(\'' + escapeHtml(url).replace(/'/g, "\\'") + '\', \'_blank\')"></div>';
+          }).join('')
+        : '<div class="pSlide"><div class="pNoPhoto">📦</div></div>';
+      const dots = photos.length > 1
+        ? '<div class="pDots">' + photos.map(function(_, i){ return '<i class="' + (i === 0 ? 'on' : '') + '"></i>'; }).join('') + '</div>'
+        : '';
+      const s = parseProductSpecs_(p.specs);
+      const tilesHtml = s.tiles.length
+        ? '<div class="pTiles">' + s.tiles.map(function(t, i){
+            const wide = (i === s.tiles.length - 1 && s.tiles.length % 2 === 1);
+            return '<div class="pTile' + (wide ? ' wide' : '') + '"><b><bdi dir="' + numDir_(t.v) + '">' + escapeHtml(t.v) + '</bdi></b><span>' + escapeHtml(t.t) + '</span></div>';
           }).join('') + '</div>'
         : '';
-      const lines = String(p.specs || '').split(/\r?\n/).map(function(l){ return l.trim(); }).filter(Boolean);
-      const specsHtml = lines.length
-        ? '<ul class="pSpecsList">' + lines.map(function(l){ return '<li>' + escapeHtml(l) + '</li>'; }).join('') + '</ul>'
+      const featsHtml = s.feats.length
+        ? (s.tiles.length ? '<div class="pSec">مميزات تانية</div>' : '<div style="height:10px"></div>') +
+          '<div class="pFeats">' + s.feats.map(function(f){ return '<span>' + escapeHtml(f) + '</span>'; }).join('') + '</div>'
         : '';
       return (
-        '<div class="productCard">' +
-          '<div class="pTitle">' + escapeHtml(p.name) + '</div>' +
-          photosHtml +
-          specsHtml +
-          delBtn +
+        '<div class="productCard" data-pid="' + escapeHtml(p.id) + '">' +
+          '<div class="pMedia">' +
+            (isNewProduct_(p.date) ? '<span class="pNew">منتج جديد</span>' : '') +
+            '<div class="pSlides" onscroll="productSlidesScrolled_(this)">' + slides + '</div>' +
+            dots +
+          '</div>' +
+          '<div class="pBody">' +
+            '<div class="pTitle">' + escapeHtml(p.name) + '</div>' +
+            (s.tagline ? '<div class="pTag">' + escapeHtml(s.tagline) + '</div>' : '') +
+            tilesHtml +
+            featsHtml +
+            adminRow +
+          '</div>' +
         '</div>'
       );
     }).join('');
+  }
+  // النقط تحت الصور بتتحرك مع سحب الصور
+  function productSlidesScrolled_(el){
+    const dots = el.parentNode.querySelectorAll('.pDots i');
+    if(!dots.length) return;
+    const idx = Math.round(Math.abs(el.scrollLeft) / Math.max(1, el.clientWidth));
+    dots.forEach(function(d, i){ d.classList.toggle('on', i === idx); });
   }
 
   // ============ اختيار صور المنتج (قبل الإضافة) — بتتصغّر بالمتصفح زي صورة البروفايل بالظبط ============
@@ -3516,8 +4315,10 @@
           const canvas = document.createElement('canvas');
           canvas.width = w; canvas.height = h;
           canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          resolve({ dataUrl: dataUrl, base64Data: dataUrl.split(',')[1], mimeType: 'image/jpeg' });
+          // صور PNG (زي صورة منتج مقصوصة بخلفية شفافة) بتفضل PNG — التحويل لـ JPEG كان بيخلي الخلفية الشفافة سودا
+          const keepPng = file.type === 'image/png';
+          const dataUrl = keepPng ? canvas.toDataURL('image/png') : canvas.toDataURL('image/jpeg', quality);
+          resolve({ dataUrl: dataUrl, base64Data: dataUrl.split(',')[1], mimeType: keepPng ? 'image/png' : 'image/jpeg' });
         };
         img.src = ev.target.result;
       };
@@ -3598,6 +4399,8 @@
       .then(function(){
         showLoading(false);
         showMsg('تم حذف المنتج ✔', 'success');
+        // السيرفر بيوقف الإعلان لوحده لو المنتج المحذوف كان هو الإعلان
+        if(state.activeAd_ && state.activeAd_.productId === productId){ state.activeAd_ = null; renderAdAdminBox_(); }
         refreshProductsAdmin();
       })
       .catch(onError);
@@ -3675,9 +4478,27 @@
   const BRAND_ZEBRA = 'FFEAF2FA';
   const BRAND_FRAME = 'FF1F4E79';
 
+  // ألوان التقرير: أزرق عادي، أو أحمر بالكامل لو الفاتورة مكررة (متطابقة بنسبة كبيرة مع فاتورة تانية نفس اليوم)
+  function brandPalette_(opts){
+    if(opts && opts.duplicate){
+      return { accent:'FFF4A6A6', banner:'FFB71C1C', subtitle:'FFD32F2F', metaBg:'FFFDECEC',
+               metaBorder:'FFF5C6C6', grid:'FFF5D0D0', zebra:'FFFDECEC', frame:'FFB71C1C' };
+    }
+    return { accent:BRAND_ACCENT, banner:BRAND_BANNER, subtitle:BRAND_SUBTITLE_BG, metaBg:BRAND_META_BG,
+             metaBorder:BRAND_META_BORDER, grid:BRAND_GRID, zebra:BRAND_ZEBRA, frame:BRAND_FRAME };
+  }
+  function dupWarningText_(d){
+    return '⚠ فاتورة مكررة — متطابقة بنسبة ' + d.pct + '% مع فاتورة تانية اتسجلت نفس اليوم' + (d.time ? ' الساعة ' + d.time : '');
+  }
+
   // ============ توليد ملف Excel منسّق (يُستخدم من شاشة "سجل فواتيري" بس) — بيرجع Blob بس من غير تنزيل ============
   async function buildExcelBlob(opts){
     await ensureExcelJsLoaded_();
+    // الألوان بتتحدد حسب الفاتورة (أزرق عادي / أحمر لو مكررة) — بتغطي على الثوابت العامة جوه الدالة دي بس
+    const pal = brandPalette_(opts);
+    const BRAND_ACCENT = pal.accent, BRAND_BANNER = pal.banner, BRAND_SUBTITLE_BG = pal.subtitle,
+          BRAND_META_BG = pal.metaBg, BRAND_META_BORDER = pal.metaBorder, BRAND_GRID = pal.grid,
+          BRAND_ZEBRA = pal.zebra, BRAND_FRAME = pal.frame;
     const headers = opts.headers;
     const rows = opts.rows;
     const meta = opts.meta || [];
@@ -3727,6 +4548,19 @@
     // الطويلة (زي اسم الفرع) لما يكون عدد أعمدة الجدول قليل — وده كمان أنضف وأوضح في القراءة
     // من اليمين للشمال (RTL) واللي احنا بنشتغل بيه، مع wrapText عشان أي نص طويل يلف بدل ما يتقطع
     let r = 3;
+    // شريط تحذير "فاتورة مكررة" تحت العنوان مباشرة (بس لو الفاتورة متطابقة مع فاتورة تانية نفس اليوم)
+    if(opts.duplicate){
+      ws.mergeCells(r, 1, r, colCount);
+      const w = ws.getCell(r, 1);
+      w.value = dupWarningText_(opts.duplicate);
+      w.font = { name: numFont, bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+      w.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+      for(let c = 1; c <= colCount; c++){
+        ws.getCell(r, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF7F0000' } };
+      }
+      ws.getRow(r).height = 32;
+      r++;
+    }
     const metaFirstRow = r;
     meta.forEach(function(pair){
       ws.mergeCells(r, 1, r, colCount);
@@ -3958,15 +4792,16 @@
       ? page.rows.map(function(r, i){ return [page.start + i + 1].concat(r); })
       : (page ? page.rows : allRows);
     const meta = opts.meta || [];
-    // نفس ألوان "الأزرق الكوربوريتي" المستخدمة في ملف الإكسل بالظبط (BRAND_* فوق)
-    const C_BANNER = argbToCss_(BRAND_BANNER);
-    const C_SUBTITLE = argbToCss_(BRAND_SUBTITLE_BG);
-    const C_META_BG = argbToCss_(BRAND_META_BG);
-    const C_META_BORDER = argbToCss_(BRAND_META_BORDER);
-    const C_GRID = argbToCss_(BRAND_GRID);
-    const C_ZEBRA = argbToCss_(BRAND_ZEBRA);
-    const C_FRAME = argbToCss_(BRAND_FRAME);
-    const C_ACCENT = argbToCss_(BRAND_ACCENT);
+    // ألوان التقرير: نفس "الأزرق الكوربوريتي" بتاع ملف الإكسل، أو أحمر بالكامل لو الفاتورة مكررة
+    const pal = brandPalette_(opts);
+    const C_BANNER = argbToCss_(pal.banner);
+    const C_SUBTITLE = argbToCss_(pal.subtitle);
+    const C_META_BG = argbToCss_(pal.metaBg);
+    const C_META_BORDER = argbToCss_(pal.metaBorder);
+    const C_GRID = argbToCss_(pal.grid);
+    const C_ZEBRA = argbToCss_(pal.zebra);
+    const C_FRAME = argbToCss_(pal.frame);
+    const C_ACCENT = argbToCss_(pal.accent);
 
     const isNumericCol = paged
       ? [true].concat(baseHeaders.map(function(_, i){ return isNumericCol_(allRows.map(function(r){ return r[i]; })); }))
@@ -4019,6 +4854,7 @@
       '<div style="padding:24px;">' +
         '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; font-size:20px; font-weight:900; padding:16px;">الزنوكي لصناعة الأجهزة الكهربائية</div>' +
         '<div style="background:' + C_SUBTITLE + '; color:#fff; text-align:center; font-size:' + (paged ? '17px' : '14.5px') + '; font-weight:800; padding:10px;">' + escapeHtml_(opts.reportTitle || 'تقرير') + (paged ? ' — صفحة ' + page.page + ' من ' + page.pages : '') + '</div>' +
+        (opts.duplicate ? '<div style="background:#7f0000; color:#fff; text-align:center; font-size:19px; font-weight:900; padding:13px; line-height:1.6;">' + escapeHtml_(dupWarningText_(opts.duplicate)) + '</div>' : '') +
         '<div style="border:2px solid ' + C_ACCENT + '; border-top:none; margin-bottom:14px;">' + metaHtml + '</div>' +
         '<table style="width:100%; border-collapse:collapse; border:2px solid ' + C_FRAME + ';"><thead><tr>' + headHtml + '</tr></thead><tbody>' + rowsHtml + totalsHtml + '</tbody></table>' +
         (paged && !isLastPage ? '<div style="text-align:center; font-size:17px; font-weight:800; color:' + C_BANNER + '; margin-top:12px;">يتبع في الصفحة ' + (page.page + 1) + ' ←</div>' : '') +
