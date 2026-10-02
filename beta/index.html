@@ -1324,7 +1324,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.8.4';
+  const APP_VERSION_ = 'v1.8.5';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -2619,6 +2619,16 @@
         if (items.length){
           emptyMsg.hidden = true;
           var html = '';
+          // المسؤول الحالي عن الصنف — "استلمه راكد" لو الصنف قاعد في الفرع من قبل ما المندوب ده يمسكه
+          var holderLine = function (it) {
+            var h = it.holder;
+            if (!h || !h.rep) return '';
+            var inherited = h.days != null && it.days - h.days >= 7;
+            return '<div class="meta" style="color:var(--navy); font-weight:800;">👤 في عهدة ' + escapeHtml(h.rep) +
+              (h.since ? ' من ' + escapeHtml(h.since) + (h.days != null ? ' (' + h.days + ' يوم)' : '') : '') +
+              (inherited ? ' <span style="background:var(--gold-bg); color:var(--gold-d); border:1px solid var(--gold); border-radius:10px; padding:1px 8px; font-size:11.5px;">استلمه راكد</span>' : '') +
+              '</div>';
+          };
           items.forEach(function (it) {
             var daysLabel = it.neverSold ? ('ما اتباعش خالص من ' + it.days + ' يوم') : (it.days < 0) ? 'لم يباع نهائيًا' : 'واقف من ' + it.days + ' يوم';
             var lastSupplyLabel = it.lastSupply ? it.lastSupply : 'لسه ما اتوردش';
@@ -2633,6 +2643,7 @@
                   ' · المخزون الفعلي: ' + stockLabel +
                   ' · آخر توريد: ' + escapeHtml(lastSupplyLabel) +
                 '</div>' +
+                holderLine(it) +
               '</div>';
           });
           document.getElementById('staleList').innerHTML = html;
