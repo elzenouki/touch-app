@@ -517,7 +517,9 @@
   .pSlides{display:flex; height:100%; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none; direction:ltr;}
   .pSlides::-webkit-scrollbar{display:none;}
   .pSlide{flex:0 0 100%; height:100%; scroll-snap-align:center; display:flex; align-items:center; justify-content:center; padding:14px 14px 28px;}
-  .pSlide img{max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in; filter:drop-shadow(0 10px 12px rgba(0,0,0,.16));}
+  /* multiply: أي خلفية بيضا في صورة المنتج بتختفي وتندمج مع خلفية الكارت (الصور الشفافة مش بتتأثر) */
+  .pSlide img{max-width:100%; max-height:100%; object-fit:contain; cursor:zoom-in; mix-blend-mode:multiply;}
+  .pMedia::after{content:''; position:absolute; left:50%; bottom:18px; width:46%; height:14px; margin-left:-23%; border-radius:50%; background:radial-gradient(rgba(0,0,0,.18), transparent 70%); pointer-events:none;}
   .pNoPhoto{height:100%; display:flex; align-items:center; justify-content:center; font-size:58px; opacity:.5;}
   .pNew{position:absolute; top:12px; right:12px; z-index:2; background:linear-gradient(135deg, var(--gold-light), var(--gold)); color:#fff; font-size:12px; font-weight:900; padding:4px 12px; border-radius:14px; box-shadow:0 4px 10px rgba(138,98,24,.3);}
   .pDots{position:absolute; bottom:10px; left:0; right:0; direction:ltr; display:flex; justify-content:center; gap:5px; pointer-events:none;}
@@ -1279,7 +1281,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.7.1';
+  const APP_VERSION_ = 'v1.7.2';
 
   function callApi(action, args){
     return fetch(WEBAPP_URL, {
@@ -4026,7 +4028,10 @@
       if(/^[*★]/.test(l)){ if(!out.tagline) out.tagline = l.replace(/^[*★]+/, '').trim(); return; }
       const parts = l.split('|');
       if(parts.length > 1) out.tiles.push({ v: parts[0].trim(), t: parts.slice(1).join(' ').trim() });
-      else out.feats.push(l);
+      else {
+        const f = l.replace(/^[•·▪◦●○■□◆◇►▶➤✓✔✅\-–—]+\s*/, '').trim(); // نشيل أي نقطة أو علامة في أول السطر — الكارت بيحط ✓ لوحده
+        if(f) out.feats.push(f);
+      }
     });
     return out;
   }
