@@ -6,12 +6,12 @@
 <title>تاتش الزنوكي - نظام إدارة المبيعات</title>
 
 <!-- ============ إعدادات تطبيق الويب التقدمي (PWA) — عشان يتثبت زي أي تطبيق حقيقي ============ -->
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="../manifest.json">
 <meta name="theme-color" content="#0c1730">
-<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="../icons/icon-512.png">
 <!-- آيفون: تثبيت على الشاشة الرئيسية بدون شريط عنوان المتصفح -->
-<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="تاتش الزنوكي">
@@ -262,6 +262,28 @@
   .adminLink.ic-stale .icon{background:var(--red-bg); color:#c73e3e;}
   .adminLink.ic-stalereasons .icon{background:var(--red-bg); color:#c73e3e;}
   .adminLink.ic-history .icon{background:#eef1f7; color:var(--navy);}
+  .adminLink.ic-eval .icon{background:var(--gold-bg); color:var(--gold-d);}
+  /* ============ تقييم المناديب ============ */
+  .evalCard{background:#fff; border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:12px; box-shadow:0 4px 14px rgba(15,28,61,.06);}
+  .evalHead{display:flex; align-items:center; gap:14px;}
+  .evalRing{flex:none; width:74px; height:74px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(var(--ec) calc(var(--ep) * 1%), #eceae3 0); position:relative;}
+  .evalRing::before{content:''; position:absolute; inset:7px; border-radius:50%; background:#fff;}
+  .evalRing b{position:relative; font-size:22px; font-weight:900; color:var(--navy);}
+  .evalName{font-size:17px; font-weight:900; color:var(--navy);}
+  .evalMeta{font-size:12.5px; color:var(--muted); font-weight:700; margin-top:2px;}
+  .evalGrade{display:inline-block; margin-top:6px; font-size:12.5px; font-weight:900; padding:3px 12px; border-radius:14px; color:#fff; background:var(--ec);}
+  .evalRank{margin-inline-start:auto; text-align:center; flex:none;}
+  .evalRank b{display:block; font-size:22px; font-weight:900; color:var(--gold-d); line-height:1;}
+  .evalRank span{font-size:11px; color:var(--muted); font-weight:700;}
+  .evalParts{margin-top:14px; border-top:1px dashed var(--border); padding-top:10px;}
+  .evalPart{margin-bottom:10px;}
+  .evalPart .row{display:flex; justify-content:space-between; font-size:13.5px; font-weight:800; color:var(--navy);}
+  .evalPart .row span:last-child{color:var(--gold-d);}
+  .evalPart .det{font-size:12px; color:var(--muted); font-weight:700; margin-top:2px;}
+  .evalBar{height:6px; border-radius:5px; background:#eceae3; overflow:hidden; margin-top:5px;}
+  .evalBar i{display:block; height:100%; border-radius:5px; background:var(--ec);}
+  .evalToggle{font-size:12.5px; font-weight:800; color:var(--blue); margin-top:10px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;}
   .adminLink.ic-prices .icon{background:var(--blue-bg); color:var(--blue);}
   .adminLink.ic-admin .icon{background:var(--gold-bg); color:var(--gold-d);}
   .adminLink.ic-logout .icon{background:var(--red-bg); color:#c73e3e;}
@@ -841,6 +863,7 @@
         <button class="adminLink ic-stalereasons" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><div class="icon">📝</div><div class="title">تقرير أسباب الركود</div></button>
         <button class="adminLink ic-history" id="invoiceHistoryLink" onclick="openScreen('history')"><div class="icon">📋</div><div class="title">سجل فواتيري</div></button>
         <button class="adminLink ic-prices" id="pricesLink" onclick="openScreen('prices')"><div class="icon">💰</div><div class="title">أسعاري</div></button>
+        <button class="adminLink ic-eval" id="evalLink" onclick="openScreen('eval')"><div class="icon">🏅</div><div class="title">تقييمي</div></button>
         <button class="adminLink wide ic-admin" id="adminLink" onclick="openScreen('admin')" hidden><div class="icon">⚙</div><div class="title">إدارة المناديب والمشرفين</div></button>
         <button class="adminLink wide ic-logout" onclick="handleLogout()"><div class="icon">⎋</div><div class="title">تسجيل خروج</div></button>
       </div>
@@ -1026,6 +1049,21 @@
     <div class="card">
       <div class="cardTitle">مبيعات الأصناف (الأكتر مبيعًا فوق)</div>
       <div id="itemSalesList"></div>
+    </div>
+  </div>
+
+  <!-- ============ شاشة تقييم المناديب (درجة من 100 + ترتيب) ============ -->
+  <div id="viewEval" hidden>
+    <div class="card">
+      <div class="cardTitle">اختار الشهر</div>
+      <select id="evalMonthSelect" onchange="loadEval(this.value)"></select>
+      <div class="pulseNote" id="evalSummary" style="margin:0;"></div>
+    </div>
+    <div id="evalList"></div>
+    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
+      التقييم من 100: تحقيق التارجت 30 · حجم البيع 15 · متوسط بيع الصنف 20 · الرواكد 20 · المرتجع 15<br>
+      متوسط بيع الصنف = كميتك من كل صنف معاك مقارنة بمتوسط باقي المناديب اللي باعوه<br>
+      (لو مفيش تارجت للشهر، الـ 30 بتتضاف لحجم البيع) — الرواكد بتتحسب على الوضع الحالي دايمًا
     </div>
   </div>
 
@@ -1324,7 +1362,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.8.5';
+  const APP_VERSION_ = 'v1.8.7-beta.1';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -1341,16 +1379,46 @@
     const t0 = performance.now();
     let serverMs = null;
     return callApiRaw_(action, args)
-      .then(function(r){ logSpeed_(action, performance.now() - t0, r.ms, true); return r.result; })
+      .then(function(r){ logSpeed_(r.src === 'sb' ? action + ' ⚡' : action, performance.now() - t0, r.ms, true); return r.result; })
       .catch(function(err){ logSpeed_(action, performance.now() - t0, serverMs, false); throw err; });
   }
+  // ============ النسخة التجريبية: شاشات القراءة من Supabase (أسرع) — التسجيل لسه على جوجل ============
+  // أي مشكلة في Supabase (نت/خطأ) → نفس الطلب بيتبعت لجوجل تلقائيًا، فالمندوب مش هيحس بحاجة.
+  const SB_RPC_URL_ = 'https://llbvttieimysqxyrdwph.supabase.co/rest/v1/rpc/api';
+  const SB_PUBLIC_KEY_ = 'sb_publishable_upUxZo453bAsS73Rsm0fXA_T9xtIfyy';
+  const SB_READ_ACTIONS_ = {bootstrapHome:1, bootstrapMyStats:1, bootstrapStale:1, listMyInvoices:1, getInvoiceDetails:1, getMyBalances:1,
+    bootstrapBalances:1, bootstrapItemSalesReport:1, bootstrapRepEvaluation:1, bootstrapProfile:1, listSuggestions:1, listProductDescriptions:1,
+    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1};
+  // طلبات بتكتب في الشيت: بنطلب من جوجل ينسخ التغيير لـ Supabase فورًا (عشان الشاشات تبان محدثة على طول)
+  const SB_WRITE_ACTIONS_ = {finalizeInvoice:1, addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, saveJard:1, saveTawrid:1, savePrices:1,
+    saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
+    addProductDescription:1, deleteProductDescription:1, setAdProduct:1, clearAd:1, passkeyRegisterFinish:1, passkeyClearMine:1};
   function callApiRaw_(action, args){
+    if(SB_READ_ACTIONS_[action]){
+      return fetch(SB_RPC_URL_, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: SB_PUBLIC_KEY_ },
+        body: JSON.stringify({ p_action: action, p_args: args || [] }),
+      })
+        .then(function(res){ if(!res.ok) throw new Error('sb ' + res.status); return res.json(); })
+        .then(function(data){
+          if(!data || data.ok !== true) throw new Error('sb: ' + ((data && data.error) || '?'));
+          return { result: data.result, ms: data.ms, src: 'sb' };
+        })
+        .catch(function(e){
+          console.warn('Supabase → جوجل', action, e && e.message);
+          return callGasApi_(action, args);
+        });
+    }
+    return callGasApi_(action, args);
+  }
+  function callGasApi_(action, args){
     return fetch(WEBAPP_URL, {
       method: 'POST',
       // text/plain مهم عشان المتصفح ميبعتش طلب OPTIONS (preflight) قبل الطلب الحقيقي —
       // Apps Script مش بيعرف يرد على OPTIONS، فلو بعتنا application/json هنا هيفشل الطلب.
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, args: args || [] }),
+      body: JSON.stringify({ action: action, args: args || [], mirror: !!SB_WRITE_ACTIONS_[action] }),
     })
       .then(function(res){ return res.json(); })
       .then(function(data){
@@ -1452,7 +1520,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -1728,6 +1796,7 @@
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
+    document.querySelector('#evalLink .title').textContent = state.isAdmin ? 'تقييم المناديب' : 'تقييمي';
     saveHomeCache_();
   }
 
@@ -2292,6 +2361,7 @@
     if(name === 'prices'){ loadPrices(); return; }
     if(name === 'mystats'){ loadMyStats(); return; }
     if(name === 'itemsales'){ loadItemSalesReport(); return; }
+    if(name === 'eval'){ loadEval(); return; }
     if(name === 'stale'){ loadStale(''); return; }
     if(name === 'stalereasons'){ loadStaleReasons(); return; }
     if(name === 'balances'){ loadBalances(); return; }
@@ -2526,6 +2596,81 @@
   // فوق (المناديب اللي هو مشرف عليهم فقط). فوقها فلتر شهر (افتراضيًا الشهر الحالي).
   let state_itemSalesRepName_ = ''; // آخر مندوب متعروض حاليًا في الشاشة دي — يستخدم لما يتغيّر الشهر بس
   function currentItemSalesRep_(){ return state_itemSalesRepName_; }
+
+  // ============ تقييم المناديب ============
+  // المشرف/المدير بيشوف كل مناديبه مترتبين بالدرجة، والمندوب بيشوف تقييمه هو بس وترتيبه على الشركة.
+  const EVAL_MONTHS_AR_ = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  function evalColor_(s){
+    return s >= 85 ? '#2b7a4f' : s >= 70 ? '#4f9a3a' : s >= 55 ? '#b6862f' : s >= 40 ? '#c77b1e' : '#b83a3a';
+  }
+  function loadEval(monthKey){
+    document.getElementById('pageTitle').textContent = state.isAdmin ? 'تقييم المناديب' : 'تقييمي';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('bootstrapRepEvaluation', [state.auth, monthKey || ''])
+      .then(function(data){
+        showLoading(false);
+        document.getElementById('evalMonthSelect').innerHTML = data.months.map(function(mk){
+          const p = mk.split('-');
+          return '<option value="' + mk + '"' + (mk === data.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
+        }).join('');
+        document.getElementById('evalSummary').textContent = state.isAdmin
+          ? (data.list.length + ' مندوب · متوسط صافي مبيعات المناديب ' + fmt(Math.round(data.avgNet)))
+          : ('متوسط صافي مبيعات المناديب الشهر ده ' + fmt(Math.round(data.avgNet)));
+        renderEvalList_(data);
+        setView('viewEval');
+      })
+      .catch(onError);
+  }
+  function renderEvalList_(data){
+    const el = document.getElementById('evalList');
+    if(!data.list.length){
+      el.innerHTML = '<div class="card"><div class="empty">مفيش تقييم متاح للشهر ده</div></div>';
+      return;
+    }
+    const single = !state.isAdmin || data.list.length === 1;
+    el.innerHTML = data.list.map(function(r, idx){
+      const c = evalColor_(r.score);
+      const part = function(label, p, det){
+        if(!p) return '';
+        const w = p.max ? Math.round(p.score / p.max * 100) : 0;
+        return '<div class="evalPart"><div class="row"><span>' + label + '</span><span>' + fmt(p.score) + ' / ' + p.max + '</span></div>' +
+          '<div class="evalBar"><i style="width:' + w + '%"></i></div><div class="det">' + det + '</div></div>';
+      };
+      const parts =
+        part('تحقيق التارجت', r.parts.target, r.target ? ('اتحقق ' + r.targetPct + '% من ' + fmt(r.target)) : '') +
+        part(r.parts.target ? 'حجم البيع' : 'حجم البيع (مفيش تارجت الشهر ده)', r.parts.volume,
+          'صافي ' + fmt(r.net) + ' = ' + r.volPct + '% من متوسط المناديب') +
+        part('متوسط بيع الصنف', r.parts.items,
+          (r.itemsCompared ? (r.itemsBelow + ' صنف تحت المتوسط من ' + r.itemsCompared + ' صنف') : '') +
+          ((r.weakItems || []).length ? '<div style="margin-top:4px;">' + r.weakItems.map(function(w){
+            return '• ' + escapeHtml(w.name) + ': باع ' + fmt(w.qty) + ' والمتوسط ' + fmt(w.avg) + ' (' + w.pct + '%)';
+          }).join('<br>') + '</div>' : '')) +
+        part('الرواكد', r.parts.stale,
+          (r.stale ? (r.stale + ' صنف راكد في عهدته' + (r.unresolved ? ' · ' + r.unresolved + ' منهم عدّى 30 يوم من غير سبب' : '')) : 'مفيش رواكد 👌')) +
+        part('المرتجع', r.parts.returns,
+          r.gross > 0 ? ('مرتجع ' + fmt(r.ret) + ' = ' + r.retRate + '% من البيع') : 'مفيش بيع الشهر ده');
+      const rankLabel = state.isAdmin ? ('من ' + data.total) : ('من ' + data.total + ' مندوب');
+      return '<div class="evalCard" style="--ec:' + c + '">' +
+        '<div class="evalHead">' +
+          '<div class="evalRing" style="--ep:' + Math.max(0, Math.min(100, r.score)) + '"><b>' + r.score + '</b></div>' +
+          '<div style="min-width:0;">' +
+            '<div class="evalName">' + escapeHtml(r.name) + '</div>' +
+            '<div class="evalMeta">📍 ' + escapeHtml((r.branches || []).join('، ') || '—') + '</div>' +
+            '<span class="evalGrade">' + escapeHtml(r.grade) + '</span>' +
+          '</div>' +
+          '<div class="evalRank"><b>#' + r.rank + '</b><span>' + rankLabel + '</span></div>' +
+        '</div>' +
+        '<div class="evalParts" id="evalParts_' + idx + '"' + (single ? '' : ' hidden') + '>' + parts + '</div>' +
+        (single ? '' : '<button class="evalToggle" onclick="toggleEvalParts_(' + idx + ', this)">التفاصيل ▾</button>') +
+      '</div>';
+    }).join('');
+  }
+  function toggleEvalParts_(idx, btn){
+    const box = document.getElementById('evalParts_' + idx);
+    box.hidden = !box.hidden;
+    btn.textContent = box.hidden ? 'التفاصيل ▾' : 'إخفاء التفاصيل ▴';
+  }
 
   function loadItemSalesReport(repName, monthKey){
     document.getElementById('pageTitle').textContent = state.isAdmin ? 'مبيعات الأصناف الشهرية للمناديب' : 'مبيعات الأصناف الشهرية';
@@ -3984,7 +4129,7 @@
 
   const SPEED_NAMES_ = { bootstrapHome:'فتح التطبيق', bootstrapInvoice:'تحميل الأصناف', finalizeInvoice:'ترحيل فاتورة', bootstrapJard:'فتح الجرد',
     saveJard:'حفظ الجرد', bootstrapTawrid:'فتح التوريد', saveTawrid:'حفظ التوريد', bootstrapMyStats:'مبيعاتي', bootstrapBalances:'أرصدتي',
-    bootstrapStale:'الرواكد', listMyInvoices:'سجل فواتيري', getInvoiceDetails:'تفاصيل فاتورة', bootstrapItemSalesReport:'مبيعات الأصناف',
+    bootstrapStale:'الرواكد', listMyInvoices:'سجل فواتيري', getInvoiceDetails:'تفاصيل فاتورة', bootstrapItemSalesReport:'مبيعات الأصناف', bootstrapRepEvaluation:'التقييم',
     listProductDescriptions:'وصف المنتجات', bootstrapAdmin:'شاشة الإدارة', bootstrapProfile:'إعداداتي', login:'تسجيل الدخول' };
   function renderSpeedLog_(){
     const el = document.getElementById('speedLogList');
@@ -4942,6 +5087,7 @@
   let newWorkerWaiting_ = null;
 
   function registerServiceWorkerWithUpdateCheck_(){
+    return; // النسخة التجريبية مالهاش service worker خاص بيها
     if(!('serviceWorker' in navigator)) return;
     navigator.serviceWorker.register('sw.js').then(function(reg){
       if(reg.waiting && navigator.serviceWorker.controller){
