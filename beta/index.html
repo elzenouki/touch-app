@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>تاتش الزنوكي - نظام إدارة المبيعات</title>
 
 <!-- ============ إعدادات تطبيق الويب التقدمي (PWA) — عشان يتثبت زي أي تطبيق حقيقي ============ -->
@@ -23,7 +23,7 @@
 <!-- الخط بيتحمّل من غير ما يوقف رسم الصفحة (media=print ثم all) — التطبيق بيظهر فورًا بخط النظام
      وبعدين يتبدل لـ Cairo أول ما يوصل. Tajawal اتشال من الطلب لأن Cairo مغطي كل الحروف المستخدمة. -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Amiri:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 <noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
 <!-- ExcelJS و html2canvas اتشالوا من هنا عشان يتحمّلوا بس وقت الحاجة الفعلية ليهم (تحميل/مشاركة
      من شاشة "سجل فواتيري")، مش مع كل فتح للتطبيق — ده بيسرّع فتح التطبيق بشكل ملحوظ، خصوصًا على
@@ -710,6 +710,104 @@
     .hadithBox .hadithText .word{ animation:none; opacity:1; transform:none; }
     .spinnerOverlay{ backdrop-filter:none; }
   }
+
+  /* ===================== التصور 2 (نسخة تجريبية) ===================== */
+  html,body{touch-action:manipulation; overflow-x:clip;}
+  :root{ --c2bg:#0c1730; --c2card:rgba(255,255,255,.07); --c2muted:#aab4d4; --c2sheet:#f6f4ee; }
+  /* الهيدر في الشاشات الداخلية: مضغوط، زرار رجوع دايري، الحديث سطر بخط أميري */
+  .header{padding:calc(12px + env(safe-area-inset-top)) 16px 14px; gap:10px; border-radius:0 0 24px 24px; flex-wrap:wrap; box-shadow:0 8px 22px rgba(6,12,28,.28);}
+  .header::after{display:none;}
+  .header .kicker, .header .brandLine{display:none;}
+  .header h1{font-size:19px;}
+  .header .sub{margin-top:2px; font-size:12.5px;}
+  .headerLeft{order:2; flex:1; min-width:0;}
+  .backBtn{order:1; width:44px; height:44px; min-height:44px; padding:0; border-radius:22px; border:none; background:rgba(255,255,255,.09); color:#fff; font-size:0; display:flex; align-items:center; justify-content:center;}
+  .backBtn::before{content:''; width:10px; height:10px; border-top:2.6px solid #fff; border-right:2.6px solid #fff; transform:rotate(45deg); margin-left:4px;}
+  .hadithBox{order:3; flex-basis:100%; max-width:100%; margin:4px 0 0; padding:6px 10px 2px; background:none; border:none; border-top:1px solid rgba(217,172,82,.28); border-radius:0;}
+  .hadithBox .hadithText{font-family:'Amiri','Cairo',serif; font-size:15.5px; font-weight:700; color:#f3e3bd; line-height:1.75; -webkit-line-clamp:2;}
+  .hadithBox .hadithRef{margin-top:0; font-size:11px;}
+  @media (max-width:700px){ .hadithBox{order:3; margin:4px 0 0;} .hadithBox .hadithText{font-size:15px; -webkit-line-clamp:2;} }
+
+  /* الرئيسية: الشاشة كلها كحلي والهيدر العادي مستخبي */
+  body.c2home{background:var(--c2bg);}
+  body.c2home .header{display:none;}
+  body.c2home .wrap{padding:0; max-width:640px;}
+  .c2Top{padding:calc(16px + env(safe-area-inset-top)) 20px 0; display:flex; justify-content:space-between; align-items:center; gap:10px; color:#fff;}
+  .c2Id{display:flex; align-items:center; gap:10px; min-width:0;}
+  .c2Avatar{width:46px; height:46px; border-radius:23px; background:var(--gold-light); color:var(--navy); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:19px; flex:none; overflow:hidden;}
+  .c2Avatar img{width:100%; height:100%; object-fit:cover;}
+  .c2IdText{display:flex; flex-direction:column; min-width:0;}
+  .c2Name{font-size:17px; font-weight:900; color:#fff; line-height:1.4; overflow-wrap:anywhere;}
+  .c2Branch{font-size:12.5px; font-weight:700; color:var(--c2muted);}
+  .c2IdText .branchChip{margin-top:3px; padding:3px 10px; font-size:12.5px; align-self:flex-start;}
+  .c2Date{font-size:12px; font-weight:800; color:var(--gold-light); border:1px solid rgba(217,172,82,.5); border-radius:999px; padding:4px 12px; white-space:nowrap; flex:none;}
+  .c2Hadith{padding:18px 24px 0; text-align:center; display:flex; flex-direction:column; gap:2px; min-height:92px; justify-content:center;}
+  .c2Hadith .hadithText{display:block; font-family:'Amiri','Cairo',serif; font-size:21px; font-weight:700; line-height:1.8; color:#f3e3bd;}
+  .c2Hadith .hadithText .word{display:inline-block; opacity:0; transform:translateY(6px); animation:hadithWordIn .45s ease forwards;}
+  .c2Hadith .hadithRef{font-size:11.5px; font-weight:800; color:var(--gold-light); transition:opacity .5s ease;}
+  .c2Hadith .hadithRef.hiddenRef{opacity:0;}
+  .c2Stats{padding:16px 20px 0; display:flex; gap:14px; align-items:center;}
+  .c2Ring{--pct:0; width:96px; height:96px; border-radius:48px; flex:none; display:flex; align-items:center; justify-content:center;
+    background:conic-gradient(var(--ringc, var(--gold-light)) calc(var(--pct) * 1%), rgba(255,255,255,.12) 0);}
+  .c2Ring > div{width:76px; height:76px; border-radius:38px; background:var(--c2bg); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff;}
+  .c2Ring b{font-size:19px; font-weight:900; line-height:1.2;}
+  .c2Ring small{font-size:10px; font-weight:700; color:var(--c2muted);}
+  .c2Tiles{flex:1; display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px;}
+  .c2Tile{background:var(--c2card); border-radius:14px; padding:10px 12px; display:flex; flex-direction:column; color:#fff; min-width:0;}
+  .c2Tile span{font-size:11.5px; font-weight:700; color:var(--c2muted);}
+  .c2Tile b{font-size:19px; font-weight:900; overflow-wrap:anywhere;}
+  .c2Mood{margin:12px 20px 0; display:flex; align-items:center; gap:8px; font-size:12.5px; font-weight:700; color:#c7cfe6; line-height:1.5;}
+  .c2Mood .targetMoodEmoji{font-size:20px;}
+  .c2Mood b{color:var(--gold-light);}
+  .c2Big{padding:18px 20px 0;}
+  .c2Big button{width:100%; height:76px; border:none; border-radius:22px; background:linear-gradient(135deg, #e6bf6a, #b6862f); color:var(--navy);
+    display:flex; align-items:center; justify-content:center; gap:12px; font-family:inherit; font-size:21px; font-weight:900; cursor:pointer; box-shadow:0 10px 28px rgba(217,172,82,.32);}
+  .c2Row3{padding:12px 20px 0; display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px;}
+  .c2Row3 button{height:56px; border:none; border-radius:16px; background:rgba(255,255,255,.08); color:#fff; display:flex; align-items:center; justify-content:center; gap:6px; font-family:inherit; font-size:15px; font-weight:800; cursor:pointer;}
+  .c2Row3 button[hidden], .c2Big button[hidden]{display:none;}
+  #viewHome:not([hidden]){display:flex; flex-direction:column; min-height:100vh; min-height:100dvh;}
+  .c2Sheet{flex:1; margin-top:20px; background:var(--c2sheet); border-radius:28px 28px 0 0; padding:12px 16px calc(28px + env(safe-area-inset-bottom)); display:flex; flex-direction:column; gap:8px; min-height:42vh;}
+  .c2Sheet .grip{width:40px; height:4px; border-radius:2px; background:#d6d1c3; align-self:center; margin-bottom:4px;}
+  .c2Item{width:100%; border:none; background:#fff; border-radius:16px; min-height:54px; padding:0 14px; display:flex; align-items:center; gap:12px; font-family:inherit; color:var(--text); cursor:pointer; text-align:right;}
+  .c2Item[hidden]{display:none;}
+  .c2Item .ic{width:36px; height:36px; border-radius:11px; display:flex; align-items:center; justify-content:center; flex:none;}
+  .c2Item .title{flex:1; font-size:15px; font-weight:800;}
+  .c2Item .chev{width:9px; height:9px; border-top:2.2px solid #a8a396; border-left:2.2px solid #a8a396; transform:rotate(-45deg); flex:none;}
+  .c2More{border:none; background:none; color:var(--muted2); min-height:44px; font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;}
+  .c2Extra{display:flex; flex-direction:column; gap:8px;}
+  .c2Extra[hidden]{display:none;}
+  .c2Item.logout .title{color:#b3412e;}
+
+  /* شاشة الفاتورة: كحلي زي التصور */
+  body.c2dark{background:var(--c2bg);}
+  body.c2dark .header{box-shadow:none;}
+  body.c2dark #viewInvoice .card{background:#16234a; border-color:rgba(217,172,82,.25); color:#fff; box-shadow:none;}
+  body.c2dark #viewInvoice label{color:var(--c2muted);}
+  body.c2dark #viewInvoice .cardTitle{color:var(--c2muted); border-bottom-color:rgba(255,255,255,.1);}
+  body.c2dark #viewInvoice input, body.c2dark #viewInvoice select{background:#fff; border-color:transparent;}
+  body.c2dark #viewInvoice #qtyInput, body.c2dark #viewInvoice #priceInput{height:64px; font-size:28px; font-weight:900; text-align:center; color:var(--navy);}
+  body.c2dark #viewInvoice #qtyInput:focus{box-shadow:0 0 0 3px var(--gold-light);}
+  body.c2dark #viewInvoice .itemRow{background:rgba(255,255,255,.06); border-color:rgba(255,255,255,.1);}
+  body.c2dark #viewInvoice .itemRow.neg{background:rgba(240,138,118,.12);}
+  body.c2dark #viewInvoice .itemRow .name, body.c2dark #viewInvoice .itemRow .total{color:#fff;}
+  body.c2dark #viewInvoice .itemRow .meta{color:var(--c2muted);}
+  body.c2dark #viewInvoice .empty{color:var(--c2muted);}
+  body.c2dark #viewInvoice .totalBar{display:none;}
+  body.c2dark #viewInvoice #finalizeBtn{display:none;}
+  body.c2dark #viewInvoice #addBtn{background:transparent; border:1.5px solid var(--gold-light); color:var(--gold-light); height:56px;}
+  body.c2dark #viewInvoice .badge{background:rgba(217,172,82,.16); color:var(--gold-light); border-color:rgba(217,172,82,.5);}
+  body.c2dark .wrap{padding-bottom:120px;}
+  .c2Chips{display:flex; gap:6px; overflow-x:auto; padding-bottom:4px; margin:-4px 0 12px; scrollbar-width:none;}
+  .c2Chips::-webkit-scrollbar{display:none;}
+  .c2Chips button{flex:none; border:none; border-radius:999px; padding:8px 14px; background:rgba(255,255,255,.09); color:#fff; font-family:inherit; font-size:13px; font-weight:800; cursor:pointer;}
+  .c2Chips button.on{background:var(--gold-light); color:var(--navy);}
+  .c2InvBar{position:fixed; left:0; right:0; bottom:0; z-index:20; background:#1a2546; border-radius:24px 24px 0 0; padding:12px 16px calc(14px + env(safe-area-inset-bottom)); display:flex; align-items:center; gap:12px; box-shadow:0 -10px 30px rgba(0,0,0,.3);}
+  .c2InvBar[hidden]{display:none;}
+  .c2InvBar .sum{display:flex; flex-direction:column; color:#fff; min-width:0;}
+  .c2InvBar .sum span{font-size:12px; font-weight:700; color:var(--c2muted);}
+  .c2InvBar .sum b{font-size:22px; font-weight:900; color:var(--gold-light);}
+  .c2InvBar button{flex:1; height:56px; border:none; border-radius:16px; background:linear-gradient(135deg, #e6bf6a, #b6862f); color:var(--navy); font-family:inherit; font-size:17px; font-weight:900; cursor:pointer;}
+  .c2InvBar button:disabled{opacity:.45;}
 </style>
 </head>
 <body>
@@ -781,91 +879,56 @@
     </div>
   </div>
 
-  <!-- ============ شاشة رئيسية ============ -->
+  <!-- ============ شاشة رئيسية (التصور 2) ============ -->
   <div id="viewHome" hidden>
-    <div class="welcomeCard">
-      <div class="welcomeRow">
-        <div class="welcomeLeftGroup">
-          <div class="badgeIcon" id="homeBadgeIcon">✦</div>
-          <div class="wText">
-            <div class="hi">أهلاً بيك</div>
-            <div class="name" id="homeUserName"></div>
-            <div class="branchChip" id="branchChip" hidden onclick="openBranchPicker_()"><span>📍</span><span id="branchChipName"></span><span>▾</span></div>
-          </div>
-        </div>
-        <div class="targetProgressWrap" id="targetProgressWrap" hidden>
-          <div class="targetProgressPct" id="targetProgressPct"></div>
-          <div class="targetProgressTrack">
-            <div class="targetProgressFill" id="targetProgressFill"></div>
-          </div>
-          <div class="targetProgressCaption">هدف الشهر</div>
+    <div class="c2Top">
+      <div class="c2Id">
+        <div class="c2Avatar" id="homeBadgeIcon"></div>
+        <div class="c2IdText">
+          <div class="c2Name" id="homeUserName"></div>
+          <div class="c2Branch" id="homeBranchName"></div>
+          <div class="branchChip" id="branchChip" hidden onclick="openBranchPicker_()"><span id="branchChipName"></span><span>▾</span></div>
         </div>
       </div>
-      <div class="targetMoodRow" id="targetMoodRow" hidden>
-        <div class="targetMoodEmoji" id="targetMoodEmoji"></div>
-        <div class="targetMoodText" id="targetMoodText"></div>
-      </div>
+      <span class="c2Date" id="homeDate"></span>
     </div>
-    <div class="sectionLabel">الإجراءات المتاحة</div>
-    <div class="homeGrid">
-      <button class="homeBtn sales" id="salesHomeBtn" onclick="openScreen('sales')">
-        <div class="icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2f8f5b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        </div>
-        <div>
-          <div class="title">تسجيل مبيعات</div>
-          <div class="desc">إضافة أصناف لفاتورة مبيعات جديدة</div>
-        </div>
-        <div class="chev">‹</div>
-      </button>
-      <button class="homeBtn returns" id="returnsHomeBtn" onclick="openScreen('returns')">
-        <div class="icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c73e3e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14l-4-4 4-4"></path><path d="M5 10h11a4 4 0 0 1 0 8h-1"></path></svg>
-        </div>
-        <div>
-          <div class="title">تسجيل مرتجع</div>
-          <div class="desc">تسجيل أصناف مرتجعة (بالسالب)</div>
-        </div>
-        <div class="chev">‹</div>
-      </button>
-      <button class="homeBtn tawrid" id="tawridHomeBtn" onclick="openScreen('tawrid')">
-        <div class="icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#2f5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v2"></path><rect x="3" y="8" width="18" height="12" rx="2"></rect><line x1="3" y1="13" x2="21" y2="13"></line></svg>
-        </div>
-        <div>
-          <div class="title">تسجيل توريد</div>
-          <div class="desc">تسجيل أصناف مورّدة للمخزون</div>
-        </div>
-        <div class="chev">‹</div>
-      </button>
-      <button class="homeBtn jard" id="jardHomeBtn" onclick="openScreen('jard')">
-        <div class="icon">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a9781f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><line x1="8" y1="10" x2="16" y2="10"></line><line x1="8" y1="14" x2="13" y2="14"></line></svg>
-        </div>
-        <div>
-          <div class="title">تسجيل جرد</div>
-          <div class="desc">جرد الأصناف الموجودة معاك</div>
-        </div>
-        <div class="chev">‹</div>
-      </button>
+    <div class="c2Hadith"><span class="hadithText" id="homeHadithText"></span><span class="hadithRef hiddenRef" id="homeHadithRef"></span></div>
+
+    <div class="c2Stats" id="homeStats">
+      <div class="c2Ring" id="targetProgressWrap" hidden><div><b id="targetProgressPct"></b><small>من الهدف</small></div></div>
+      <div class="c2Tiles">
+        <div class="c2Tile"><span>النهارده</span><b id="homeTodayTotal">—</b></div>
+        <div class="c2Tile"><span>الشهر</span><b id="homeMonthTotal">—</b></div>
+      </div>
+      <span id="targetProgressFill" hidden></span>
+    </div>
+    <div class="c2Mood targetMoodRow" id="targetMoodRow" hidden><span class="targetMoodEmoji" id="targetMoodEmoji"></span><span class="targetMoodText" id="targetMoodText"></span></div>
+
+    <div class="c2Big"><button type="button" id="salesHomeBtn" onclick="openScreen('sales')">
+      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"></path></svg>سجّل فاتورة بيع</button></div>
+    <div class="c2Row3">
+      <button type="button" id="returnsHomeBtn" onclick="openScreen('returns')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f08a76" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-3"></path></svg>مرتجع</button>
+      <button type="button" id="tawridHomeBtn" onclick="openScreen('tawrid')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8fb4ec" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h13v10H3z"></path><path d="M16 10h3l2 3v4h-5"></path></svg>توريد</button>
+      <button type="button" id="jardHomeBtn" onclick="openScreen('jard')"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e6bf6a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 11h6M9 15h4"></path></svg>جرد</button>
     </div>
 
-    <div class="subHeader"><span class="lbl">خدمات إضافية</span><span class="line"></span></div>
-    <div class="subPanel">
-      <div class="gridSub">
-        <button class="adminLink ic-settings" id="profileLink" onclick="openScreen('profile')"><div class="icon">⚙</div><div class="title">إعداداتي</div></button>
-        <button class="adminLink ic-products" id="productsLink" onclick="openScreen('products')"><div class="icon">📄</div><div class="title">وصف المنتجات</div></button>
-        <button class="adminLink ic-suggest" id="suggestionLink" onclick="openScreen('suggestion')"><div class="icon">💡</div><div class="title">ابعت اقتراح</div></button>
-        <button class="adminLink ic-mystats" id="myStatsLink" onclick="openScreen('mystats')"><div class="icon">📊</div><div class="title">مبيعاتي</div></button>
-        <button class="adminLink ic-itemsales" id="itemSalesLink" onclick="openScreen('itemsales')"><div class="icon">📈</div><div class="title">مبيعات الأصناف</div></button>
-        <button class="adminLink ic-balances" id="balancesLink" onclick="openScreen('balances')"><div class="icon">📦</div><div class="title">أرصدتي</div></button>
-        <button class="adminLink ic-stale" id="staleLink" onclick="openScreen('stale')"><div class="icon">📦</div><div class="title">الرواكد</div></button>
-        <button class="adminLink ic-stalereasons" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><div class="icon">📝</div><div class="title">تقرير أسباب الركود</div></button>
-        <button class="adminLink ic-history" id="invoiceHistoryLink" onclick="openScreen('history')"><div class="icon">📋</div><div class="title">سجل فواتيري</div></button>
-        <button class="adminLink ic-prices" id="pricesLink" onclick="openScreen('prices')"><div class="icon">💰</div><div class="title">أسعاري</div></button>
-        <button class="adminLink ic-eval" id="evalLink" onclick="openScreen('eval')"><div class="icon">🏅</div><div class="title">تقييمي</div></button>
-        <button class="adminLink wide ic-admin" id="adminLink" onclick="openScreen('admin')" hidden><div class="icon">⚙</div><div class="title">إدارة المناديب والمشرفين</div></button>
-        <button class="adminLink wide ic-logout" onclick="handleLogout()"><div class="icon">⎋</div><div class="title">تسجيل خروج</div></button>
+    <div class="c2Sheet">
+      <span class="grip"></span>
+      <button type="button" class="c2Item" id="staleLink" onclick="openScreen('stale')"><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span><span class="title">الرواكد</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="myStatsLink" onclick="openScreen('mystats')"><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span><span class="title">مبيعاتي</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="balancesLink" onclick="openScreen('balances')"><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path></svg></span><span class="title">أرصدتي</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="invoiceHistoryLink" onclick="openScreen('history')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg></span><span class="title">سجل فواتيري</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="itemSalesLink" onclick="openScreen('itemsales')"><span class="ic" style="background:#eeeaf8"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5b4a9c" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg></span><span class="title">مبيعات الأصناف</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span class="title">تقرير أسباب الركود</span><span class="chev"></span></button>
+      <button type="button" class="c2More" id="c2MoreBtn" onclick="toggleC2More_()">كل الخدمات ▾</button>
+      <div class="c2Extra" id="c2Extra" hidden>
+        <button type="button" class="c2Item" id="evalLink" onclick="openScreen('eval')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.4 6.7 19.1l1-5.8-4.2-4.1 5.9-.9z"></path></svg></span><span class="title">تقييمي</span><span class="chev"></span></button>
+        <button type="button" class="c2Item" id="pricesLink" onclick="openScreen('prices')"><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span><span class="title">أسعاري</span><span class="chev"></span></button>
+        <button type="button" class="c2Item" id="productsLink" onclick="openScreen('products')"><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg></span><span class="title">وصف المنتجات</span><span class="chev"></span></button>
+        <button type="button" class="c2Item" id="suggestionLink" onclick="openScreen('suggestion')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"></path></svg></span><span class="title">ابعت اقتراح</span><span class="chev"></span></button>
+        <button type="button" class="c2Item" id="profileLink" onclick="openScreen('profile')"><span class="ic" style="background:#eceef3"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3d465e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></span><span class="title">إعداداتي</span><span class="chev"></span></button>
+        <button type="button" class="c2Item" id="adminLink" onclick="openScreen('admin')" hidden><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c1.2-3.5 3.6-5 6.5-5s5.3 1.5 6.5 5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .6 3.2 2.2 3.8 5"></path></svg></span><span class="title">إدارة المناديب والمشرفين</span><span class="chev"></span></button>
+        <button type="button" class="c2Item logout" onclick="handleLogout()"><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4"></path><path d="M10 17l-5-5 5-5M5 12h11"></path></svg></span><span class="title">تسجيل خروج</span></button>
       </div>
     </div>
   </div>
@@ -877,6 +940,7 @@
         <span class="badge" id="invBadge">مندوب</span>
         <span class="badge locked" id="lockBadge" hidden>✔ مرحّلة</span>
       </div>
+      <div class="c2Chips" id="c2Chips"></div>
       <label>اسم الصنف</label>
       <div class="acWrap">
         <input type="text" id="itemSelectInput" class="acInput" placeholder="اكتب أول حرف من اسم الصنف..." autocomplete="off">
@@ -919,6 +983,11 @@
         <div style="color:var(--muted); font-size:12px; text-align:center; margin-top:8px;">📋 تقدر تنزّل ملف الإكسل بعد كده من شاشة "سجل فواتيري"</div>
       </div>
     </div>
+  </div>
+
+  <div class="c2InvBar" id="c2InvBar" hidden>
+    <div class="sum"><span id="c2InvCount">0 صنف</span><b id="c2InvTotal">0</b></div>
+    <button type="button" id="c2InvFinalize" onclick="handleFinalize()">راجع ورحّل</button>
   </div>
 
   <!-- ============ شاشة التوريد ============ -->
@@ -1362,7 +1431,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.8.7-beta.1';
+  const APP_VERSION_ = 'v1.9.0-beta.2';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -1524,6 +1593,77 @@
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
+    document.body.classList.toggle('c2home', name === 'viewHome');
+    document.body.classList.toggle('c2dark', name === 'viewInvoice');
+    const bar = document.getElementById('c2InvBar');
+    if(bar && name !== 'viewInvoice') bar.hidden = true;
+    if(name === 'viewHome') renderHomeHeader_();
+  }
+
+  // ============ التصور 2: أجزاء الرئيسية ============
+  const C2_DAYS_ = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  function renderHomeHeader_(){
+    const d = new Date(Date.now() - 5 * 3600000);
+    const el = document.getElementById('homeDate');
+    if(el) el.textContent = C2_DAYS_[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1);
+    const bn = document.getElementById('homeBranchName');
+    if(bn && state.user){
+      const multi = userBranches_().length > 1;
+      bn.hidden = multi;
+      bn.textContent = multi ? '' : (state.user.branch || '');
+    }
+  }
+  function renderHomeStats_(stats, targetProgress){
+    const t = document.getElementById('homeTodayTotal'), m = document.getElementById('homeMonthTotal');
+    if(!t || !m) return;
+    t.textContent = stats && stats.today != null ? fmt(stats.today) : '—';
+    const month = stats && stats.month != null ? stats.month : (targetProgress && targetProgress.achieved != null ? targetProgress.achieved : null);
+    m.textContent = month != null ? fmt(month) : '—';
+    document.getElementById('homeStats').hidden = !!state.isAdmin && !(targetProgress && targetProgress.target);
+  }
+  function toggleC2More_(){
+    const box = document.getElementById('c2Extra');
+    box.hidden = !box.hidden;
+    document.getElementById('c2MoreBtn').textContent = box.hidden ? 'كل الخدمات ▾' : 'أقل ▴';
+  }
+  // أكتر أصناف بيستخدمها المندوب (بتتحفظ على الموبايل) — بتظهر كأزرار سريعة في شاشة البيع
+  function freqKey_(){ return 'tz_freq:' + String((state.auth && state.auth.email) || '').toLowerCase(); }
+  function bumpFreq_(name){
+    try{ const f = JSON.parse(localStorage.getItem(freqKey_()) || '{}'); f[name] = (f[name] || 0) + 1; localStorage.setItem(freqKey_(), JSON.stringify(f)); }catch(e){}
+  }
+  function renderChips_(){
+    const box = document.getElementById('c2Chips');
+    if(!box) return;
+    let f = {};
+    try{ f = JSON.parse(localStorage.getItem(freqKey_()) || '{}'); }catch(e){}
+    const known = {}; (state.asnaf || []).forEach(function(a){ known[a.name] = 1; });
+    const top = Object.keys(f).filter(function(n){ return known[n]; }).sort(function(a, b){ return f[b] - f[a]; }).slice(0, 8);
+    const sel = document.getElementById('itemSelect').value;
+    box.hidden = !top.length || state.finalized;
+    box.innerHTML = top.map(function(n){
+      return '<button type="button" class="' + (n === sel ? 'on' : '') + '" data-chip="' + escapeHtml(n) + '">' + escapeHtml(n) + '</button>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    const b = e.target.closest('[data-chip]');
+    if(!b) return;
+    acSelect(AC_CONFIGS.item, b.dataset.chip);
+    renderChips_();
+    const q = document.getElementById('qtyInput');
+    q.focus();
+  });
+  function renderInvBar_(){
+    const bar = document.getElementById('c2InvBar');
+    if(!bar) return;
+    if(state.finalized || !document.body.classList.contains('c2dark')){ bar.hidden = true; return; }
+    const isReturns = (state.screen === 'returns');
+    const n = state.draftItems.length;
+    const total = state.draftItems.reduce(function(s, it){ return s + (isReturns ? -1 : 1) * Number(it.qty) * Number(it.price); }, 0);
+    document.getElementById('c2InvCount').textContent = n + (n === 1 ? ' صنف' : ' أصناف');
+    document.getElementById('c2InvTotal').textContent = fmt(total);
+    document.getElementById('c2InvFinalize').disabled = !n || !!state.finalizeInFlight;
+    document.getElementById('c2InvFinalize').textContent = isReturns ? 'راجع ورحّل المرتجع' : 'راجع ورحّل';
+    bar.hidden = false;
   }
 
   // ============ ذاكرة محلية على الموبايل (عرض فوري + تحديث في الخلفية) ============
@@ -1605,7 +1745,7 @@
 
   function saveHomeCache_(){
     if(!state.user) return;
-    localCacheSet_('home', { user: state.user, isAdmin: state.isAdmin, targetProgress: state.targetProgress_ || null });
+    localCacheSet_('home', { user: state.user, isAdmin: state.isAdmin, targetProgress: state.targetProgress_ || null, stats: state.homeStats_ || null });
   }
 
   function goHome(){
@@ -1769,7 +1909,8 @@
   // (لازم تتطابق مع PROTECTED_OWNER_EMAIL_ في Code.gs بالظبط)
   const OWNER_EMAIL_ = 'm.s.e.m.eyg@gmail.com';
 
-  function applyLoggedInUser(user, isAdmin, targetProgress){
+  function applyLoggedInUser(user, isAdmin, targetProgress, homeStats){
+    state.homeStats_ = homeStats || state.homeStats_ || null;
     state.user = user;
     state.isAdmin = !!isAdmin;
     state.targetProgress_ = targetProgress || null;
@@ -1797,6 +1938,8 @@
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
     document.querySelector('#evalLink .title').textContent = state.isAdmin ? 'تقييم المناديب' : 'تقييمي';
+    renderHomeStats_(state.homeStats_, targetProgress);
+    renderHomeHeader_();
     saveHomeCache_();
   }
 
@@ -1828,6 +1971,8 @@
     const mood = TARGET_MOODS_.find((m) => pct <= m.max) || TARGET_MOODS_[TARGET_MOODS_.length - 1];
 
     document.getElementById('targetProgressPct').textContent = pct + '%';
+    wrap.style.setProperty('--pct', Math.max(0, Math.min(100, pct)));
+    wrap.style.setProperty('--ringc', pct >= 100 ? '#4ade80' : '#d9ac52');
     const fill = document.getElementById('targetProgressFill');
     fill.style.width = Math.max(0, Math.min(100, pct)) + '%';
     fill.style.background = mood.color;
@@ -1844,7 +1989,7 @@
       el.innerHTML = '<img src="' + escapeHtml(photoUrl) + '">';
     } else {
       el.classList.remove('hasPhoto');
-      el.innerHTML = '✦';
+      el.textContent = (state.user && state.user.name ? String(state.user.name).trim().charAt(0) : '✦');
     }
   }
 
@@ -2272,17 +2417,23 @@
     hadithLastIndex_ = idx;
     const h = HADITH_LIST_[idx];
 
+    const homeText = document.getElementById('homeHadithText');
+    const homeRef = document.getElementById('homeHadithRef');
     refEl.classList.add('hiddenRef');
+    if(homeRef) homeRef.classList.add('hiddenRef');
     const words = h.text.split(' ');
-    textEl.innerHTML = words
+    const html = words
       .map(function (w, i) {
         return '<span class="word" style="animation-delay:' + (i * 70) + 'ms">' + escapeHtml(w) + '</span>';
       })
       .join(' ');
+    textEl.innerHTML = html;
+    if(homeText) homeText.innerHTML = html;
 
     setTimeout(function () {
       refEl.textContent = h.ref;
       refEl.classList.remove('hiddenRef');
+      if(homeRef){ homeRef.textContent = h.ref; homeRef.classList.remove('hiddenRef'); }
     }, words.length * 70 + 300);
   }
   // التبديل بيقف لما التطبيق يبقى في الخلفية (الشاشة مقفولة أو فاتح تطبيق تاني) عشان ميصرفش
@@ -2300,6 +2451,14 @@
     });
   }
 
+  // الشاشة ثابتة: مفيش تكبير وتصغير بالصباعين ولا بالضغطتين
+  (function lockZoom_(){
+    ['gesturestart','gesturechange','gestureend'].forEach(function(ev){
+      document.addEventListener(ev, function(e){ e.preventDefault(); }, { passive: false });
+    });
+    document.addEventListener('touchmove', function(e){ if(e.touches && e.touches.length > 1) e.preventDefault(); }, { passive: false });
+  })();
+
   function init(){
     startHadithRotation_();
     initInAppBanner_();
@@ -2315,13 +2474,13 @@
     // الرئيسية بتظهر فورًا من آخر بيانات محفوظة على الجهاز، والتحقق من السيرفر شغال في الخلفية
     const cachedHome = localCacheGet_('home');
     if(cachedHome && cachedHome.v && cachedHome.v.user){
-      applyLoggedInUser(cachedHome.v.user, cachedHome.v.isAdmin, cachedHome.v.targetProgress);
+      applyLoggedInUser(cachedHome.v.user, cachedHome.v.isAdmin, cachedHome.v.targetProgress, cachedHome.v.stats);
       showLoading(false);
       goHome();
     }
     callApi('bootstrapHome', [state.auth])
       .then(function(data){
-        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
+        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress, data.stats);
         if(!cachedHome){
           showLoading(false);
           goHome();
@@ -3219,6 +3378,7 @@
     document.getElementById('invBadge').textContent = state.user.name;
 
     acReset(AC_CONFIGS.item);
+    renderChips_();
 
     document.getElementById('returnKindWrap').hidden = !isReturns;
     document.getElementById('returnKindInput').value = '';
@@ -3281,6 +3441,7 @@
           return s + q * Number(it.price);
         }, 0);
     document.getElementById('grandTotal').textContent = fmt(total);
+    renderInvBar_();
   }
 
   function handleAddItem(){
@@ -3310,6 +3471,7 @@
     } else {
       state.draftItems.push({ itemName: name, qty: qty, price: price });
     }
+    bumpFreq_(name);
 
     acReset(AC_CONFIGS.item);
     document.getElementById('qtyInput').value = '';
@@ -3317,6 +3479,7 @@
     document.getElementById('returnKindInput').value = '';
     document.getElementById('returnReasonInput').value = '';
     renderItemsList();
+    renderChips_();
   }
 
   function handleDeleteDraftItem(idx){
