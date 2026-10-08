@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -1731,7 +1731,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v2.5.0';
+  const APP_VERSION_ = 'v2.5.1';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -2190,6 +2190,18 @@
     localCacheSet_('home', { user: state.user, isAdmin: state.isAdmin, targetProgress: state.targetProgress_ || null, stats: state.homeStats_ || null });
   }
 
+  // الدخول نفسه بيعدّي على جوجل (مفيهوش أرقام المبيعات) — بعده على طول نجيب أرقام الرئيسية من Supabase
+  function refreshHomeAfterLogin_(){
+    if(!state.auth) return;
+    callApi('bootstrapHome', [state.auth])
+      .then(function(data){
+        if(!data || !data.user) return;
+        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress, data.stats);
+        if(state.screen === null) document.getElementById('pageSub').textContent = state.user.name;
+      })
+      .catch(function(){});
+  }
+
   function goHome(){
     clearMsg();
     state.screen = null;
@@ -2480,8 +2492,10 @@
           // الجهاز ده موثوق بالفعل لنفس المندوب — ادخله على طول من غير كود تأكيد
           state.auth = data.auth;
           saveAuth(data.auth);
+          state.homeStats_ = null;
           applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
           goHome();
+          refreshHomeAfterLogin_();
           maybeShowAd_(data.ad);
           return;
         }
@@ -2516,12 +2530,14 @@
     saveAuth(data.auth);
     saveDeviceToken(data.deviceToken);
     requestPersistentStorage_();
+    state.homeStats_ = null;
     applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
     state.pendingOtpEmail = null;
     state.pendingPasskey = null;
     showLoading(false);
     if(via === 'passkey') pkMarkLocal_(data.user.email, true);
     goHome();
+    refreshHomeAfterLogin_();
     // أول دخول بكود الإيميل بيعرض تفعيل البصمة — الإعلان يستنى لحد فتحة التطبيق الجاية عشان مايتزاحموش
     if(via !== 'email') maybeShowAd_(data.ad);
     // دخل بكود الإيميل؟ نعرض عليه يفعّل البصمة عشان المرة الجاية تبقى أسهل
