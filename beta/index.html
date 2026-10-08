@@ -1664,7 +1664,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v2.0.0-beta.4';
+  const APP_VERSION_ = 'v2.2.0';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -1692,10 +1692,37 @@
     bootstrapBalances:1, bootstrapItemSalesReport:1, bootstrapRepEvaluation:1, bootstrapProfile:1, listSuggestions:1, listProductDescriptions:1,
     getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1};
   // طلبات بتكتب في الشيت: بنطلب من جوجل ينسخ التغيير لـ Supabase فورًا (عشان الشاشات تبان محدثة على طول)
-  const SB_WRITE_ACTIONS_ = {finalizeInvoice:1, addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, saveJard:1, saveTawrid:1, savePrices:1,
+  const SB_WRITE_ACTIONS_ = {addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, savePrices:1,
     saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
     addProductDescription:1, deleteProductDescription:1, setAdProduct:1, clearAd:1, passkeyRegisterFinish:1, passkeyClearMine:1, setRepSupervisors:1};
+  // التسجيل نفسه (فاتورة/جرد/توريد) بقى على Supabase بس — جوجل شيت بياخد نسخة لوحده كل دقيقة.
+  // لو النت قطع، بنعيد نفس الطلب (بنفس رقمه المرجعي، فمستحيل يتسجل مرتين) — ومنبعتهوش لجوجل أبدًا.
+  const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1};
+  function callSbWrite_(action, args, attempt){
+    return fetch(SB_RPC_URL_, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SB_PUBLIC_KEY_ },
+      body: JSON.stringify({ p_action: action, p_args: args || [] }),
+    })
+      .then(function(res){ if(!res.ok) throw new TypeError('sb ' + res.status); return res.json(); })
+      .then(function(data){
+        if(!data || data.ok !== true) throw new Error((data && data.error) || 'حصل خطأ غير متوقع، حاول تاني');
+        return { result: data.result, ms: data.ms, src: 'sb' };
+      })
+      .catch(function(err){
+        if(err instanceof TypeError && (attempt || 0) < 2){
+          return new Promise(function(r){ setTimeout(r, 1200); }).then(function(){ return callSbWrite_(action, args, (attempt || 0) + 1); });
+        }
+        if(err instanceof TypeError){
+          const netErr = new Error('تعذر الاتصال بالسيرفر — تأكد إنك متصل بالإنترنت وحاول تاني');
+          netErr.isNetwork = true;
+          throw netErr;
+        }
+        throw err;
+      });
+  }
   function callApiRaw_(action, args){
+    if(SB_WRITE_ONLY_[action]) return callSbWrite_(action, args, 0);
     if(SB_READ_ACTIONS_[action]){
       return fetch(SB_RPC_URL_, {
         method: 'POST',
@@ -1708,8 +1735,11 @@
           return { result: data.result, ms: data.ms, src: 'sb' };
         })
         .catch(function(e){
-          console.warn('Supabase → جوجل', action, e && e.message);
-          return callGasApi_(action, args);
+          // Supabase هو الأصل — مفيش رجوع لجوجل (بياناته قديمة). لو النت فصل بنحاول تاني مرة واحدة.
+          if(e instanceof TypeError || /^sb 5/.test(String(e && e.message))){
+            return new Promise(function(r){ setTimeout(r, 1000); }).then(function(){ return callSbWrite_(action, args, 1); });
+          }
+          throw new Error(String((e && e.message) || '').replace(/^sb: /, '') || 'حصل خطأ غير متوقع، حاول تاني');
         });
     }
     return callGasApi_(action, args);
