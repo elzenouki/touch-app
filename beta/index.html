@@ -6,12 +6,12 @@
 <title>تاتش الزنوكي - نظام إدارة المبيعات</title>
 
 <!-- ============ إعدادات تطبيق الويب التقدمي (PWA) — عشان يتثبت زي أي تطبيق حقيقي ============ -->
-<link rel="manifest" href="../manifest.json">
+<link rel="manifest" href="/touch-app/manifest.json">
 <meta name="theme-color" content="#3f4c22">
-<link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
-<link rel="icon" type="image/png" sizes="512x512" href="../icons/icon-512.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/touch-app/icons/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/touch-app/icons/icon-512.png">
 <!-- آيفون: تثبيت على الشاشة الرئيسية بدون شريط عنوان المتصفح -->
-<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" href="/touch-app/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="تاتش الزنوكي">
@@ -586,6 +586,7 @@
   }
   textarea:focus{outline:none; border-color:var(--gold); box-shadow:0 0 0 3px rgba(182,134,47,.12);}
   /* ============ نبض البيع اليومي + نمط الأسبوع (شاشة مبيعاتي) ============ */
+  .wkCell .dn{font-size:10.5px; font-weight:600; color:var(--muted); line-height:1.3; margin-top:1px;}
   .pulseNote{font-size:12.5px; color:var(--muted2); font-weight:700; margin:-4px 0 12px;}
   .calHead, .calGrid, .wkGrid{display:grid; grid-template-columns:repeat(7, 1fr); gap:5px;}
   .calHead div{font-size:10.5px; font-weight:800; color:var(--muted2); text-align:center; padding-bottom:2px;}
@@ -1221,6 +1222,7 @@
           <option value="" disabled selected>اختر نوع المرتجع</option>
           <option value="سليم">سليم (قابل للبيع تاني)</option>
           <option value="تالف">تالف (مرتجع للشركة)</option>
+          <option value="رجوع للشركة">رجوع للشركة (من مخزون الفرع — مش من عميل)</option>
         </select>
         <label>سبب المرتجع</label>
         <input type="text" id="returnReasonInput" maxlength="300" placeholder="مثال: عيب في الموتور / العميل غيّر رأيه">
@@ -1390,6 +1392,8 @@
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
       التقييم من 100: تحقيق التارجت 30 · حجم البيع 15 · متوسط بيع الصنف 20 · الرواكد 20 · المرتجع 15<br>
       متوسط بيع الصنف = كميتك من كل صنف معاك مقارنة بمتوسط باقي المناديب اللي باعوه<br>
+      الرواكد = نسبة الأصناف الراكدة من الأصناف اللي معاك (30% أو أكتر = صفر) — ومش بتتحسب على المندوب الجديد أول 30 يوم<br>
+      المرتجع = المرتجع السليم من العملاء بس (التالف ورجوع الشركة مش بيتحسبوا)<br>
       (لو مفيش تارجت للشهر، الـ 30 بتتضاف لحجم البيع) — الرواكد بتتحسب على الوضع الحالي دايمًا
     </div>
   </div>
@@ -1727,7 +1731,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v2.3.0';
+  const APP_VERSION_ = 'v2.4.1';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -3173,15 +3177,17 @@
       const isWeak = wMin != null && v === wMin && !weakName;
       if(isWeak) weakName = WD_NAMES_[wd];
       const w = wMax > 0 ? Math.max(v > 0 ? 6 : 0, Math.round(v / wMax * 100)) : 0;
-      return '<div class="wkCell"><div class="nm">' + WD_SHORT_[wd] + '</div><div class="amt">' + fmt(v) + '</div>' +
+      const nd = (wk[wd] && wk[wd].days) || 0;
+      const ndTxt = nd === 1 ? 'يوم واحد' : nd === 2 ? 'متوسط يومين' : 'متوسط ' + nd + ' أيام';
+      return '<div class="wkCell"><div class="nm">' + WD_SHORT_[wd] + '</div><div class="amt">' + fmt(v) + '</div><div class="dn">' + ndTxt + '</div>' +
         '<div class="pBar"><i class="' + (v >= wAvg ? 'g' : 'b') + '" style="width:' + w + '%"></i></div>' +
         (isWeak ? '<div class="weak">الأضعف</div>' : '') + '</div>';
     }).join('');
     document.getElementById('weekNote').innerHTML = weakName
       ? 'أضعف يوم بيع: <b style="color:var(--navy)">' + weakName + '</b> بمتوسط ' + fmt(wMin) + ' ج — يفيد في جدولة الزيارات والعروض'
-      : 'متوسط مبيعات كل يوم في الأسبوع';
+      : 'متوسط بيعك في كل يوم من أيام الأسبوع';
     const lastD = p.daily[p.daily.length - 1].d;
-    document.getElementById('weekFoot').textContent = 'المتوسط محسوب من أيام الشغل الفعلية للشركة من ' + '01/' + mm + ' لحد ' + pad2(lastD) + '/' + mm + ' (' + (p.companyDays || 0) + ' يوم شغل).';
+    document.getElementById('weekFoot').textContent = 'كل رقم هنا متوسط مش إجمالي: مجموع بيعك في اليوم ده ÷ عدد مراته اللي الشركة اشتغلت فيها (حتى لو انت ما بعتش فيه) — من ' + '01/' + mm + ' لحد ' + pad2(lastD) + '/' + mm + ' (' + (p.companyDays || 0) + ' يوم شغل).';
     weekCard.hidden = false;
   }
 
@@ -3240,10 +3246,11 @@
           ((r.weakItems || []).length ? '<div style="margin-top:4px;">' + r.weakItems.map(function(w){
             return '• ' + escapeHtml(w.name) + ': باع ' + fmt(w.qty) + ' والمتوسط ' + fmt(w.avg) + ' (' + w.pct + '%)';
           }).join('<br>') + '</div>' : '')) +
-        part('الرواكد', r.parts.stale,
-          (r.stale ? (r.stale + ' صنف راكد في عهدته' + (r.unresolved ? ' · ' + r.unresolved + ' منهم عدّى 30 يوم من غير سبب' : '')) : 'مفيش رواكد 👌')) +
+        (r.parts.stale ? part('الرواكد', r.parts.stale,
+          (r.stale ? (r.stale + ' صنف راكد من ' + fmt(Math.max(r.carried || 0, r.stale)) + ' صنف معاه' + (r.unresolved ? ' · ' + r.unresolved + ' منهم عدّى 30 يوم من غير سبب (بيتحسب مرتين)' : '')) : 'مفيش رواكد 👌'))
+          : (r.isNew ? '<div class="evalPart"><div class="row"><span>الرواكد</span><span>مش محسوبة</span></div><div class="det">مندوب جديد (أقل من 30 يوم) — التقييم اتحسب من باقي المعايير</div></div>' : '')) +
         part('المرتجع', r.parts.returns,
-          r.gross > 0 ? ('مرتجع ' + fmt(r.ret) + ' = ' + r.retRate + '% من البيع') : 'مفيش بيع الشهر ده');
+          r.gross > 0 ? ('مرتجع من العملاء ' + fmt(r.ret) + ' = ' + r.retRate + '% من البيع' + (r.retDamaged > 0 ? ' · التالف ' + fmt(r.retDamaged) + ' مش محسوب' : '')) : 'مفيش بيع الشهر ده');
       const rankLabel = state.isAdmin ? ('من ' + data.total) : ('من ' + data.total + ' مندوب');
       return '<div class="evalCard" style="--ec:' + c + '">' +
         '<div class="evalHead">' +
@@ -3939,7 +3946,7 @@
         const displayQty = state.finalized ? qty : (isReturns ? -qty : qty);
         const neg = displayQty < 0;
         const returnKind = state.finalized ? it['نوع المرتجع'] : it.returnKind;
-        const kindSuffix = (isReturns && returnKind === 'تالف') ? ' (تالف)' : '';
+        const kindSuffix = (isReturns && (returnKind === 'تالف' || returnKind === 'رجوع للشركة')) ? ' (' + returnKind + ')' : '';
         const reason = isReturns ? (state.finalized ? it['سبب المرتجع'] : it.returnReason) : '';
         const reasonHtml = reason ? '<div class="meta">السبب: ' + escapeHtml(reason) + '</div>' : '';
         return '<div class="itemRow' + (neg ? ' neg' : '') + '">' +
@@ -4030,7 +4037,7 @@
       const qty = isReturns ? -Number(it.qty) : Number(it.qty);
       const rowTotal = qty * Number(it.price);
       total += rowTotal;
-      const kindSuffix = (isReturns && it.returnKind === 'تالف') ? ' (تالف)' : '';
+      const kindSuffix = (isReturns && (it.returnKind === 'تالف' || it.returnKind === 'رجوع للشركة')) ? ' (' + it.returnKind + ')' : '';
       return (
         '<div class="reviewRow">' +
           '<div>' +
@@ -4131,10 +4138,11 @@
     let total = 0;
     const items = state.draftItems.map(function(it){
       const q = isReturns ? -Number(it.qty) : Number(it.qty);
-      const rowTotal = q * Number(it.price);
+      const isCo = isReturns && it.returnKind === 'رجوع للشركة';
+      const rowTotal = isCo ? 0 : q * Number(it.price);
       total += rowTotal;
       const o = { 'اسم الصنف': it.itemName, 'الكمية': q, 'السعر': Number(it.price), 'الاجمالي': rowTotal };
-      if(isReturns){ o['نوع المرتجع'] = it.returnKind === 'تالف' ? 'تالف' : 'سليم'; o['سبب المرتجع'] = it.returnReason || ''; }
+      if(isReturns){ o['نوع المرتجع'] = isCo ? 'رجوع للشركة' : (it.returnKind === 'تالف' ? 'تالف' : 'سليم'); o['سبب المرتجع'] = it.returnReason || ''; }
       return o;
     });
     const d = new Date();
@@ -5774,7 +5782,7 @@
   let newWorkerWaiting_ = null;
 
   function registerServiceWorkerWithUpdateCheck_(){
-    return; // النسخة التجريبية مالهاش service worker خاص بيها
+    if(/\/beta\//.test(location.pathname)) return; // النسخة التجريبية مالهاش service worker خاص بيها
     if(!('serviceWorker' in navigator)) return;
     navigator.serviceWorker.register('sw.js').then(function(reg){
       if(reg.waiting && navigator.serviceWorker.controller){
