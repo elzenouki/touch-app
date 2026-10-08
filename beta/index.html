@@ -7,7 +7,7 @@
 
 <!-- ============ إعدادات تطبيق الويب التقدمي (PWA) — عشان يتثبت زي أي تطبيق حقيقي ============ -->
 <link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#0c1730">
+<meta name="theme-color" content="#0e2453">
 <link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="../icons/icon-512.png">
 <!-- آيفون: تثبيت على الشاشة الرئيسية بدون شريط عنوان المتصفح -->
@@ -808,6 +808,176 @@
   .c2InvBar .sum b{font-size:22px; font-weight:900; color:var(--gold-light);}
   .c2InvBar button{flex:1; height:56px; border:none; border-radius:16px; background:linear-gradient(135deg, #e6bf6a, #b6862f); color:var(--navy); font-family:inherit; font-size:17px; font-weight:900; cursor:pointer;}
   .c2InvBar button:disabled{opacity:.45;}
+
+  /* ===== شاشة الإدارة: تابات + شيت المندوب ===== */
+  .admTabs{display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:6px; margin-bottom:14px; position:sticky; top:calc(env(safe-area-inset-top) + 4px); z-index:5; background:var(--bg); padding:6px 0;}
+  .admTabs button{height:44px; border:1px solid var(--border); border-radius:14px; background:#fff; color:var(--navy); font-family:inherit; font-size:13.5px; font-weight:800; cursor:pointer;}
+  .admTabs button.on{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .admTabs button .n{display:inline-block; min-width:18px; margin-inline-start:4px; padding:0 5px; border-radius:9px; background:var(--gold-light); color:var(--navy); font-size:11px;}
+  .admSection[hidden]{display:none;}
+  .admAddToggle{width:100%; height:50px; border:1.5px dashed var(--gold); border-radius:14px; background:transparent; color:var(--gold-d); font-family:inherit; font-size:15px; font-weight:800; cursor:pointer; margin-bottom:12px;}
+  .repCard{display:flex; align-items:center; gap:12px; width:100%; text-align:right; background:#fff; border:1px solid var(--border); border-radius:16px; padding:12px 14px; margin-bottom:8px; font-family:inherit; color:var(--text); cursor:pointer;}
+  .repCard .av{width:42px; height:42px; border-radius:21px; background:var(--navy); color:var(--gold-light); display:flex; align-items:center; justify-content:center; font-weight:900; font-size:17px; flex:none;}
+  .repCard .av.adm{background:var(--gold-light); color:var(--navy);}
+  .repCard .info{flex:1; min-width:0; display:flex; flex-direction:column; gap:2px;}
+  .repCard .nm{font-size:15.5px; font-weight:900; color:var(--navy); display:flex; align-items:center; gap:6px; flex-wrap:wrap;}
+  .repCard .sub{font-size:12.5px; font-weight:700; color:var(--muted2); overflow-wrap:anywhere;}
+  .repCard .sups{display:flex; gap:4px; flex-wrap:wrap; margin-top:2px;}
+  .repCard .sups span{font-size:11.5px; font-weight:800; background:var(--blue-bg); color:var(--blue); border-radius:999px; padding:1px 8px;}
+  .repCard .sups span.none{background:var(--red-bg); color:var(--red);}
+  .repCard .chev{width:9px; height:9px; border-top:2.2px solid #a8a396; border-left:2.2px solid #a8a396; transform:rotate(-45deg); flex:none;}
+  .tag{font-size:11px; font-weight:800; border-radius:999px; padding:1px 8px;}
+  .tag.adm{background:var(--gold-bg); color:var(--gold-d); border:1px solid rgba(182,134,47,.4);}
+  .tag.own{background:var(--navy); color:#fff;}
+  .repSheetOv{position:fixed; inset:0; background:rgba(8,14,30,.55); z-index:60; display:flex; align-items:flex-end; justify-content:center;}
+  .repSheetOv[hidden]{display:none;}
+  .repSheet{width:100%; max-width:640px; max-height:88vh; overflow-y:auto; background:var(--bg); border-radius:26px 26px 0 0; padding:10px 18px calc(22px + env(safe-area-inset-bottom));}
+  .repSheet .grip{width:42px; height:4px; border-radius:2px; background:#d6d1c3; margin:4px auto 12px;}
+  .repSheet h3{margin:0; font-size:19px; font-weight:900; color:var(--navy);}
+  .repSheet .em{font-size:13px; color:var(--muted2); font-weight:700; direction:ltr; text-align:right;}
+  .rsBlock{background:#fff; border:1px solid var(--border); border-radius:16px; padding:14px; margin-top:12px;}
+  .rsBlock .t{font-size:14px; font-weight:900; color:var(--navy); margin-bottom:4px;}
+  .rsBlock .d{font-size:12.5px; font-weight:700; color:var(--muted2); line-height:1.6; margin-bottom:10px;}
+  .supChips{display:flex; flex-wrap:wrap; gap:8px;}
+  .supChips button{min-height:44px; padding:0 14px; border-radius:999px; border:1.5px solid var(--border); background:#fff; color:var(--navy); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;}
+  .supChips button.on{background:var(--navy); color:#fff; border-color:var(--navy);}
+  .supChips button.on::before{content:'✓ ';}
+  .rsRow{display:flex; gap:8px;}
+  .rsRow button{flex:1; min-height:48px; border-radius:14px; font-family:inherit; font-size:14.5px; font-weight:800; cursor:pointer; border:1px solid var(--navy); background:#fff; color:var(--navy);}
+  .rsRow button.danger{border-color:#d9a0a0; color:var(--red);}
+  .rsRow button.solid{background:var(--navy); color:#fff;}
+  .rsRow button:disabled{opacity:.4;}
+
+  /* ===== شاشة البيع: الأصناف اللي معاك بس + زراير + و − ===== */
+  .stepBox{margin-bottom:16px;}
+  .stepHead{display:flex; align-items:center; justify-content:space-between; gap:8px; margin-bottom:10px; color:#f3e3bd; font-size:13.5px; font-weight:800;}
+  .stepSearch{width:100%; height:48px; border-radius:14px; border:none; padding:0 14px; font-family:inherit; font-size:15.5px; margin-bottom:10px; background:#fff;}
+  .stepList{background:#f6f4ee; border-radius:20px; padding:6px; display:flex; flex-direction:column; gap:6px;}
+  .stepRow{background:#fff; border-radius:14px; padding:10px; display:flex; align-items:center; gap:8px; color:var(--text);}
+  .stepRow.on{box-shadow:inset 0 0 0 2px var(--gold-light);}
+  .stepRow.over{box-shadow:inset 0 0 0 2px #c0392b; background:#fdf0ec;}
+  .stepRow .nm{flex:1; min-width:0; display:flex; flex-direction:column; gap:3px;}
+  .stepRow .nm b{font-size:15px; font-weight:800; line-height:1.4; overflow-wrap:anywhere;}
+  .stepRow .meta{display:flex; align-items:center; gap:6px; flex-wrap:wrap; font-size:12px; font-weight:800; color:var(--green);}
+  .stepRow.over .meta .stk{color:#b3412e;}
+  .stepRow .bar{width:64px; height:5px; border-radius:3px; background:#e6e1d4; overflow:hidden;}
+  .stepRow .bar i{display:block; height:100%; background:var(--green); border-radius:3px;}
+  .stepRow .pr{width:74px; height:30px; margin:0; padding:0 6px; border-radius:8px; border:1px solid var(--border); font-size:13px; font-weight:800; text-align:center; background:#faf8f3;}
+  .stepRow .q{width:46px; height:44px; margin:0; padding:0; border:none; background:transparent; text-align:center; font-size:20px; font-weight:900; color:var(--navy);}
+  .stepRow .sb{width:44px; height:44px; flex:none; border:none; border-radius:13px; font-size:23px; font-weight:900; cursor:pointer; font-family:inherit; line-height:1;}
+  .stepRow .sb.minus{background:#eeeae0; color:var(--navy);}
+  .stepRow .sb.plus{background:var(--navy); color:#fff;}
+  body.c2dark #viewInvoice .stepRow .pr{border:1.5px solid #d6d0c1; background:#faf8f3; color:var(--navy);}
+  body.c2dark #viewInvoice .stepRow .q{background:transparent; border:none; height:44px; font-size:20px;}
+  body.c2dark #viewInvoice .stepSearch{border:none;}
+  .stepManualToggle{width:100%; min-height:46px; margin-top:10px; border:1.5px dashed rgba(217,172,82,.6); border-radius:14px; background:transparent; color:var(--gold-light); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;}
+  #viewInvoice.stepMode #manualCard{display:none;}
+  #viewInvoice.stepMode.showManual #manualCard{display:block;}
+
+  /* ================= الشكل المختار: أزرق وكريمي بالدهبي + شريط تحت ================= */
+  :root{ --v3n:#0e2453; --v3n2:#163f80; --v3n3:#08183b; --v3c:#f6efe0; --v3card:#fffaf0; --v3g:#c9a24a; --v3gl:#f3dc9f; --v3line:#e9d6a8; --v3mut:#6b7a99;
+    --navy:#0e2453; --navy2:#163f80; --navy3:#08183b; --bg:#f6efe0; --card:#fffaf0; --card2:#fbf6ea; --border:#e9d6a8; --gold:#b38a35; --gold-light:#d9b45e; --gold-d:#8a6420; }
+  body{background:var(--v3c) !important;}
+  .v3pat, .header, .v3Head{
+    background-color:var(--v3n);
+    background-image:repeating-conic-gradient(from 22.5deg, rgba(246,236,214,.09) 0 12.5%, transparent 0 25%), linear-gradient(165deg, var(--v3n2) 0%, var(--v3n) 55%, var(--v3n3) 100%) !important;
+    background-size:44px 44px, 100% 100% !important;
+  }
+  .header{box-shadow:inset 0 -3px 0 var(--v3g), 0 8px 20px rgba(14,36,83,.18) !important; border-radius:0 0 28px 28px;}
+  /* الحديث في مربع */
+  .hadithBox{background:rgba(255,255,255,.06) !important; border:1px solid rgba(233,214,168,.55) !important; border-radius:14px !important; padding:8px 12px 6px !important; margin-top:6px !important;}
+  .hadithBox .hadithText{color:#fbf3e2 !important;}
+  .hadithBox .hadithRef{color:var(--v3line) !important;}
+  .backBtn{background:rgba(255,255,255,.1) !important;}
+
+  /* الرئيسية */
+  body.c2home{background:var(--v3c) !important;}
+  .v3Head{padding-bottom:46px; border-radius:0 0 38px 38px; box-shadow:inset 0 -3px 0 var(--v3g), inset 0 -4px 0 rgba(0,0,0,.25);}
+  .v3Head .c2Top{padding-top:calc(16px + env(safe-area-inset-top));}
+  .c2Avatar{background:var(--v3n3) !important; color:#f6ecd6 !important; border:2px solid var(--v3g);}
+  .c2Name{color:#fff;}
+  .c2Branch{color:#c8d8f2 !important;}
+  .c2Date{background:#f6ecd6; color:var(--v3n) !important; border:none !important;}
+  .v3Orn{display:flex; align-items:center; gap:10px; padding:12px 20px 0;}
+  .v3Orn span{flex:1; height:1px; background:linear-gradient(90deg, transparent, var(--v3line));}
+  .v3Orn span:last-child{background:linear-gradient(270deg, transparent, var(--v3line));}
+  .v3Head .c2Hadith{margin:10px 18px 0; padding:12px 14px 10px; min-height:0; border:1px solid rgba(233,214,168,.55); border-radius:18px; background:rgba(255,255,255,.06); box-shadow:inset 0 0 0 3px rgba(14,36,83,.6), inset 0 0 0 4px rgba(201,162,74,.35);}
+  .v3Head .c2Hadith .hadithText{color:#fbf3e2; font-size:20px;}
+  .v3Head .c2Hadith .hadithRef{color:var(--v3line);}
+  .c2Stats{margin:-30px 16px 0; padding:14px; background:var(--v3card); border:1.5px solid var(--v3g); border-radius:22px; box-shadow:0 14px 30px rgba(14,36,83,.16); position:relative; z-index:2;}
+  .c2Ring{background:conic-gradient(var(--v3g) calc(var(--pct) * 1%), #ece3cf 0) !important;}
+  .c2Ring > div{background:var(--v3card) !important; color:var(--v3n) !important;}
+  .c2Ring small{color:var(--v3mut) !important;}
+  .c2Tile{background:transparent !important; color:var(--v3n) !important; padding:4px 6px !important;}
+  .c2Tile span{color:var(--v3mut) !important;}
+  .c2Tiles .c2Tile:last-child b{color:#a77b25;}
+  .c2Mood{color:var(--v3mut) !important; margin:10px 18px 0 !important;}
+  .c2Mood b{color:#8a6420 !important;}
+  .c2Big{padding:16px 16px 0 !important;}
+  .c2Big button{height:72px !important; border-radius:20px !important; background:linear-gradient(135deg, var(--v3n2), var(--v3n)) !important; color:#fbf3e2 !important;
+    box-shadow:inset 0 0 0 2px var(--v3g), inset 0 0 0 4px var(--v3n), inset 0 0 0 5px rgba(201,162,74,.45), 0 12px 24px rgba(14,36,83,.25) !important;}
+  .c2Big button svg{stroke:#d9b45e;}
+  .c2Row3{padding:10px 16px 0 !important;}
+  .c2Row3 button{background:var(--v3card) !important; color:var(--v3n) !important; border:1px solid #e3d3ad !important;}
+  .c2Sheet{background:var(--v3card) !important; border:1px solid var(--v3line); border-radius:20px !important; margin:14px 16px 0 !important; padding:4px 12px !important; min-height:0 !important; flex:none !important; gap:0 !important;}
+  .c2Sheet .grip{display:none;}
+  .c2Sheet .c2Item{background:transparent; border-radius:0; border-bottom:1px solid #efe4cb; padding:0 4px;}
+  .c2Sheet .c2Item:last-of-type{border-bottom:none;}
+  .c2Item .chev{border-color:var(--v3g);}
+  #viewHome:not([hidden]){min-height:0;}
+  body.v3nav .wrap{padding-bottom:110px !important;}
+  .v3Nav{position:fixed; left:12px; right:12px; bottom:calc(12px + env(safe-area-inset-bottom)); max-width:616px; margin:0 auto; height:68px; z-index:30; background:var(--v3n); border-radius:24px; display:flex; padding:6px; gap:4px;
+    box-shadow:inset 0 0 0 1px rgba(201,162,74,.5), 0 12px 28px rgba(14,36,83,.35);}
+  .v3Nav[hidden]{display:none;}
+  .v3Nav button{flex:1; border:none; background:transparent; color:#c8d8f2; border-radius:18px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font-family:inherit; font-size:11.5px; font-weight:800; cursor:pointer;}
+  .v3Nav button[hidden]{display:none;}
+  .v3Nav button.on{background:linear-gradient(135deg, var(--v3gl), var(--v3g)); color:var(--v3n); font-weight:900;}
+  #acctSheetOv .repSheet{background:var(--v3c);}
+  #acctSheetOv .c2Item{background:var(--v3card); border:1px solid #efe4cb; margin-bottom:8px;}
+
+  /* الكروت والزراير في كل الشاشات */
+  .card{background:var(--v3card) !important; border-color:var(--v3line) !important;}
+  button.primary{background:linear-gradient(135deg, var(--v3n2), var(--v3n)) !important; border-color:var(--v3n) !important; box-shadow:inset 0 0 0 1.5px rgba(201,162,74,.7);}
+  button.finalize{background:linear-gradient(135deg, var(--v3n2), var(--v3n)) !important; color:#fbf3e2 !important; box-shadow:inset 0 0 0 2px var(--v3g), 0 8px 18px rgba(14,36,83,.2) !important;}
+  input, select, textarea{background:#fff !important;}
+
+  /* شاشة البيع: فاتحة زي الشكل */
+  body.c2dark{background:var(--v3c) !important;}
+  body.c2dark #viewInvoice .card{background:var(--v3card) !important; border-color:var(--v3line) !important; color:var(--text) !important;}
+  body.c2dark #viewInvoice label{color:var(--muted2) !important;}
+  body.c2dark #viewInvoice .cardTitle{color:var(--muted) !important; border-bottom-color:var(--v3line) !important;}
+  body.c2dark #viewInvoice input, body.c2dark #viewInvoice select{border:1px solid var(--v3line) !important;}
+  body.c2dark #viewInvoice .itemRow{background:#fff !important; border-color:#efe4cb !important;}
+  body.c2dark #viewInvoice .itemRow .name, body.c2dark #viewInvoice .itemRow .total{color:var(--v3n) !important;}
+  body.c2dark #viewInvoice .itemRow .meta, body.c2dark #viewInvoice .empty{color:var(--v3mut) !important;}
+  body.c2dark #viewInvoice #addBtn{border-color:var(--v3g) !important; color:#8a6420 !important;}
+  body.c2dark #viewInvoice .badge{background:#f6ecd6 !important; color:var(--v3n) !important; border-color:var(--v3line) !important;}
+  .stepHead{color:var(--v3n) !important;}
+  .stepHead #stepHeadCount{color:#a77b25;}
+  .stepSearch{background:var(--v3card) !important; border:1px solid var(--v3line) !important;}
+  .stepList{background:transparent !important; padding:0 !important; gap:8px !important;}
+  .stepRow{background:var(--v3card) !important; border:1px solid #ece3cf;}
+  .stepRow.on{box-shadow:inset 0 0 0 2px var(--v3g) !important; border-color:transparent;}
+  .stepRow .sb.plus{background:var(--v3n) !important; color:var(--v3gl) !important;}
+  .stepRow .sb.minus{background:#ece3cf !important;}
+  .stepManualToggle{border-color:var(--v3g) !important; color:#8a6420 !important;}
+  .c2Chips button{background:var(--v3card) !important; color:var(--v3n) !important; border:1px solid var(--v3line) !important;}
+  .c2Chips button.on{background:var(--v3n) !important; color:var(--v3gl) !important;}
+  .c2InvBar{background:var(--v3n) !important; box-shadow:inset 0 3px 0 var(--v3g), 0 -10px 30px rgba(14,36,83,.25) !important;}
+  .c2InvBar .sum b{color:var(--v3gl) !important;}
+  .c2InvBar button{background:#f6ecd6 !important; color:var(--v3n) !important; box-shadow:inset 0 0 0 2px var(--v3g);}
+  /* الإدارة */
+  .admTabs{background:var(--v3c) !important;}
+  .admTabs button{background:var(--v3card) !important; border-color:var(--v3line) !important;}
+  .admTabs button.on{background:var(--v3n) !important; color:var(--v3gl) !important; box-shadow:inset 0 0 0 1.5px var(--v3g);}
+  .repCard{background:var(--v3card) !important; border-color:#ece3cf !important;}
+  .repCard .av{background:var(--v3n) !important; color:var(--v3gl) !important;}
+  .repCard .av.adm{background:linear-gradient(135deg, var(--v3gl), var(--v3g)) !important; color:var(--v3n) !important;}
+  .admAddToggle{border-color:var(--v3g) !important; color:#8a6420 !important;}
+  .repSheet{background:var(--v3c) !important; box-shadow:inset 0 3px 0 var(--v3g);}
+  .rsBlock{background:var(--v3card) !important;}
+  .supChips button.on{background:var(--v3n) !important; color:var(--v3gl) !important;}
+  .rsRow button.solid{background:linear-gradient(135deg, var(--v3n2), var(--v3n)) !important; color:var(--v3gl) !important; box-shadow:inset 0 0 0 2px var(--v3g);}
 </style>
 </head>
 <body>
@@ -881,6 +1051,7 @@
 
   <!-- ============ شاشة رئيسية (التصور 2) ============ -->
   <div id="viewHome" hidden>
+    <div class="v3Head">
     <div class="c2Top">
       <div class="c2Id">
         <div class="c2Avatar" id="homeBadgeIcon"></div>
@@ -892,7 +1063,9 @@
       </div>
       <span class="c2Date" id="homeDate"></span>
     </div>
+    <div class="v3Orn"><span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="#d9b45e"><path d="M12 1l2.8 8.2L23 12l-8.2 2.8L12 23l-2.8-8.2L1 12l8.2-2.8z"></path></svg><span></span></div>
     <div class="c2Hadith"><span class="hadithText" id="homeHadithText"></span><span class="hadithRef hiddenRef" id="homeHadithRef"></span></div>
+    </div>
 
     <div class="c2Stats" id="homeStats">
       <div class="c2Ring" id="targetProgressWrap" hidden><div><b id="targetProgressPct"></b><small>من الهدف</small></div></div>
@@ -920,8 +1093,15 @@
       <button type="button" class="c2Item" id="invoiceHistoryLink" onclick="openScreen('history')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg></span><span class="title">سجل فواتيري</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="itemSalesLink" onclick="openScreen('itemsales')"><span class="ic" style="background:#eeeaf8"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5b4a9c" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg></span><span class="title">مبيعات الأصناف</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span class="title">تقرير أسباب الركود</span><span class="chev"></span></button>
-      <button type="button" class="c2More" id="c2MoreBtn" onclick="toggleC2More_()">كل الخدمات ▾</button>
-      <div class="c2Extra" id="c2Extra" hidden>
+    </div>
+  </div>
+
+  <!-- حسابي: باقي الخدمات -->
+  <div class="repSheetOv" id="acctSheetOv" hidden onclick="if(event.target===this) this.hidden=true">
+    <div class="repSheet" role="dialog" aria-modal="true" aria-label="حسابي">
+      <div class="grip"></div>
+      <h3 style="margin-bottom:10px;">حسابي والخدمات</h3>
+      <div class="c2Extra" id="c2Extra" onclick="if(event.target.closest('.c2Item')) document.getElementById('acctSheetOv').hidden = true">
         <button type="button" class="c2Item" id="evalLink" onclick="openScreen('eval')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.4 6.7 19.1l1-5.8-4.2-4.1 5.9-.9z"></path></svg></span><span class="title">تقييمي</span><span class="chev"></span></button>
         <button type="button" class="c2Item" id="pricesLink" onclick="openScreen('prices')"><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 6H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg></span><span class="title">أسعاري</span><span class="chev"></span></button>
         <button type="button" class="c2Item" id="productsLink" onclick="openScreen('products')"><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3" width="16" height="18" rx="2"></rect><path d="M8 8h8M8 12h8M8 16h5"></path></svg></span><span class="title">وصف المنتجات</span><span class="chev"></span></button>
@@ -933,9 +1113,24 @@
     </div>
   </div>
 
+  <!-- الشريط اللي تحت -->
+  <nav class="v3Nav" id="v3Nav" hidden>
+    <button type="button" data-nav="home" onclick="goHome()"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l9-7 9 7"></path><path d="M5 10v10h14V10"></path></svg>الرئيسية</button>
+    <button type="button" data-nav="history" id="navHistory" onclick="openScreen('history')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg>فواتيري</button>
+    <button type="button" data-nav="eval" id="navEval" onclick="openScreen('eval')" hidden><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.6 5.3 5.9.9-4.2 4.1 1 5.8L12 16.4 6.7 19.1l1-5.8-4.2-4.1 5.9-.9z"></path></svg>التقييم</button>
+    <button type="button" data-nav="mystats" onclick="openScreen('mystats')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg><span id="navStatsLbl">مبيعاتي</span></button>
+    <button type="button" data-nav="acct" onclick="document.getElementById('acctSheetOv').hidden = false"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg>حسابي</button>
+  </nav>
+
   <!-- ============ شاشة فاتورة (مبيعات / مرتجع) ============ -->
   <div id="viewInvoice" hidden>
-    <div class="card">
+    <div class="stepBox" id="stepBox" hidden>
+      <div class="stepHead"><span id="stepHeadText">الأصناف اللي معاك</span><span id="stepHeadCount"></span></div>
+      <input type="search" class="stepSearch" id="stepSearch" placeholder="دوّر في أصنافك…" oninput="renderStepList_()">
+      <div class="stepList" id="stepList"></div>
+      <button type="button" class="stepManualToggle" onclick="document.getElementById('viewInvoice').classList.toggle('showManual')">صنف مش في القايمة؟ اكتبه بالطريقة العادية</button>
+    </div>
+    <div class="card" id="manualCard">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <span class="badge" id="invBadge">مندوب</span>
         <span class="badge locked" id="lockBadge" hidden>✔ مرحّلة</span>
@@ -1211,59 +1406,97 @@
 
   <!-- ============ شاشة إدارة المشرفين والمناديب (للمشرفين فقط) ============ -->
   <div id="viewAdmin" hidden>
-    <div class="card">
-      <div class="cardTitle">إضافة مندوب جديد</div>
-      <label>اسم المندوب</label>
-      <input type="text" id="repNameInput" placeholder="مثال: محمد أحمد">
-      <label>الإيميل (Gmail)</label>
-      <input type="email" id="repEmailInput" placeholder="example@gmail.com">
-      <label>كود الدخول (PIN) — أرقام بس، من 4 إلى 6 أرقام</label>
-      <input type="text" id="repPinInput" class="ltrNum" inputmode="numeric" dir="ltr" maxlength="6" placeholder="مثال: 1234">
-      <button class="primary" onclick="handleAddRep()">إضافة المندوب</button>
+    <div class="admTabs" role="tablist">
+      <button type="button" class="on" data-adm="reps" onclick="admTab_('reps')">المناديب</button>
+      <button type="button" data-adm="asnaf" onclick="admTab_('asnaf')">الأصناف</button>
+      <button type="button" data-adm="sugg" onclick="admTab_('sugg')">المقترحات<span class="n" id="admSuggN" hidden></span></button>
+      <button type="button" data-adm="prod" onclick="admTab_('prod')">المنتجات</button>
     </div>
-    <div class="card">
-      <div class="cardTitle">كل المناديب — تفعيل / إلغاء الإشراف</div>
+
+    <div class="admSection" data-sec="reps">
+      <button type="button" class="admAddToggle" onclick="toggleAdmAdd_('repAddCard')">+ مندوب جديد</button>
+      <div class="card" id="repAddCard" hidden>
+        <div class="cardTitle">إضافة مندوب جديد</div>
+        <label>اسم المندوب</label>
+        <input type="text" id="repNameInput" placeholder="مثال: محمد أحمد">
+        <label>الإيميل (Gmail)</label>
+        <input type="email" id="repEmailInput" placeholder="example@gmail.com">
+        <label>كود الدخول (PIN) — أرقام بس، من 4 إلى 6 أرقام</label>
+        <input type="text" id="repPinInput" class="ltrNum" inputmode="numeric" dir="ltr" maxlength="6" placeholder="مثال: 1234">
+        <button class="primary" onclick="handleAddRep()">إضافة المندوب</button>
+      </div>
       <div id="repsList"><div class="empty">جاري التحميل...</div></div>
     </div>
 
-    <div class="card">
-      <div class="cardTitle">إضافة صنف جديد</div>
-      <label>الكود</label>
-      <input type="text" id="asnafCodeInput" placeholder="مثال: 40550N">
-      <label>اسم الصنف</label>
-      <input type="text" id="asnafNameInput" placeholder="مثال: خلاط انسباير 600">
-      <button class="primary" onclick="handleAddAsnaf()">إضافة الصنف</button>
-    </div>
-    <div class="card">
-      <div class="cardTitle">كل الأصناف الحالية</div>
-      <div id="asnafList"><div class="empty">جاري التحميل...</div></div>
+    <div class="admSection" data-sec="asnaf" hidden>
+      <button type="button" class="admAddToggle" onclick="toggleAdmAdd_('asnafAddCard')">+ صنف جديد</button>
+      <div class="card" id="asnafAddCard" hidden>
+        <div class="cardTitle">إضافة صنف جديد</div>
+        <label>الكود</label>
+        <input type="text" id="asnafCodeInput" placeholder="مثال: 40550N">
+        <label>اسم الصنف</label>
+        <input type="text" id="asnafNameInput" placeholder="مثال: خلاط انسباير 600">
+        <button class="primary" onclick="handleAddAsnaf()">إضافة الصنف</button>
+      </div>
+      <div class="card">
+        <div class="cardTitle">كل الأصناف الحالية</div>
+        <div id="asnafList"><div class="empty">جاري التحميل...</div></div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="cardTitle">مقترحات المناديب</div>
-      <div id="suggestionsAdminList"><div class="empty">جاري التحميل...</div></div>
+    <div class="admSection" data-sec="sugg" hidden>
+      <div class="card">
+        <div class="cardTitle">مقترحات المناديب (بتوصلك إنت بس)</div>
+        <div id="suggestionsAdminList"><div class="empty">جاري التحميل...</div></div>
+      </div>
     </div>
 
-    <div class="card">
-      <div class="cardTitle">إضافة وصف منتج</div>
-      <label>اسم المنتج</label>
-      <input type="text" id="productNameInput" placeholder="مثال: خلاط انسباير 600">
-      <label>المواصفات (اكتب كل ميزة في سطر لوحدها)</label>
-      <textarea id="productSpecsInput" placeholder="مثال:&#10;* تبريد ذكي · تسخين فوري&#10;5–8° | تبريد تربو&#10;95° | تسخين قوي&#10;قفل أمان للأطفال"></textarea>
-      <div style="color:var(--muted); font-size:12.5px; font-weight:700; line-height:1.8; margin:-6px 0 14px;">
-        للإعلان: سطر بيبدأ بـ <b>*</b> = الجملة اللي تحت الاسم · <b>قيمة | وصف</b> = رقم دهبي كبير ووصفه تحته
-      </div>
-      <label>صور المنتج (اختياري، حد أقصى 5 صور)</label>
-      <div class="productPhotoPicker" id="productPhotoPicker">
-        <button type="button" class="productPhotoAddBtn" onclick="document.getElementById('productPhotoInput').click()">+</button>
-      </div>
-      <input type="file" id="productPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleProductPhotosSelected(event)">
-      <button class="primary" onclick="handleAddProduct()">إضافة المنتج</button>
-    </div>
-    <div class="card">
-      <div class="cardTitle">المنتجات الحالية</div>
+    <div class="admSection" data-sec="prod" hidden>
       <div id="adAdminBox"></div>
-      <div id="productsAdminList"><div class="empty">جاري التحميل...</div></div>
+      <button type="button" class="admAddToggle" onclick="toggleAdmAdd_('prodAddCard')">+ وصف منتج جديد</button>
+      <div class="card" id="prodAddCard" hidden>
+        <div class="cardTitle">إضافة وصف منتج</div>
+        <label>اسم المنتج</label>
+        <input type="text" id="productNameInput" placeholder="مثال: خلاط انسباير 600">
+        <label>المواصفات (اكتب كل ميزة في سطر لوحدها)</label>
+        <textarea id="productSpecsInput" placeholder="مثال:&#10;* تبريد ذكي · تسخين فوري&#10;5–8° | تبريد تربو&#10;95° | تسخين قوي&#10;قفل أمان للأطفال"></textarea>
+        <div style="color:var(--muted); font-size:12.5px; font-weight:700; line-height:1.8; margin:-6px 0 14px;">
+          للإعلان: سطر بيبدأ بـ <b>*</b> = الجملة اللي تحت الاسم · <b>قيمة | وصف</b> = رقم دهبي كبير ووصفه تحته
+        </div>
+        <label>صور المنتج (اختياري، حد أقصى 5 صور)</label>
+        <div class="productPhotoPicker" id="productPhotoPicker">
+          <button type="button" class="productPhotoAddBtn" onclick="document.getElementById('productPhotoInput').click()">+</button>
+        </div>
+        <input type="file" id="productPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleProductPhotosSelected(event)">
+        <button class="primary" onclick="handleAddProduct()">إضافة المنتج</button>
+      </div>
+      <div class="card">
+        <div class="cardTitle">المنتجات الحالية</div>
+        <div id="productsAdminList"><div class="empty">جاري التحميل...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- شيت إدارة مندوب واحد -->
+  <div class="repSheetOv" id="repSheetOv" hidden onclick="if(event.target===this) closeRepSheet_()">
+    <div class="repSheet" role="dialog" aria-modal="true" aria-labelledby="rsName">
+      <div class="grip"></div>
+      <h3 id="rsName"></h3>
+      <div class="em" id="rsEmail"></div>
+      <div class="rsBlock">
+        <div class="t">المشرفين المسؤولين عنه</div>
+        <div class="d" id="rsSupHint">اختار مشرف واحد أو أكتر — كل واحد فيهم هيشوف فرع المندوب ده (مبيعاته وأرصدته ورواكده).</div>
+        <div class="supChips" id="rsSupChips"></div>
+        <div class="rsRow" style="margin-top:12px;"><button type="button" class="solid" id="rsSupSave" onclick="saveRepSupervisors_()">حفظ المشرفين</button></div>
+      </div>
+      <div class="rsBlock">
+        <div class="t">الحساب</div>
+        <div class="rsRow" style="margin-bottom:8px;">
+          <button type="button" id="rsAdminBtn" onclick="rsToggleAdmin_()"></button>
+          <button type="button" onclick="rsSetPin_()">🔑 كود الدخول</button>
+        </div>
+        <div class="rsRow"><button type="button" class="danger" id="rsDelBtn" onclick="rsDelete_()">حذف المندوب</button></div>
+      </div>
     </div>
   </div>
 
@@ -1431,7 +1664,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v1.9.0-beta.2';
+  const APP_VERSION_ = 'v2.0.0-beta.4';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -1457,11 +1690,11 @@
   const SB_PUBLIC_KEY_ = 'sb_publishable_upUxZo453bAsS73Rsm0fXA_T9xtIfyy';
   const SB_READ_ACTIONS_ = {bootstrapHome:1, bootstrapMyStats:1, bootstrapStale:1, listMyInvoices:1, getInvoiceDetails:1, getMyBalances:1,
     bootstrapBalances:1, bootstrapItemSalesReport:1, bootstrapRepEvaluation:1, bootstrapProfile:1, listSuggestions:1, listProductDescriptions:1,
-    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1};
+    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1};
   // طلبات بتكتب في الشيت: بنطلب من جوجل ينسخ التغيير لـ Supabase فورًا (عشان الشاشات تبان محدثة على طول)
   const SB_WRITE_ACTIONS_ = {finalizeInvoice:1, addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, saveJard:1, saveTawrid:1, savePrices:1,
     saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
-    addProductDescription:1, deleteProductDescription:1, setAdProduct:1, clearAd:1, passkeyRegisterFinish:1, passkeyClearMine:1};
+    addProductDescription:1, deleteProductDescription:1, setAdProduct:1, clearAd:1, passkeyRegisterFinish:1, passkeyClearMine:1, setRepSupervisors:1};
   function callApiRaw_(action, args){
     if(SB_READ_ACTIONS_[action]){
       return fetch(SB_RPC_URL_, {
@@ -1595,6 +1828,13 @@
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
     document.body.classList.toggle('c2home', name === 'viewHome');
     document.body.classList.toggle('c2dark', name === 'viewInvoice');
+    const navMap = { viewHome: 'home', viewInvoiceHistory: 'history', viewMyStats: 'mystats', viewEval: 'eval' };
+    const nav = document.getElementById('v3Nav');
+    if(nav){
+      nav.hidden = !navMap[name];
+      document.body.classList.toggle('v3nav', !!navMap[name]);
+      nav.querySelectorAll('button').forEach(function(b){ b.classList.toggle('on', b.dataset.nav === navMap[name]); });
+    }
     const bar = document.getElementById('c2InvBar');
     if(bar && name !== 'viewInvoice') bar.hidden = true;
     if(name === 'viewHome') renderHomeHeader_();
@@ -1652,6 +1892,105 @@
     const q = document.getElementById('qtyInput');
     q.focus();
   });
+  // ============ فكرة 5: الأصناف اللي معاك بس + زراير + و − ============
+  state.stock_ = null;
+  function loadSaleStock_(){
+    const box = document.getElementById('stepBox');
+    const view = document.getElementById('viewInvoice');
+    const on = state.screen === 'sales' && !state.finalized;
+    view.classList.toggle('stepMode', on && !!state.stock_);
+    view.classList.remove('showManual');
+    box.hidden = !(on && state.stock_);
+    if(!on) return;
+    const cached = localCacheGet_('stock');
+    if(cached && cached.v && cached.v.branch === state.user.branch){ state.stock_ = cached.v; showStep_(); }
+    callApi('getSaleStock', [state.auth])
+      .then(function(st){
+        state.stock_ = st;
+        localCacheSet_('stock', st);
+        if(state.screen === 'sales' && !state.finalized) showStep_();
+      })
+      .catch(function(){ /* جوجل مش بيعرف الطلب ده — نفضل على الطريقة العادية */ });
+  }
+  function showStep_(){
+    document.getElementById('viewInvoice').classList.add('stepMode');
+    document.getElementById('stepBox').hidden = false;
+    renderStepList_();
+  }
+  function stepQty_(name){
+    const it = state.draftItems.find(function(x){ return x.itemName === name; });
+    return it ? Number(it.qty) : 0;
+  }
+  function renderStepList_(){
+    const el = document.getElementById('stepList');
+    if(!el || !state.stock_) return;
+    const q = String(document.getElementById('stepSearch').value || '').trim().toLowerCase();
+    let f = {};
+    try{ f = JSON.parse(localStorage.getItem(freqKey_()) || '{}'); }catch(e){}
+    const items = (state.stock_.items || []).slice().sort(function(a, b){
+      const ia = stepQty_(a.name) > 0, ib = stepQty_(b.name) > 0;
+      if(ia !== ib) return ia ? -1 : 1;
+      return ((f[b.name] || 0) - (f[a.name] || 0)) || String(a.name).localeCompare(String(b.name), 'ar');
+    }).filter(function(a){ return !q || String(a.name).toLowerCase().indexOf(q) !== -1; });
+    const hidden = !!state.stock_.hidden;
+    document.getElementById('stepHeadCount').textContent = (state.stock_.items || []).length + ' صنف معاك';
+    if(!items.length){ el.innerHTML = '<div class="empty" style="padding:14px;">' + (q ? 'مفيش صنف بالاسم ده معاك' : 'مفيش أصناف معاك دلوقتي') + '</div>'; return; }
+    const maxBal = Math.max.apply(null, (state.stock_.items || []).map(function(a){ return Number(a.balance) || 0; }).concat([1]));
+    el.innerHTML = items.map(function(a){
+      const n = a.name, qty = stepQty_(n), bal = a.balance == null ? null : Number(a.balance);
+      const over = bal != null && qty > bal;
+      const price = (state.draftItems.find(function(x){ return x.itemName === n; }) || {}).price;
+      const pv = price != null ? price : (state.myPrices && state.myPrices[n] != null ? state.myPrices[n] : '');
+      const esc = escapeHtml(n);
+      const stockTxt = bal == null ? 'معاك' : (over ? 'معاك ' + fmt(bal) + ' بس' : 'معاك ' + fmt(bal));
+      return '<div class="stepRow' + (qty > 0 ? ' on' : '') + (over ? ' over' : '') + '">' +
+        '<div class="nm"><b>' + esc + '</b><div class="meta">' +
+          (bal != null ? '<span class="bar"><i style="width:' + Math.max(6, Math.round(bal / maxBal * 100)) + '%"></i></span>' : '') +
+          '<span class="stk">' + stockTxt + '</span>' +
+          '<input class="pr ltrNum" inputmode="decimal" aria-label="السعر" placeholder="السعر" value="' + escapeHtml(pv) + '" data-step-price="' + esc + '">' +
+        '</div></div>' +
+        (qty > 0 ? '<button type="button" class="sb minus" aria-label="قلّل" data-step="' + esc + '" data-d="-1">−</button>' +
+          '<input class="q" inputmode="numeric" aria-label="الكمية" value="' + qty + '" data-step-qty="' + esc + '">' : '') +
+        '<button type="button" class="sb plus" aria-label="زوّد" data-step="' + esc + '" data-d="1">+</button>' +
+      '</div>';
+    }).join('');
+  }
+  function setStepQty_(name, qty){
+    qty = Math.max(0, Math.round(Number(qty) || 0));
+    const idx = state.draftItems.findIndex(function(x){ return x.itemName === name; });
+    if(qty === 0){ if(idx !== -1) state.draftItems.splice(idx, 1); }
+    else{
+      const priceEl = document.querySelector('[data-step-price="' + CSS.escape(name) + '"]');
+      let price = priceEl && priceEl.value !== '' ? Number(priceEl.value) : (state.myPrices && state.myPrices[name] != null ? Number(state.myPrices[name]) : NaN);
+      if(idx === -1){
+        if(isNaN(price)){ showMsg('اكتب سعر "' + name + '" الأول في الخانة اللي جنبه', 'error'); if(priceEl) priceEl.focus(); return; }
+        state.draftItems.push({ itemName: name, qty: qty, price: price });
+        bumpFreq_(name);
+      } else {
+        state.draftItems[idx].qty = qty;
+        if(!isNaN(price)) state.draftItems[idx].price = price;
+      }
+    }
+    renderItemsList();
+    renderStepList_();
+  }
+  document.addEventListener('click', function(e){
+    const b = e.target.closest('[data-step]');
+    if(!b) return;
+    clearMsg();
+    setStepQty_(b.dataset.step, stepQty_(b.dataset.step) + Number(b.dataset.d));
+  });
+  document.addEventListener('change', function(e){
+    const q = e.target.closest('[data-step-qty]');
+    if(q){ setStepQty_(q.dataset.stepQty, q.value); return; }
+    const p = e.target.closest('[data-step-price]');
+    if(p){
+      const it = state.draftItems.find(function(x){ return x.itemName === p.dataset.stepPrice; });
+      const v = Number(p.value);
+      if(it && p.value !== '' && !isNaN(v) && v >= 0){ it.price = v; renderItemsList(); }
+    }
+  });
+
   function renderInvBar_(){
     const bar = document.getElementById('c2InvBar');
     if(!bar) return;
@@ -1933,12 +2272,15 @@
     document.getElementById('invoiceHistoryLink').hidden = state.isAdmin;
     document.getElementById('profileLink').hidden = false; // إعداداتي متاحة للكل (مندوب ومشرف وصاحب الحساب)
     document.getElementById('suggestionLink').hidden = state.isAdmin;
-    document.getElementById('staleReasonsLink').hidden = !state.isAdmin;
+    document.getElementById('staleReasonsLink').hidden = !state.isOwner;
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
     document.querySelector('#evalLink .title').textContent = state.isAdmin ? 'تقييم المناديب' : 'تقييمي';
     renderHomeStats_(state.homeStats_, targetProgress);
+    document.getElementById('navHistory').hidden = state.isAdmin;
+    document.getElementById('navEval').hidden = !state.isAdmin;
+    document.getElementById('navStatsLbl').textContent = state.isAdmin ? 'المبيعات' : 'مبيعاتي';
     renderHomeHeader_();
     saveHomeCache_();
   }
@@ -3193,6 +3535,7 @@
     document.getElementById('productSpecsInput').value = '';
     selectedProductPhotos_ = [];
     renderProductPhotoPicker();
+    ['repAddCard','asnafAddCard','prodAddCard'].forEach(function(id){ document.getElementById(id).hidden = true; });
     setView('viewAdmin');
     // طلب واحد بيجيب الأربع قوايم مع بعض بدل 4 طلبات منفصلة
     ['repsList','asnafList','suggestionsAdminList','productsAdminList'].forEach(function(id){
@@ -3203,6 +3546,9 @@
         renderRepsList(data.reps);
         renderAsnafList(data.asnaf);
         renderSuggestionsAdminList(data.suggestions);
+        const sn = document.getElementById('admSuggN');
+        sn.hidden = !(data.suggestions && data.suggestions.length);
+        sn.textContent = (data.suggestions || []).length;
         state.activeAd_ = data.activeAd || null;
         renderAdAdminBox_();
         renderProductsList(data.products, 'productsAdminList', true);
@@ -3227,12 +3573,94 @@
       .catch(onError);
   }
 
+  // ============ شاشة الإدارة: تابات + كارت لكل مندوب + شيت إدارته ============
+  function admTab_(name){
+    document.querySelectorAll('.admTabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.adm === name); });
+    document.querySelectorAll('.admSection').forEach(function(sec){ sec.hidden = sec.dataset.sec !== name; });
+  }
+  function toggleAdmAdd_(id){
+    const el = document.getElementById(id);
+    el.hidden = !el.hidden;
+    if(!el.hidden){ const f = el.querySelector('input'); if(f) setTimeout(function(){ f.focus(); }, 50); }
+  }
   function renderRepsList(reps){
+    state.adminReps_ = reps || [];
     const el = document.getElementById('repsList');
     if(!reps || !reps.length){
       el.innerHTML = '<div class="empty">مفيش مناديب مسجلين</div>';
       return;
     }
+    el.innerHTML = reps.map(function(r, i){
+      const sups = r.supervisors || [];
+      const supHtml = r.isAdmin
+        ? (sups.some(function(x){ return /^(الكل|كل الفروع|all)$/.test(x); }) || r.isProtected ? '<span>بيشوف كل الفروع</span>' : '')
+        : (sups.length ? sups.map(function(x){ return '<span>' + escapeHtml(x) + '</span>'; }).join('') : '<span class="none">مفيش مشرف</span>');
+      return '<button type="button" class="repCard" onclick="openRepSheet_(' + i + ')">' +
+        '<span class="av' + (r.isAdmin ? ' adm' : '') + '">' + escapeHtml(String(r.name || '?').trim().charAt(0)) + '</span>' +
+        '<span class="info">' +
+          '<span class="nm">' + escapeHtml(r.name) + (r.isProtected ? '<span class="tag own">صاحب الحساب</span>' : (r.isAdmin ? '<span class="tag adm">مشرف</span>' : '')) + '</span>' +
+          '<span class="sub">' + escapeHtml(r.branch || 'من غير فرع') + '</span>' +
+          (supHtml ? '<span class="sups">' + supHtml + '</span>' : '') +
+        '</span><span class="chev"></span></button>';
+    }).join('');
+  }
+  let rsIdx_ = -1, rsSel_ = [];
+  function openRepSheet_(i){
+    const r = (state.adminReps_ || [])[i];
+    if(!r) return;
+    rsIdx_ = i;
+    rsSel_ = (r.supervisors || []).slice();
+    document.getElementById('rsName').textContent = r.name;
+    document.getElementById('rsEmail').textContent = r.email + (r.branch ? '  ·  ' + r.branch : '');
+    document.getElementById('rsSupHint').textContent = r.isAdmin
+      ? 'ده مشرف: اختار "كل الفروع" لو عاوزه يشوف كل الفروع، أو سيبها فاضية ويشوف بس الفروع اللي هو مشرف عليها.'
+      : 'اختار مشرف واحد أو أكتر — كل واحد فيهم هيشوف فرع المندوب ده (مبيعاته وأرصدته ورواكده).';
+    renderRsChips_();
+    const adminBtn = document.getElementById('rsAdminBtn');
+    adminBtn.textContent = r.isAdmin ? 'إلغاء الإشراف' : 'خليه مشرف';
+    adminBtn.className = r.isAdmin ? 'danger' : '';
+    adminBtn.disabled = !!r.isProtected;
+    document.getElementById('rsDelBtn').disabled = !!r.isProtected;
+    document.getElementById('repSheetOv').hidden = false;
+  }
+  function renderRsChips_(){
+    const r = state.adminReps_[rsIdx_];
+    const opts = r.isAdmin ? ['الكل'] : (state.adminReps_ || []).filter(function(x){ return x.isAdmin; }).map(function(x){ return x.name; });
+    const box = document.getElementById('rsSupChips');
+    if(!opts.length){ box.innerHTML = '<div class="d">مفيش مشرفين لسه — فعّل حد كمشرف الأول.</div>'; return; }
+    box.innerHTML = opts.map(function(n){
+      const on = rsSel_.some(function(x){ return x === n || (n === 'الكل' && /^(كل الفروع|all)$/.test(x)); });
+      return '<button type="button" class="' + (on ? 'on' : '') + '" data-sup="' + escapeHtml(n) + '">' + escapeHtml(n === 'الكل' ? 'كل الفروع' : n) + '</button>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    const b = e.target.closest('[data-sup]');
+    if(!b) return;
+    const n = b.dataset.sup;
+    const k = rsSel_.indexOf(n);
+    if(k === -1) rsSel_.push(n); else rsSel_.splice(k, 1);
+    renderRsChips_();
+  });
+  function closeRepSheet_(){ document.getElementById('repSheetOv').hidden = true; }
+  function saveRepSupervisors_(){
+    const r = state.adminReps_[rsIdx_];
+    if(!r) return;
+    showLoading(true);
+    callApi('setRepSupervisors', [state.auth, r.email, rsSel_])
+      .then(function(res){
+        showLoading(false);
+        r.supervisors = res.supervisors || rsSel_;
+        closeRepSheet_();
+        renderRepsList(state.adminReps_);
+        showMsg('تم حفظ المشرفين ✔', 'success');
+      })
+      .catch(onError);
+  }
+  function rsToggleAdmin_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleToggleAdmin(r.email, !r.isAdmin); }
+  function rsSetPin_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleSetRepPin(r.email, r.name); }
+  function rsDelete_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleDeleteRep(r.email, r.name); }
+  function renderRepsListOld_(reps){
+    const el = document.getElementById('repsList');
     el.innerHTML = reps.map(function(r){
       const btnClass = r.isAdmin ? 'adminToggleBtn isAdminBtn' : 'adminToggleBtn';
       const btnLabel = r.isAdmin ? 'إلغاء الإشراف' : 'تفعيل كمشرف';
@@ -3379,6 +3807,7 @@
 
     acReset(AC_CONFIGS.item);
     renderChips_();
+    loadSaleStock_();
 
     document.getElementById('returnKindWrap').hidden = !isReturns;
     document.getElementById('returnKindInput').value = '';
@@ -3480,11 +3909,13 @@
     document.getElementById('returnReasonInput').value = '';
     renderItemsList();
     renderChips_();
+    renderStepList_();
   }
 
   function handleDeleteDraftItem(idx){
     state.draftItems.splice(idx, 1);
     renderItemsList();
+    renderStepList_();
   }
 
   function handleFinalize(){
@@ -4304,7 +4735,7 @@
       const slow = x.t > 4000 ? ' slow' : '';
       const d = new Date(x.at);
       const tm = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
-      return '<div class="speedRow' + slow + '"><span>' + escapeHtml(SPEED_NAMES_[x.a] || x.a) + ' <small>' + tm + (x.ok ? '' : ' ✖') + '</small></span>' +
+      return '<div class="speedRow' + slow + '"><span>' + escapeHtml(SPEED_NAMES_[String(x.a).replace(' ⚡','')] ? SPEED_NAMES_[String(x.a).replace(' ⚡','')] + (String(x.a).indexOf('⚡') !== -1 ? ' ⚡' : '') : x.a) + ' <small>' + tm + (x.ok ? '' : ' ✖') + '</small></span>' +
         '<span><b>' + sec(x.t) + '</b>' + (x.s != null ? ' <small>(السيرفر ' + sec(x.s) + ')</small>' : '') + '</span></div>';
     }).join('');
   }
