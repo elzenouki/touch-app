@@ -3,7 +3,7 @@
 // (زي تغيير لينك السيرفر) يوصل فورًا من غير ما نحتاج نعمل bump يدوي في اسم الكاش كل مرة.
 // ملحوظة: v2 هنا لأن v1 كانت بتخزن index.html نفسها وسبّبت مشكلة إن تحديث الكود القديم فضل
 // شغال من الكاش حتى بعد إصلاحه على GitHub — النسخة دي بتتفادى المشكلة دي تمامًا.
-const CACHE_NAME = 'tatsh-zenouki-v3';
+const CACHE_NAME = 'tatsh-zenouki-v2.5.0';
 const APP_SHELL = [
   './manifest.json',
   './icons/icon-192.png',
