@@ -7,7 +7,7 @@
 
 <!-- ============ إعدادات تطبيق الويب التقدمي (PWA) — عشان يتثبت زي أي تطبيق حقيقي ============ -->
 <link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#0e2453">
+<meta name="theme-color" content="#3f4c22">
 <link rel="icon" type="image/png" sizes="192x192" href="../icons/icon-192.png">
 <link rel="icon" type="image/png" sizes="512x512" href="../icons/icon-512.png">
 <!-- آيفون: تثبيت على الشاشة الرئيسية بدون شريط عنوان المتصفح -->
@@ -22,9 +22,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <!-- الخط بيتحمّل من غير ما يوقف رسم الصفحة (media=print ثم all) — التطبيق بيظهر فورًا بخط النظام
      وبعدين يتبدل لـ Cairo أول ما يوصل. Tajawal اتشال من الطلب لأن Cairo مغطي كل الحروف المستخدمة. -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap">
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&family=Amiri:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
-<noscript><link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;600;700;800;900&display=swap" rel="stylesheet"></noscript>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=El+Messiri:wght@600;700&family=Scheherazade+New:wght@700&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=El+Messiri:wght@600;700&family=Scheherazade+New:wght@700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+<noscript><link href="https://fonts.googleapis.com/css2?family=Alexandria:wght@400;500;600;700;800&family=El+Messiri:wght@600;700&family=Scheherazade+New:wght@700&display=swap" rel="stylesheet"></noscript>
 <!-- ExcelJS و html2canvas اتشالوا من هنا عشان يتحمّلوا بس وقت الحاجة الفعلية ليهم (تحميل/مشاركة
      من شاشة "سجل فواتيري")، مش مع كل فتح للتطبيق — ده بيسرّع فتح التطبيق بشكل ملحوظ، خصوصًا على
      نت ضعيف. شوف loadScriptOnce_ تحت. -->
@@ -978,6 +978,69 @@
   .rsBlock{background:var(--v3card) !important;}
   .supChips button.on{background:var(--v3n) !important; color:var(--v3gl) !important;}
   .rsRow button.solid{background:linear-gradient(135deg, var(--v3n2), var(--v3n)) !important; color:var(--v3gl) !important; box-shadow:inset 0 0 0 2px var(--v3g);}
+
+  /* ================= الشكل المختار: زيتوني وخردلي (تراثي) ================= */
+  :root{ --v3n:#3f4c22; --v3n2:#56672f; --v3n3:#2f3519; --v3c:#f3efe2; --v3card:#fbf8ee; --v3g:#d9a21b; --v3gl:#f2cf6b; --v3line:#e0d8bd; --v3mut:#6c7051;
+    --navy:#3f4c22; --navy2:#56672f; --navy3:#2f3519; --bg:#f3efe2; --card:#fbf8ee; --card2:#f7f3e6; --border:#e0d8bd;
+    --gold:#b8860f; --gold-light:#e0b23c; --gold-d:#8a640a; --gold-bg:#fbf1d6; --text:#2f3519; --muted:#7d7f62; --muted2:#6c7051;
+    --blue:#56672f; --blue-bg:#eef0dc; --f5title:'El Messiri','Alexandria',sans-serif; --f5hadith:'Scheherazade New','Amiri',serif; }
+  body{font-family:'Alexandria','Cairo','Segoe UI',Tahoma,Arial,sans-serif !important; font-weight:500;}
+  h1, h2, .cardTitle, .c2Name, .stepHead, #pageTitle{font-family:var(--f5title) !important;}
+  /* هيدر الشاشات الداخلية: زيتوني سادة بخط خردلي */
+  .header{background:linear-gradient(160deg, var(--v3n2), var(--v3n) 60%, var(--v3n3)) !important; background-size:100% 100% !important;
+    box-shadow:inset 0 -3px 0 var(--v3g), 0 8px 20px rgba(47,53,25,.2) !important;}
+  .header .sub{color:#e4e2c6 !important;}
+  .hadithBox{border-color:rgba(242,207,107,.55) !important; background:rgba(255,255,255,.07) !important;}
+  .hadithBox .hadithText{font-family:var(--f5hadith) !important; font-size:18px !important; color:#fbf8ee !important; line-height:1.7 !important;}
+  .hadithBox .hadithRef{color:var(--v3gl) !important;}
+  /* الرئيسية: فاتحة، الاسم فوق، والحديث في مربع زيتوني بإطار خردلي */
+  .v3Head{background:transparent !important; background-image:none !important; box-shadow:none !important; padding-bottom:0 !important; border-radius:0 !important;}
+  .c2Avatar{background:var(--v3n) !important; color:#fbf8ee !important; border:none !important; width:50px !important; height:50px !important; border-radius:25px !important; font-size:21px !important;}
+  .c2Name{color:var(--v3n3) !important; font-size:20px !important; font-weight:700 !important;}
+  .c2Branch{color:var(--v3mut) !important; font-size:14px !important; font-weight:500 !important;}
+  .c2Date{background:var(--v3card) !important; color:var(--v3n3) !important; border:1px solid var(--v3line) !important; font-size:13.5px !important; font-weight:600 !important; padding:6px 14px !important;}
+  .v3Orn{display:none !important;}
+  .v3Head .c2Hadith{margin:14px 18px 0 !important; padding:12px 16px 10px !important; background:var(--v3n) !important; border:1.5px solid var(--v3g) !important; border-radius:18px !important;
+    box-shadow:inset 0 0 0 4px var(--v3n), inset 0 0 0 5px rgba(217,162,27,.85) !important;}
+  .v3Head .c2Hadith::before{content:'✦'; color:var(--v3g); font-size:18px; line-height:1; display:block; margin-bottom:2px;}
+  .v3Head .c2Hadith .hadithText{font-family:var(--f5hadith) !important; color:#fbf8ee !important; font-size:21px !important; line-height:1.7 !important;}
+  .v3Head .c2Hadith .hadithRef{color:var(--v3gl) !important; font-size:13px !important; font-weight:600 !important;}
+  .c2Stats{margin:14px 16px 0 !important; border:1px solid var(--v3line) !important; border-radius:20px !important; box-shadow:0 6px 18px rgba(47,53,25,.06) !important;}
+  .c2Ring{background:conic-gradient(var(--v3n) calc(var(--pct) * 1%), #e8e2cb 0) !important;}
+  .c2Tile span{font-size:13.5px !important; font-weight:500 !important;}
+  .c2Tile b{font-size:27px !important; font-weight:700 !important; color:var(--v3n3);}
+  .c2Tiles .c2Tile:last-child b{color:var(--v3n) !important;}
+  .c2Mood{font-size:14px !important;}
+  .c2Mood b{color:var(--gold-d) !important;}
+  .c2Big button{height:70px !important; background:var(--v3g) !important; color:var(--v3n3) !important; box-shadow:0 10px 22px rgba(217,162,27,.28) !important;
+    font-family:var(--f5title) !important; font-size:23px !important; font-weight:700 !important;}
+  .c2Big button svg{stroke:var(--v3n3) !important;}
+  .c2Row3 button{height:64px !important; border:1px solid var(--v3line) !important; color:var(--v3n3) !important; font-size:16px !important; font-weight:600 !important;}
+  .c2Row3 button svg{stroke:var(--v3n) !important;}
+  .c2Sheet{border-color:var(--v3line) !important;}
+  .c2Sheet .c2Item{border-bottom-color:#ebe5cf !important; font-size:16px;}
+  .v3Nav{background:var(--v3n3) !important; box-shadow:0 12px 28px rgba(47,53,25,.3) !important; height:72px !important;}
+  .v3Nav button{color:#c9c7a8 !important; font-size:13px !important; font-weight:500 !important;}
+  .v3Nav button.on{background:var(--v3g) !important; color:var(--v3n3) !important; font-weight:700 !important;}
+  /* الكروت والزراير */
+  button.primary{background:var(--v3n) !important; border-color:var(--v3n) !important; box-shadow:none !important;}
+  button.finalize{background:var(--v3n) !important; color:#fbf8ee !important; box-shadow:inset 0 0 0 2px var(--v3g), 0 8px 18px rgba(47,53,25,.2) !important;}
+  body.c2dark #viewInvoice .itemRow{border-color:#ebe5cf !important;}
+  body.c2dark #viewInvoice #addBtn{color:var(--gold-d) !important;}
+  body.c2dark #viewInvoice .badge{background:var(--gold-bg) !important;}
+  .stepHead #stepHeadCount{color:var(--gold-d) !important;}
+  .stepRow{border-color:#ebe5cf !important;}
+  .stepRow .sb.plus{background:var(--v3n) !important; color:#fbf8ee !important;}
+  .stepRow .sb.minus{background:#e8e2cb !important; color:var(--v3n3) !important;}
+  .stepManualToggle, .admAddToggle{color:var(--gold-d) !important;}
+  .c2Chips button.on, .admTabs button.on, .supChips button.on{background:var(--v3n) !important; color:#fbf8ee !important; box-shadow:inset 0 0 0 1.5px var(--v3g) !important;}
+  .c2InvBar{background:var(--v3n3) !important; box-shadow:inset 0 3px 0 var(--v3g), 0 -10px 30px rgba(47,53,25,.25) !important;}
+  .c2InvBar .sum b{color:var(--v3gl) !important;}
+  .c2InvBar button{background:var(--v3g) !important; color:var(--v3n3) !important; box-shadow:none !important; font-family:var(--f5title) !important; font-weight:700 !important;}
+  .repCard{border-color:#ebe5cf !important;}
+  .repCard .av{background:var(--v3n) !important; color:#fbf8ee !important;}
+  .repCard .av.adm{background:var(--v3g) !important; color:var(--v3n3) !important;}
+  .rsRow button.solid{background:var(--v3n) !important; color:#fbf8ee !important; box-shadow:inset 0 0 0 2px var(--v3g) !important;}
 </style>
 </head>
 <body>
@@ -1063,7 +1126,7 @@
       </div>
       <span class="c2Date" id="homeDate"></span>
     </div>
-    <div class="v3Orn"><span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="#d9b45e"><path d="M12 1l2.8 8.2L23 12l-8.2 2.8L12 23l-2.8-8.2L1 12l8.2-2.8z"></path></svg><span></span></div>
+    <div class="v3Orn"><span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="#d9a21b"><path d="M12 1l2.8 8.2L23 12l-8.2 2.8L12 23l-2.8-8.2L1 12l8.2-2.8z"></path></svg><span></span></div>
     <div class="c2Hadith"><span class="hadithText" id="homeHadithText"></span><span class="hadithRef hiddenRef" id="homeHadithRef"></span></div>
     </div>
 
@@ -1664,7 +1727,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v2.2.0';
+  const APP_VERSION_ = 'v2.3.0';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
