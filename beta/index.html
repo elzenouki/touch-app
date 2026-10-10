@@ -292,6 +292,34 @@
   .evalHist{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
   .evalHist span{font-size:11.5px; font-weight:800; background:#f4f2ec; border:1px solid var(--border); border-radius:12px; padding:2px 9px; color:var(--navy);}
   .evalPart.off .row span:last-child{color:var(--muted);}
+  .usePeriods{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px; margin-bottom:12px;}
+  .usePeriods button{height:44px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--navy); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;}
+  .usePeriods button.on{background:var(--navy); color:#fbf8ee; border-color:var(--navy);}
+  .useTiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-bottom:12px;}
+  .useTile{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:10px 12px;}
+  .useTile b{display:block; font-size:20px; font-weight:900; color:var(--navy);}
+  .useTile span{font-size:12px; font-weight:700; color:var(--muted2);}
+  .useUser{padding:11px 0; border-bottom:1px dashed var(--border);}
+  .useUser:last-child{border-bottom:none;}
+  .useUser .top{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .useUser .nm{font-size:15px; font-weight:900; color:var(--navy); min-width:0; overflow-wrap:anywhere;}
+  .useUser .nm small{display:block; font-size:11.5px; font-weight:700; color:var(--muted); direction:ltr; text-align:right;}
+  .useUser .cnt{text-align:left; flex:none; font-size:16px; font-weight:900; color:var(--gold-d);}
+  .useUser .cnt small{display:block; font-size:11px; color:var(--muted); font-weight:700;}
+  .useBar{height:7px; border-radius:5px; background:#eceae3; overflow:hidden; margin:7px 0 6px;}
+  .useBar i{display:block; height:100%; border-radius:5px; background:var(--navy);}
+  .useUser.heavy .useBar i{background:var(--gold);}
+  .useMeta{font-size:12px; font-weight:700; color:var(--muted2); line-height:1.7;}
+  .useMeta .bad{color:var(--red);}
+  .useActs{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
+  .useActs span{font-size:11.5px; font-weight:800; background:#f4f2ec; border:1px solid var(--border); border-radius:12px; padding:2px 9px; color:var(--navy);}
+  .useTag{display:inline-block; font-size:11px; font-weight:900; padding:1px 8px; border-radius:10px; background:var(--gold-bg); color:var(--gold-d); border:1px solid var(--gold); margin-inline-start:6px; vertical-align:middle;}
+  .useHours{display:flex; align-items:flex-end; gap:2px; height:90px; direction:ltr;}
+  .useHours i{flex:1; background:var(--navy); border-radius:3px 3px 0 0; min-height:2px; opacity:.85;}
+  .useHoursAxis{display:flex; justify-content:space-between; direction:ltr; font-size:10.5px; font-weight:700; color:var(--muted); margin-top:4px;}
+  .useAct{display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid #f0ece2; font-size:13.5px; font-weight:700; color:var(--navy);}
+  .useAct:last-child{border-bottom:none;}
+  .useAct small{color:var(--muted); font-weight:700;}
   .evalToggle{font-size:12.5px; font-weight:800; color:var(--blue); margin-top:10px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;}
   .adminLink.ic-prices .icon{background:var(--blue-bg); color:var(--blue);}
   .adminLink.ic-admin .icon{background:var(--gold-bg); color:var(--gold-d);}
@@ -1181,6 +1209,7 @@
         <button type="button" class="c2Item" id="suggestionLink" onclick="openScreen('suggestion')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"></path></svg></span><span class="title">ابعت اقتراح</span><span class="chev"></span></button>
         <button type="button" class="c2Item" id="profileLink" onclick="openScreen('profile')"><span class="ic" style="background:#eceef3"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3d465e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></span><span class="title">إعداداتي</span><span class="chev"></span></button>
         <button type="button" class="c2Item" id="adminLink" onclick="openScreen('admin')" hidden><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c1.2-3.5 3.6-5 6.5-5s5.3 1.5 6.5 5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .6 3.2 2.2 3.8 5"></path></svg></span><span class="title">إدارة المناديب والمشرفين</span><span class="chev"></span></button>
+        <button type="button" class="c2Item" id="usageLink" onclick="openScreen('usage')" hidden><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"></rect><rect x="3" y="13" width="18" height="7" rx="2"></rect><path d="M7 7.5h.01M7 16.5h.01"></path></svg></span><span class="title">استخدام السيرفر</span><span class="chev"></span></button>
         <button type="button" class="c2Item logout" onclick="handleLogout()"><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4"></path><path d="M10 17l-5-5 5-5M5 12h11"></path></svg></span><span class="title">تسجيل خروج</span></button>
       </div>
     </div>
@@ -1473,6 +1502,33 @@
     </div>
   </div>
 
+  <!-- ============ شاشة استخدام السيرفر (صاحب الحساب بس) ============ -->
+  <div id="viewUsage" hidden>
+    <div class="usePeriods" id="usePeriods">
+      <button type="button" data-days="1" onclick="loadUsage(1)">النهارده</button>
+      <button type="button" data-days="7" onclick="loadUsage(7)">آخر 7 أيام</button>
+      <button type="button" data-days="30" onclick="loadUsage(30)">آخر 30 يوم</button>
+    </div>
+    <div class="useTiles" id="useTiles"></div>
+    <div class="card">
+      <div class="cardTitle">مين بيستخدم السيرفر أكتر</div>
+      <div id="useUsers"></div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">الطلبات حسب الساعة</div>
+      <div class="useHours" id="useHours"></div>
+      <div class="useHoursAxis"><span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span></div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">أكتر الطلبات تقلًا على السيرفر</div>
+      <div id="useActions"></div>
+    </div>
+    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
+      بيتحسب كل طلب بيعدّي على السيرفر (Supabase) — الدخول وحفظ الإعدادات اللي على جوجل مش محسوبين هنا.<br>
+      "وقت السيرفر" = مجموع الوقت اللي السيرفر قعده يشتغل للمستخدم ده. الصفحة دي بتبان ليك إنت بس.
+    </div>
+  </div>
+
   <!-- ============ شاشة تقرير أسباب الركود (للمشرفين فقط) ============ -->
   <div id="viewStaleReasons" hidden>
     <div class="card">
@@ -1755,7 +1811,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v2.5.2';
+  const APP_VERSION_ = 'v2.5.3';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -1781,7 +1837,7 @@
   const SB_PUBLIC_KEY_ = 'sb_publishable_upUxZo453bAsS73Rsm0fXA_T9xtIfyy';
   const SB_READ_ACTIONS_ = {bootstrapHome:1, bootstrapMyStats:1, bootstrapStale:1, listMyInvoices:1, getInvoiceDetails:1, getMyBalances:1,
     bootstrapBalances:1, bootstrapItemSalesReport:1, bootstrapRepEvaluation:1, bootstrapProfile:1, listSuggestions:1, listProductDescriptions:1,
-    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1};
+    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1, serverUsage:1};
   // طلبات بتكتب في الشيت: بنطلب من جوجل ينسخ التغيير لـ Supabase فورًا (عشان الشاشات تبان محدثة على طول)
   const SB_WRITE_ACTIONS_ = {addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, savePrices:1,
     saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
@@ -1943,7 +1999,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -2412,6 +2468,7 @@
     document.getElementById('profileLink').hidden = false; // إعداداتي متاحة للكل (مندوب ومشرف وصاحب الحساب)
     document.getElementById('suggestionLink').hidden = state.isAdmin;
     document.getElementById('staleReasonsLink').hidden = !state.isOwner;
+    document.getElementById('usageLink').hidden = !state.isOwner;
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
@@ -3008,6 +3065,7 @@
     if(name === 'eval'){ loadEval(); return; }
     if(name === 'stale'){ loadStale(''); return; }
     if(name === 'stalereasons'){ loadStaleReasons(); return; }
+    if(name === 'usage'){ loadUsage(state.usageDays_ || 7); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
     if(name === 'profile'){ loadProfile(); return; }
@@ -3083,6 +3141,83 @@
   }
 
   // ============ تقرير أسباب الركود (للمشرفين فقط) ============
+  // ============ استخدام السيرفر (صاحب الحساب بس) ============
+  function fmtDur_(ms){
+    ms = Number(ms) || 0;
+    if(ms < 1000) return ms + ' مللي';
+    const s = ms / 1000;
+    if(s < 60) return (Math.round(s * 10) / 10) + ' ث';
+    const m = s / 60;
+    if(m < 60) return (Math.round(m * 10) / 10) + ' دقيقة';
+    return (Math.round(m / 6) / 10) + ' ساعة';
+  }
+  function fmtAgo_(iso){
+    const t = Date.parse(iso);
+    if(!t) return '';
+    const min = Math.round((Date.now() - t) / 60000);
+    if(min < 1) return 'دلوقتي';
+    if(min < 60) return 'من ' + min + ' دقيقة';
+    const h = Math.round(min / 60);
+    if(h < 24) return 'من ' + h + ' ساعة';
+    return 'من ' + Math.round(h / 24) + ' يوم';
+  }
+  function useActName_(a){
+    const n = SPEED_NAMES_[a];
+    return n || a;
+  }
+  function loadUsage(days){
+    state.usageDays_ = days;
+    document.getElementById('pageTitle').textContent = 'استخدام السيرفر';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.querySelectorAll('#usePeriods button').forEach(function(b){ b.classList.toggle('on', Number(b.dataset.days) === days); });
+    showLoading(true);
+    callApi('serverUsage', [state.auth, days])
+      .then(function(d){
+        showLoading(false);
+        renderUsage_(d);
+        setView('viewUsage');
+      })
+      .catch(onError);
+  }
+  function renderUsage_(d){
+    const users = (d.byUser || []).filter(function(u){ return u.email; });
+    const anon = (d.byUser || []).find(function(u){ return !u.email; });
+    document.getElementById('useTiles').innerHTML =
+      '<div class="useTile"><b>' + fmt(d.total) + '</b><span>طلب على السيرفر</span></div>' +
+      '<div class="useTile"><b>' + fmtDur_(d.serverMs) + '</b><span>وقت شغل السيرفر</span></div>' +
+      '<div class="useTile"><b>' + fmt(d.users) + '</b><span>مستخدم</span></div>' +
+      '<div class="useTile"><b' + (d.errors ? ' style="color:var(--red)"' : '') + '>' + fmt(d.errors) + '</b><span>طلب فشل</span></div>';
+
+    const max = users.reduce(function(m, u){ return Math.max(m, u.requests); }, 1);
+    document.getElementById('useUsers').innerHTML = users.length ? users.map(function(u){
+      const acts = (u.actions || []).map(function(a){ return '<span>' + escapeHtml(useActName_(a.a)) + ' ' + fmt(a.n) + '</span>'; }).join('');
+      return '<div class="useUser' + (u.heavy ? ' heavy' : '') + '">' +
+        '<div class="top"><div class="nm">' + escapeHtml(u.name || 'مش في المناديب') + (u.heavy ? '<span class="useTag">استخدام عالي</span>' : '') +
+          '<small>' + escapeHtml(u.email) + '</small></div>' +
+          '<div class="cnt">' + fmt(u.requests) + '<small>' + u.share + '% من الطلبات</small></div></div>' +
+        '<div class="useBar"><i style="width:' + Math.max(2, Math.round(u.requests / max * 100)) + '%"></i></div>' +
+        '<div class="useMeta">وقت السيرفر ' + fmtDur_(u.serverMs) + ' · متوسط الطلب ' + fmtDur_(u.avgMs) +
+          ' · آخر استخدام ' + fmtAgo_(u.lastAt) +
+          (d.days > 1 ? ' · نشط ' + u.activeDays + ' يوم' : '') +
+          ' · ' + u.devices + (u.devices > 1 ? ' أجهزة' : ' جهاز') +
+          (u.errors ? ' · <span class="bad">' + fmt(u.errors) + ' طلب فشل</span>' : '') + '</div>' +
+        (acts ? '<div class="useActs">' + acts + '</div>' : '') +
+      '</div>';
+    }).join('') + (anon ? '<div class="useMeta" style="margin-top:8px;">طلبات من غير تسجيل دخول (شاشة الدخول): ' + fmt(anon.requests) + '</div>' : '')
+      : '<div class="empty">لسه مفيش طلبات متسجلة في الفترة دي</div>';
+
+    const hrs = d.byHour || [];
+    const hmax = hrs.reduce(function(m, v){ return Math.max(m, v); }, 1);
+    document.getElementById('useHours').innerHTML = hrs.map(function(v, h){
+      return '<i title="' + h + ':00 — ' + v + ' طلب" style="height:' + Math.round(v / hmax * 100) + '%"></i>';
+    }).join('');
+
+    const acts = (d.byAction || []).slice().sort(function(a, b){ return b.ms - a.ms; });
+    document.getElementById('useActions').innerHTML = acts.length ? acts.map(function(a){
+      return '<div class="useAct"><span>' + escapeHtml(useActName_(a.a)) + ' <small>· ' + fmt(a.n) + ' مرة · متوسط ' + fmtDur_(a.avgMs) + '</small></span><span>' + fmtDur_(a.ms) + '</span></div>';
+    }).join('') : '<div class="empty">—</div>';
+  }
+
   function loadStaleReasons(){
     document.getElementById('pageTitle').textContent = 'تقرير أسباب الركود';
     document.getElementById('pageSub').textContent = state.user.name;
@@ -4957,7 +5092,7 @@
   const SPEED_NAMES_ = { bootstrapHome:'فتح التطبيق', bootstrapInvoice:'تحميل الأصناف', finalizeInvoice:'ترحيل فاتورة', bootstrapJard:'فتح الجرد',
     saveJard:'حفظ الجرد', bootstrapTawrid:'فتح التوريد', saveTawrid:'حفظ التوريد', bootstrapMyStats:'مبيعاتي', bootstrapBalances:'أرصدتي',
     bootstrapStale:'الرواكد', listMyInvoices:'سجل فواتيري', getInvoiceDetails:'تفاصيل فاتورة', bootstrapItemSalesReport:'مبيعات الأصناف', bootstrapRepEvaluation:'التقييم',
-    listProductDescriptions:'وصف المنتجات', bootstrapAdmin:'شاشة الإدارة', bootstrapProfile:'إعداداتي', login:'تسجيل الدخول' };
+    listProductDescriptions:'وصف المنتجات', bootstrapAdmin:'شاشة الإدارة', bootstrapProfile:'إعداداتي', login:'تسجيل الدخول', serverUsage:'استخدام السيرفر', getSaleStock:'أصناف البيع', getMyBalances:'أرصدتي', bootstrapPrices:'أسعاري', getStaleReasonsReport:'أسباب الركود', listSuggestions:'المقترحات', listReps:'المناديب', listAsnaf:'الأصناف' };
   function renderSpeedLog_(){
     const el = document.getElementById('speedLogList');
     let log = [];
