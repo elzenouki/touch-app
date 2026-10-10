@@ -283,6 +283,15 @@
   .evalPart .det{font-size:12px; color:var(--muted); font-weight:700; margin-top:2px;}
   .evalBar{height:6px; border-radius:5px; background:#eceae3; overflow:hidden; margin-top:5px;}
   .evalBar i{display:block; height:100%; border-radius:5px; background:var(--ec);}
+  .evalHowBtn{width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:13px 16px; border-radius:14px;
+    border:1.5px dashed var(--gold); background:var(--gold-bg); color:var(--gold-d); font-family:inherit; font-size:14.5px; font-weight:800; cursor:pointer;}
+  .evalHow p{margin:0 0 10px; font-size:13.5px; line-height:1.8; color:var(--text);}
+  .evalHowItem{font-size:13px; line-height:1.75; color:var(--muted2); padding:8px 0; border-bottom:1px dashed var(--border);}
+  .evalHowItem:last-of-type{border-bottom:none; margin-bottom:8px;}
+  .evalHowItem b{display:block; color:var(--navy); font-size:14px;}
+  .evalHist{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .evalHist span{font-size:11.5px; font-weight:800; background:#f4f2ec; border:1px solid var(--border); border-radius:12px; padding:2px 9px; color:var(--navy);}
+  .evalPart.off .row span:last-child{color:var(--muted);}
   .evalToggle{font-size:12.5px; font-weight:800; color:var(--blue); margin-top:10px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;}
   .adminLink.ic-prices .icon{background:var(--blue-bg); color:var(--blue);}
   .adminLink.ic-admin .icon{background:var(--gold-bg); color:var(--gold-d);}
@@ -1388,8 +1397,23 @@
       <select id="evalMonthSelect" onchange="loadEval(this.value)"></select>
       <div class="pulseNote" id="evalSummary" style="margin:0;"></div>
     </div>
+    <div id="evalHowWrap" hidden>
+      <button type="button" class="evalHowBtn" onclick="toggleEvalHow_()"><span>💡 إزاي بيتحسب تقييمي؟</span><span id="evalHowArrow">▾</span></button>
+      <div class="card evalHow" id="evalHow" hidden>
+        <p>التقييم من <b>100 درجة</b>، والفكرة إنك تتقيم على <b>شغلك إنت</b> مش على حجم فرعك — المندوب في فرع صغير ممكن ياخد درجة أعلى من مندوب في فرع كبير لو اشتغل أحسن من المعتاد.</p>
+        <div class="evalHowItem"><b>1. أداء فرعك — 35</b>بيعك في اليوم مقارنة بالمعتاد في نفس فرعك (آخر 3 شهور). ولو السوق كله هادي (زي آخر الموسم) ده مش بيتحسب عليك. 110% من المتوقع أو أكتر = الدرجة كاملة.</div>
+        <div class="evalHowItem"><b>2. التارجت — 15</b>نسبة اللي حققته من تارجت الشهر.</div>
+        <div class="evalHowItem"><b>3. التصريف — 20</b>بعت كام من البضاعة اللي كانت معاك: اللي بعته ÷ (اللي بعته + رصيدك آخر الشهر)، مقارنة بمتوسط المناديب.</div>
+        <div class="evalHowItem"><b>4. الرواكد — 15</b>نسبة الأصناف اللي معاك ومتباعتش من 21 يوم. الراكد اللي عدّى 30 يوم من غير ما تكتب سببه بيتحسب مرتين — والمندوب الجديد (أول 30 يوم) مش بتتحسب عليه.</div>
+        <div class="evalHowItem"><b>5. المرتجع — 10</b>المرتجع السليم من العملاء بس، على آخر 3 شهور. التالف ورجوع البضاعة للشركة مش بيتحسبوا عليك — اختار نوع المرتجع صح.</div>
+        <div class="evalHowItem"><b>6. الالتزام — 5</b>الجرد كل أسبوع.</div>
+        <p>أي بند مش متاح ليك (فرع جديد، مفيش تارجت، مندوب جديد) مش بيتحسب، ودرجتك بتتحسب من الباقي على 100.</p>
+        <p><b>غير مكتمل:</b> لو أيام بيعك في الشهر قليلة، أو فرعك جديد ومفيش تارجت — بيبان تقييمك بس من غير ترتيب.</p>
+        <p><b>الترتيب</b> على آخر 3 شهور (الشهر الحالي 50% · اللي قبله 30% · اللي قبله 20%)، عشان شهر واحد مايقلبش ترتيبك.</p>
+      </div>
+    </div>
     <div id="evalList"></div>
-    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
+    <div id="evalOldNote" style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
       التقييم من 100: تحقيق التارجت 30 · حجم البيع 15 · متوسط بيع الصنف 20 · الرواكد 20 · المرتجع 15<br>
       متوسط بيع الصنف = كميتك من كل صنف معاك مقارنة بمتوسط باقي المناديب اللي باعوه<br>
       الرواكد = نسبة الأصناف الراكدة من الأصناف اللي معاك (30% أو أكتر = صفر) — ومش بتتحسب على المندوب الجديد أول 30 يوم<br>
@@ -1731,7 +1755,7 @@
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v2.4.1';
+  const APP_VERSION_ = 'v2.5.2';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -1762,7 +1786,7 @@
   const SB_WRITE_ACTIONS_ = {addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, savePrices:1,
     saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
     addProductDescription:1, deleteProductDescription:1, setAdProduct:1, clearAd:1, passkeyRegisterFinish:1, passkeyClearMine:1, setRepSupervisors:1};
-  // التسجيل نفسه (فاتورة/جرد/توريد) بقى على Supabase بس — جوجل شيت بياخد نسخة لوحده كل دقيقة.
+  // التسجيل نفسه (فاتورة/جرد/توريد) بقى على Supabase بس — ومفيش نسخة بتروح لجوجل شيت.
   // لو النت قطع، بنعيد نفس الطلب (بنفس رقمه المرجعي، فمستحيل يتسجل مرتين) — ومنبعتهوش لجوجل أبدًا.
   const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1};
   function callSbWrite_(action, args, attempt){
@@ -2088,13 +2112,19 @@
     }
   });
 
+  // قيمة سطر في الفاتورة: "رجوع للشركة" مش بيتحسب فلوس (بيتشال من الرصيد بس، مش مبيعات)
+  function draftLineValue_(it, isReturns){
+    if(isReturns && it.returnKind === 'رجوع للشركة') return 0;
+    return (isReturns ? -1 : 1) * Number(it.qty) * Number(it.price);
+  }
+
   function renderInvBar_(){
     const bar = document.getElementById('c2InvBar');
     if(!bar) return;
     if(state.finalized || !document.body.classList.contains('c2dark')){ bar.hidden = true; return; }
     const isReturns = (state.screen === 'returns');
     const n = state.draftItems.length;
-    const total = state.draftItems.reduce(function(s, it){ return s + (isReturns ? -1 : 1) * Number(it.qty) * Number(it.price); }, 0);
+    const total = state.draftItems.reduce(function(s, it){ return s + draftLineValue_(it, isReturns); }, 0);
     document.getElementById('c2InvCount').textContent = n + (n === 1 ? ' صنف' : ' أصناف');
     document.getElementById('c2InvTotal').textContent = fmt(total);
     document.getElementById('c2InvFinalize').disabled = !n || !!state.finalizeInFlight;
@@ -2182,6 +2212,18 @@
   function saveHomeCache_(){
     if(!state.user) return;
     localCacheSet_('home', { user: state.user, isAdmin: state.isAdmin, targetProgress: state.targetProgress_ || null, stats: state.homeStats_ || null });
+  }
+
+  // الدخول نفسه بيعدّي على جوجل (مفيهوش أرقام المبيعات) — بعده على طول نجيب أرقام الرئيسية من Supabase
+  function refreshHomeAfterLogin_(){
+    if(!state.auth) return;
+    callApi('bootstrapHome', [state.auth])
+      .then(function(data){
+        if(!data || !data.user) return;
+        applyLoggedInUser(data.user, data.isAdmin, data.targetProgress, data.stats);
+        if(state.screen === null) document.getElementById('pageSub').textContent = state.user.name;
+      })
+      .catch(function(){});
   }
 
   function goHome(){
@@ -2474,8 +2516,10 @@
           // الجهاز ده موثوق بالفعل لنفس المندوب — ادخله على طول من غير كود تأكيد
           state.auth = data.auth;
           saveAuth(data.auth);
+          state.homeStats_ = null;
           applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
           goHome();
+          refreshHomeAfterLogin_();
           maybeShowAd_(data.ad);
           return;
         }
@@ -2510,12 +2554,14 @@
     saveAuth(data.auth);
     saveDeviceToken(data.deviceToken);
     requestPersistentStorage_();
+    state.homeStats_ = null;
     applyLoggedInUser(data.user, data.isAdmin, data.targetProgress);
     state.pendingOtpEmail = null;
     state.pendingPasskey = null;
     showLoading(false);
     if(via === 'passkey') pkMarkLocal_(data.user.email, true);
     goHome();
+    refreshHomeAfterLogin_();
     // أول دخول بكود الإيميل بيعرض تفعيل البصمة — الإعلان يستنى لحد فتحة التطبيق الجاية عشان مايتزاحموش
     if(via !== 'email') maybeShowAd_(data.ad);
     // دخل بكود الإيميل؟ نعرض عليه يفعّل البصمة عشان المرة الجاية تبقى أسهل
@@ -3203,21 +3249,38 @@
   function evalColor_(s){
     return s >= 85 ? '#2b7a4f' : s >= 70 ? '#4f9a3a' : s >= 55 ? '#b6862f' : s >= 40 ? '#c77b1e' : '#b83a3a';
   }
+  // التقييم العادل (v2): النسخة التجريبية بس لحد ما يتجرب — بعدها خليها true للكل
+  const EVAL_V2_ = /\/beta\//.test(location.pathname);
+  function toggleEvalHow_(){
+    const box = document.getElementById('evalHow');
+    box.hidden = !box.hidden;
+    document.getElementById('evalHowArrow').textContent = box.hidden ? '▾' : '▴';
+  }
   function loadEval(monthKey){
     document.getElementById('pageTitle').textContent = state.isAdmin ? 'تقييم المناديب' : 'تقييمي';
     document.getElementById('pageSub').textContent = state.user.name;
     showLoading(true);
-    callApi('bootstrapRepEvaluation', [state.auth, monthKey || ''])
+    callApi('bootstrapRepEvaluation', [state.auth, (EVAL_V2_ ? 'v2:' : '') + (monthKey || '')])
       .then(function(data){
         showLoading(false);
         document.getElementById('evalMonthSelect').innerHTML = data.months.map(function(mk){
           const p = mk.split('-');
           return '<option value="' + mk + '"' + (mk === data.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
         }).join('');
-        document.getElementById('evalSummary').textContent = state.isAdmin
-          ? (data.list.length + ' مندوب · متوسط صافي مبيعات المناديب ' + fmt(Math.round(data.avgNet)))
-          : ('متوسط صافي مبيعات المناديب الشهر ده ' + fmt(Math.round(data.avgNet)));
-        renderEvalList_(data);
+        document.getElementById('evalHowWrap').hidden = !data.v2;
+        document.getElementById('evalOldNote').hidden = !!data.v2;
+        if(data.v2){
+          const sea = Math.round((Number(data.season) || 1) * 100);
+          document.getElementById('evalSummary').textContent =
+            (state.isAdmin ? data.list.length + ' مندوب · ' : '') +
+            'السوق الشهر ده ' + sea + '% من المعتاد' + (sea < 100 ? ' — ومش بيتحسب على حد' : '');
+          renderEvalListV2_(data);
+        } else {
+          document.getElementById('evalSummary').textContent = state.isAdmin
+            ? (data.list.length + ' مندوب · متوسط صافي مبيعات المناديب ' + fmt(Math.round(data.avgNet)))
+            : ('متوسط صافي مبيعات المناديب الشهر ده ' + fmt(Math.round(data.avgNet)));
+          renderEvalList_(data);
+        }
         setView('viewEval');
       })
       .catch(onError);
@@ -3262,6 +3325,70 @@
           '</div>' +
           '<div class="evalRank"><b>#' + r.rank + '</b><span>' + rankLabel + '</span></div>' +
         '</div>' +
+        '<div class="evalParts" id="evalParts_' + idx + '"' + (single ? '' : ' hidden') + '>' + parts + '</div>' +
+        (single ? '' : '<button class="evalToggle" onclick="toggleEvalParts_(' + idx + ', this)">التفاصيل ▾</button>') +
+      '</div>';
+    }).join('');
+  }
+  function renderEvalListV2_(data){
+    const el = document.getElementById('evalList');
+    if(!data.list.length){
+      el.innerHTML = '<div class="card"><div class="empty">مفيش تقييم متاح للشهر ده</div></div>';
+      return;
+    }
+    const single = !state.isAdmin || data.list.length === 1;
+    const part = function(label, p, det, offText){
+      if(!p) return '<div class="evalPart off"><div class="row"><span>' + label + '</span><span>مش محسوب</span></div><div class="det">' + offText + '</div></div>';
+      const w = p.max ? Math.round(p.score / p.max * 100) : 0;
+      return '<div class="evalPart"><div class="row"><span>' + label + '</span><span>' + fmt(p.score) + ' / ' + p.max + '</span></div>' +
+        '<div class="evalBar"><i style="width:' + w + '%"></i></div><div class="det">' + det + '</div></div>';
+    };
+    el.innerHTML = data.list.map(function(r, idx){
+      const c = evalColor_(r.score);
+      const P = r.parts || {};
+      const parts =
+        part('أداء فرعك', P.perf,
+          'بعت ' + fmt(r.perDay) + ' في اليوم — المتوقع في فرعك ' + fmt(r.expPerDay) + ' = ' + r.perfPct + '% من المتوقع',
+          'فرعك جديد ولسه مالوش تاريخ نقارن بيه') +
+        part('التارجت', P.target,
+          'اتحقق ' + r.targetPct + '% من ' + fmt(r.target) + ' (صافي ' + fmt(r.net) + ')',
+          'مفيش تارجت متسجل الشهر ده') +
+        part('التصريف', P.sell,
+          'بعت ' + fmt(r.sold) + ' قطعة، وفضل معاك ' + fmt(r.endStock) + ' = ' + r.sellPct + '%' + (data.stMedian != null ? ' · متوسط المناديب ' + data.stMedian + '%' : ''),
+          'مفيش بيانات مخزون كفاية (جرد) نحسب منها') +
+        part('الرواكد', P.stale,
+          r.stale ? (r.stale + ' صنف راكد من ' + fmt(Math.max(r.carried || 0, r.stale)) + ' صنف معاك' + (r.unresolved ? ' · ' + r.unresolved + ' منهم عدّى 30 يوم من غير سبب (بيتحسب مرتين)' : '')) : 'مفيش رواكد 👌',
+          'مندوب جديد (أقل من 30 يوم)') +
+        part('المرتجع', P.returns,
+          'مرتجع العملاء السليم آخر 3 شهور = ' + r.retRate3 + '% من البيع' +
+            (r.retDamaged > 0 ? ' · التالف ' + fmt(r.retDamaged) + ' مش محسوب' : '') +
+            (r.retCompany > 0 ? ' · رجوع للشركة ' + fmt(r.retCompany) + ' مش محسوب' : ''),
+          'بيعك آخر 3 شهور أقل من 50 ألف — مش بيتحسب عليك') +
+        part('الالتزام', P.commit, 'جرد ' + r.jardWeeks + ' من ' + data.weeks + ' أسابيع', '');
+      const hist = (r.history || []).length > 1
+        ? '<div class="evalHist">' + r.history.map(function(h){
+            const p = String(h.mk).split('-');
+            return '<span>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ': ' + h.score + '</span>';
+          }).join('') + '<span>متوسط 3 شهور: ' + r.score3 + '</span></div>'
+        : '';
+      const why = r.incomplete
+        ? '<div class="pulseNote" style="margin:10px 0 0; color:var(--gold-d);">⏳ غير مكتمل — ' +
+            (r.fewDays ? 'أيام بيع قليلة الشهر ده (' + r.days + ' يوم)' : 'فرع جديد ومفيش تارجت نقيس بيهم البيع') + '، فمش داخل الترتيب</div>'
+        : '';
+      const rankHtml = r.rank
+        ? '<div class="evalRank"><b>#' + r.rank + '</b><span>من ' + data.total + (state.isAdmin ? '' : ' مندوب') + '</span></div>'
+        : '<div class="evalRank"><b style="font-size:15px;">—</b><span>غير مكتمل</span></div>';
+      return '<div class="evalCard" style="--ec:' + c + '">' +
+        '<div class="evalHead">' +
+          '<div class="evalRing" style="--ep:' + Math.max(0, Math.min(100, r.score)) + '"><b>' + r.score + '</b></div>' +
+          '<div style="min-width:0;">' +
+            '<div class="evalName">' + escapeHtml(r.name) + '</div>' +
+            '<div class="evalMeta">📍 ' + escapeHtml((r.branches || []).join('، ') || '—') + ' · ' + r.days + ' يوم بيع</div>' +
+            '<span class="evalGrade">' + escapeHtml(r.grade) + '</span>' +
+          '</div>' +
+          rankHtml +
+        '</div>' +
+        why + hist +
         '<div class="evalParts" id="evalParts_' + idx + '"' + (single ? '' : ' hidden') + '>' + parts + '</div>' +
         (single ? '' : '<button class="evalToggle" onclick="toggleEvalParts_(' + idx + ', this)">التفاصيل ▾</button>') +
       '</div>';
@@ -3525,6 +3652,7 @@
     'مرتجع': { label: 'مرتجع', neg: true },
     'جرد': { label: 'جرد', neg: false },
     'توريد': { label: 'توريد', neg: false },
+    'رجوع للشركة': { label: 'رجوع للشركة', neg: true },
   };
 
   function renderInvoiceHistory(invoices, multiBranch){
@@ -3590,7 +3718,7 @@
   }
 
   function historyExcelOptsFromResult_(result){
-    return (result.type === 'جرد' || result.type === 'توريد')
+    return (result.type === 'جرد' || result.type === 'توريد' || result.type === 'رجوع للشركة')
       ? buildJardTawridExcelOptsFromResult_(result)
       : buildInvoiceExcelOpts(result, result.type === 'مرتجع');
   }
@@ -3942,7 +4070,7 @@
         const name = state.finalized ? it['اسم الصنف'] : it.itemName;
         const qty = state.finalized ? Number(it['الكمية']) : Number(it.qty);
         const price = state.finalized ? Number(it['السعر']) : Number(it.price);
-        const total = state.finalized ? Number(it['الاجمالي']) : (isReturns ? -qty : qty) * price;
+        const total = state.finalized ? Number(it['الاجمالي']) : draftLineValue_(it, isReturns);
         const displayQty = state.finalized ? qty : (isReturns ? -qty : qty);
         const neg = displayQty < 0;
         const returnKind = state.finalized ? it['نوع المرتجع'] : it.returnKind;
@@ -3965,10 +4093,7 @@
 
     const total = state.finalized
       ? state.finalResult.total
-      : state.draftItems.reduce((s, it) => {
-          const q = isReturns ? -Number(it.qty) : Number(it.qty);
-          return s + q * Number(it.price);
-        }, 0);
+      : state.draftItems.reduce((s, it) => s + draftLineValue_(it, isReturns), 0);
     document.getElementById('grandTotal').textContent = fmt(total);
     renderInvBar_();
   }
@@ -3986,8 +4111,8 @@
 
     if(isReturns){
       const kindSel = document.getElementById('returnKindInput').value;
-      if(kindSel !== 'سليم' && kindSel !== 'تالف'){
-        showMsg('من فضلك حدد نوع المرتجع (سليم أو تالف) قبل الإضافة', 'error');
+      if(kindSel !== 'سليم' && kindSel !== 'تالف' && kindSel !== 'رجوع للشركة'){
+        showMsg('من فضلك حدد نوع المرتجع قبل الإضافة', 'error');
         return;
       }
       const reason = document.getElementById('returnReasonInput').value.trim();
@@ -4028,14 +4153,20 @@
   function openReviewModal(){
     // رقم مرجعي جديد لكل ما شاشة المراجعة تتفتح — نفس الفاتورة (حتى لو المندوب دوس تأكيد أكتر
     // من مرة عليها) بتفضل بنفس الرقم، فالسيرفر يقدر يمنع تكرارها
-    state.pendingFinalizeId = genRequestId_();
+    // الرقم بيفضل ثابت طول ما الأصناف هي هي (حتى لو الترحيل فشل والمندوب رجع دوس تاني) — بيتغير بس
+    // لو الفاتورة نفسها اتغيرت، فلو الطلب الأول وصل فعلاً السيرفر بيرجّع نفس الفاتورة ومش بيسجلها مرتين
+    const draftSig = state.screen + '|' + JSON.stringify(state.draftItems);
+    if(!state.pendingFinalizeId || state.pendingFinalizeSig !== draftSig){
+      state.pendingFinalizeId = genRequestId_();
+      state.pendingFinalizeSig = draftSig;
+    }
     document.getElementById('reviewConfirmBtn').disabled = false;
     const isReturns = (state.screen === 'returns');
     const body = document.getElementById('reviewBody');
     let total = 0;
     const rowsHtml = state.draftItems.map(function(it){
       const qty = isReturns ? -Number(it.qty) : Number(it.qty);
-      const rowTotal = qty * Number(it.price);
+      const rowTotal = draftLineValue_(it, isReturns);
       total += rowTotal;
       const kindSuffix = (isReturns && (it.returnKind === 'تالف' || it.returnKind === 'رجوع للشركة')) ? ' (' + it.returnKind + ')' : '';
       return (
@@ -4103,6 +4234,7 @@
         }
         state.finalizeInFlight = false;
         state.finalized = true;
+        state.pendingFinalizeId = null; state.pendingFinalizeSig = null;
         // حماية: لو رد السيرفر وصل من غير قايمة الأصناف (نسخة سيرفر مختلفة مثلاً)، الفاتورة اتسجلت
         // فعلاً — نعرضها من الأصناف اللي المندوب كتبها بدل ما الشاشة تقع بخطأ ويفتكر إنها متسجلتش
         state.finalResult = normalizeFinalResult_(result);
@@ -4175,7 +4307,7 @@
   function buildInvoiceExcelOpts(result, isReturns){
     const label = isReturns ? 'مرتجع' : 'مبيعات';
     const rows = result.items.map(it => {
-      const kindSuffix = (isReturns && it['نوع المرتجع'] === 'تالف') ? ' (تالف)' : '';
+      const kindSuffix = (isReturns && (it['نوع المرتجع'] === 'تالف' || it['نوع المرتجع'] === 'رجوع للشركة')) ? ' (' + it['نوع المرتجع'] + ')' : '';
       return isReturns
         ? [it['اسم الصنف'] + kindSuffix, it['سبب المرتجع'] || '—', it['الكمية'], it['السعر'], it['الاجمالي']]
         : [it['اسم الصنف'] + kindSuffix, it['الكمية'], it['السعر'], it['الاجمالي']];
