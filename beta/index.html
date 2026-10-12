@@ -314,6 +314,7 @@
   .rtRow .nums b{color:var(--navy);}
   .rtRow .hint{margin-top:5px; font-size:12px; font-weight:800;}
   .rtRow.noT .pc{font-size:13px; color:var(--muted);}
+  .rtRow .rtEdit{display:inline-block; margin:2px 0 6px; padding:4px 12px; border-radius:10px; border:1px dashed var(--border); background:var(--card2); color:var(--navy); font:inherit; font-size:12px; font-weight:800; cursor:pointer;}
   .usePeriods{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px; margin-bottom:12px;}
   .usePeriods button{height:44px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--navy); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;}
   .usePeriods button.on{background:var(--navy); color:#fbf8ee; border-color:var(--navy);}
@@ -1680,6 +1681,7 @@
           <button type="button" id="rsAdminBtn" onclick="rsToggleAdmin_()"></button>
           <button type="button" onclick="rsSetPin_()">🔑 كود الدخول</button>
         </div>
+        <div class="rsRow" style="margin-bottom:8px;"><button type="button" onclick="rsSetBranch_()">📍 الفرع</button></div>
         <div class="rsRow"><button type="button" class="danger" id="rsDelBtn" onclick="rsDelete_()">حذف المندوب</button></div>
       </div>
     </div>
@@ -1845,11 +1847,11 @@
   // الويب بتاع Apps Script كـ API عادي (JSON)، بدل ما يكون Apps Script هو اللي بيعرض الصفحة.
   // ملحوظة: لو عملت Deploy جديد (deployment جديد خالص، مش تعديل نفس القديم) هيتغيّر اللينك،
   // وهتحتاج تحدّث القيمة دي بس.
-  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwCd28GkMFnonxGWs4TfX2Kuszj5KUYn2i5HRj1WDZVfiesp47OaDk-e6ehV_Csl9JI/exec';
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxa1Uz2Nk1nGhmKuW1t4UQvJaQXw_nZ7p1vDlET_lQKcYH4xKatecTGjzeoRPdMufqZ/exec';
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v2.5.4';
+  const APP_VERSION_ = 'v2.6.0';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -1882,7 +1884,10 @@
     addProductDescription:1, deleteProductDescription:1, setAdProduct:1, clearAd:1, passkeyRegisterFinish:1, passkeyClearMine:1, setRepSupervisors:1};
   // التسجيل نفسه (فاتورة/جرد/توريد) بقى على Supabase بس — ومفيش نسخة بتروح لجوجل شيت.
   // لو النت قطع، بنعيد نفس الطلب (بنفس رقمه المرجعي، فمستحيل يتسجل مرتين) — ومنبعتهوش لجوجل أبدًا.
-  const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1};
+  const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1,
+    // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
+    listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
+    addRep:1, setRepPin:1, setRepBranch:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, saveTarget:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
       method: 'POST',
@@ -1935,7 +1940,7 @@
       // text/plain مهم عشان المتصفح ميبعتش طلب OPTIONS (preflight) قبل الطلب الحقيقي —
       // Apps Script مش بيعرف يرد على OPTIONS، فلو بعتنا application/json هنا هيفشل الطلب.
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, args: args || [], mirror: !!SB_WRITE_ACTIONS_[action] }),
+      body: JSON.stringify({ action: action, args: args || [] }),
     })
       .then(function(res){ return res.json(); })
       .then(function(data){
@@ -3240,6 +3245,7 @@
           '<span class="pc" style="color:' + c + '">' + (hasT ? p + '%' : 'مفيش تارجت') + '</span>' +
         '</div>' +
         (hasT ? '<div class="bar"><i style="width:' + Math.min(100, Math.max(0, p)) + '%; background:' + c + '"></i>' + expMark + '</div>' : '<div style="height:8px"></div>') +
+        (state.isOwner ? '<button type="button" class="rtEdit" data-rtname="' + escapeHtml(r.name) + '" data-rtt="' + (hasT ? r.target : '') + '">✏️ ' + (hasT ? 'تعديل التارجت' : 'حط تارجت') + '</button>' : '') +
         '<div class="nums"><span>الصافي <b>' + fmt(r.net) + '</b></span>' +
           (hasT ? '<span>التارجت <b>' + fmt(r.target) + '</b></span>' : '') +
           (Number(r.ret) > 0 ? '<span>مرتجع ' + fmt(r.ret) + '</span>' : '') +
@@ -3249,6 +3255,17 @@
     }).join('');
   }
 
+  document.addEventListener('click', function(e){
+    const b = e.target.closest('.rtEdit[data-rtname]');
+    if(!b) return;
+    const name = b.dataset.rtname, mk = state.rtMonth_ || '';
+    const v = prompt('تارجت "' + name + '" لشهر ' + mk + ' (اكتب 0 أو سيبها فاضية عشان تشيله):', b.dataset.rtt || '');
+    if(v == null) return;
+    showLoading(true);
+    callApi('saveTarget', [state.auth, name, mk, String(v).replace(/[٠-٩]/g, function(d){ return String(d.charCodeAt(0) - 0x660); })])
+      .then(function(){ showLoading(false); showMsg('تم حفظ التارجت ✔', 'success'); loadRepsTargets(mk); })
+      .catch(onError);
+  });
   // ============ استخدام السيرفر (صاحب الحساب بس) ============
   function fmtDur_(ms){
     ms = Number(ms) || 0;
@@ -4129,6 +4146,18 @@
   }
   function rsToggleAdmin_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleToggleAdmin(r.email, !r.isAdmin); }
   function rsSetPin_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleSetRepPin(r.email, r.name); }
+  // الفرع (أو أكتر من فرع مفصولين بفاصلة) — كان بيتكتب في الشيت، دلوقتي من هنا
+  function rsSetBranch_(){
+    const r = state.adminReps_[rsIdx_];
+    if(!r) return;
+    const v = prompt('فرع "' + r.name + '" — لو ماسك أكتر من فرع افصل بينهم بفاصلة (،):', r.branch || '');
+    if(v == null) return;
+    closeRepSheet_();
+    showLoading(true);
+    callApi('setRepBranch', [state.auth, r.email, v])
+      .then(function(res){ showLoading(false); showMsg('تم حفظ الفرع ✔' + (res.branch ? ' — ' + res.branch : ''), 'success'); refreshRepsList(); })
+      .catch(onError);
+  }
   function rsDelete_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleDeleteRep(r.email, r.name); }
   function renderRepsListOld_(reps){
     const el = document.getElementById('repsList');
