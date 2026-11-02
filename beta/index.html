@@ -3452,8 +3452,9 @@
     rows.forEach(function(r){ (byRep[r.rep] = byRep[r.rep] || []).push(r); });
     document.getElementById('itReportList').innerHTML = Object.keys(byRep).sort().map(function(rep){
       var repBonus = byRep[rep].reduce(function(t, r){ return t + Number(r.bonusEarned || 0); }, 0);
+      var branch = byRep[rep][0] && byRep[rep][0].branch;
       return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) +
-        '<small>بونص مستحق: ' + fmt(repBonus) + '</small></div></div>' +
+        '<small>' + (branch ? '📍 ' + escapeHtml(branch) + ' · ' : '') + 'بونص مستحق: ' + fmt(repBonus) + '</small></div></div>' +
         byRep[rep].map(function(r){
           var ok = Number(r.achieved) >= Number(r.target);
           return '<div class="nums" style="margin-top:6px; color:' + (ok ? '#2b7a4f' : 'var(--muted)') + ';">' +
@@ -3468,16 +3469,25 @@
     var d = state.itReportData_;
     if(!d || !d.rows || !d.rows.length){ showMsg('مفيش تقرير لتصديره', 'error'); return; }
     showLoading(true);
-    var rows = d.rows.map(function(r){
-      return [r.rep, r.name || r.code, Number(r.target), Number(r.achieved), r.pct != null ? Number(r.pct) : '', Number(r.bonusEarned || 0)];
+    var byRep = {};
+    d.rows.forEach(function(r){ (byRep[r.rep] = byRep[r.rep] || []).push(r); });
+    var rows = [];
+    Object.keys(byRep).sort().forEach(function(rep){
+      var repRows = byRep[rep];
+      var branch = repRows[0] && repRows[0].branch || '';
+      var repBonus = repRows.reduce(function(t, r){ return t + Number(r.bonusEarned || 0); }, 0);
+      repRows.forEach(function(r){
+        rows.push([r.rep, branch, r.name || r.code, Number(r.target), Number(r.achieved), r.pct != null ? Number(r.pct) : '', Number(r.bonusEarned || 0)]);
+      });
+      rows.push(['إجمالي ' + rep, '', '', '', '', '', Number(repBonus)]);
     });
     var opts = {
       fileName: 'تارجت الأصناف - ' + d.monthKey,
       reportTitle: 'تقرير تارجت الأصناف والبونص',
       meta: [['الشهر', d.monthKey], ['التاريخ', new Date().toLocaleDateString('ar-EG')]],
-      headers: ['المندوب', 'الصنف', 'التارجت', 'المتحقق', 'النسبة %', 'البونص المستحق'],
+      headers: ['المندوب', 'الفرع', 'الصنف', 'التارجت', 'المتحقق', 'النسبة %', 'البونص المستحق'],
       rows: rows,
-      totalsLabel: 'إجمالي البونص المستحق',
+      totalsLabel: 'إجمالي البونص المستحق (كل المناديب)',
       totalsValue: Number(d.totalBonus || 0),
       totalsIsCurrency: true,
     };
