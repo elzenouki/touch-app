@@ -1556,7 +1556,7 @@
       <datalist id="itItemsList"></datalist>
       <input list="itItemsList" id="itExtraCodesInput" placeholder="صنف إضافي بنفس التارجت (لو عنده اسم/كود تاني — افصل بفاصلة لو أكتر من واحد)" style="margin-bottom:8px;">
       <input id="itTargetInput" type="number" inputmode="decimal" placeholder="التارجت (بالعدد)" style="margin-bottom:8px;">
-      <input id="itBonusInput" type="number" inputmode="decimal" placeholder="البونص (جنيه) لو حقق التارجت" style="margin-bottom:8px;">
+      <input id="itBonusInput" type="number" inputmode="decimal" placeholder="بونص القطعة (جنيه) — لو حقق التارجت ياخده على كل قطعة باعها" style="margin-bottom:8px;">
       <button type="button" class="ok" id="itSaveBtn" style="width:100%;" onclick="saveItemTarget_()">💾 حفظ</button>
       <button type="button" id="itCancelEditBtn" style="width:100%; margin-top:6px;" onclick="itResetForm_()" hidden>إلغاء التعديل</button>
     </div>
@@ -3365,7 +3365,7 @@
           var extraTxt = (r.extraCodes && r.extraCodes.length) ? ' + كود ' + r.extraCodes.join('، ') : '';
           return '<div class="nums" style="margin-top:6px;"><span>' + escapeHtml(r.itemName || r.code) + escapeHtml(extraTxt) +
             '<b style="margin-right:6px;">تارجت ' + fmt(r.target) + '</b>' +
-            (r.bonus ? '<span style="margin-right:6px;">بونص ' + fmt(r.bonus) + '</span>' : '') + '</span></div>' +
+            (r.bonus ? '<span style="margin-right:6px;">بونص ' + fmt(r.bonus) + '/قطعة</span>' : '') + '</span></div>' +
             '<div class="aBtns" style="margin-top:4px;"><button type="button" class="itEdit" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">✏️ تعديل</button>' +
             '<button type="button" class="itDel" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">🗑 حذف</button></div>';
         }).join('<hr style="border:none; border-top:1px solid var(--line); margin:8px 0;">') +
@@ -3459,7 +3459,7 @@
           return '<div class="nums" style="margin-top:6px; color:' + (ok ? '#2b7a4f' : 'var(--muted)') + ';">' +
             '<span>' + escapeHtml(r.name || r.code) + '</span>' +
             '<b>' + fmt(r.achieved) + ' / ' + fmt(r.target) + (r.pct != null ? ' (' + r.pct + '%)' : '') + '</b>' +
-            (ok ? '<span>✔ بونص ' + fmt(r.bonusEarned) + '</span>' : '<span>— مفيش بونص</span>') + '</div>';
+            (ok ? '<span>✔ بونص ' + fmt(r.bonusEarned) + ' (' + fmt(r.bonus) + '/قطعة × ' + fmt(r.achieved) + ')</span>' : '<span>— مفيش بونص</span>') + '</div>';
         }).join('') +
       '</div>';
     }).join('');
