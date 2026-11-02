@@ -3348,7 +3348,7 @@
           var p = mk.split('-');
           return '<option value="' + mk + '"' + (mk === d.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
         }).join('');
-        document.getElementById('itRepSelect').innerHTML = state.itReps_.map(function(r){
+        document.getElementById('itRepSelect').innerHTML = '<option value="__all__">🌟 كل المناديب</option>' + state.itReps_.map(function(r){
           return '<option value="' + escapeHtml(r) + '">' + escapeHtml(r) + '</option>';
         }).join('');
         document.getElementById('itItemsList').innerHTML = state.itItems_.map(function(it){
@@ -3442,8 +3442,16 @@
     if(!noTarget && (!target || Number(target) <= 0)){ showMsg('اكتب التارجت، أو اختار "من غير تارجت"', 'error'); return; }
     if(!bonus || Number(bonus) <= 0){ showMsg('اكتب قيمة البونص', 'error'); return; }
     showLoading(true);
-    callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, noTarget ? '' : Number(target), Number(bonus), extraCodes, false])
-      .then(function(){ showLoading(false); showMsg('اتحفظ ✔', 'success'); loadItemTargets(state.itMonth_); })
+    var repsToSave = rep === '__all__' ? (state.itReps_ || []) : [rep];
+    if(!repsToSave.length){ showLoading(false); showMsg('مفيش مناديب', 'error'); return; }
+    var chain = Promise.resolve();
+    repsToSave.forEach(function(r){
+      chain = chain.then(function(){
+        return callDirectRpc_('api_item_targets_save_', [state.auth, r, code, state.itMonth_, noTarget ? '' : Number(target), Number(bonus), extraCodes, false]);
+      });
+    });
+    chain
+      .then(function(){ showLoading(false); showMsg('اتحفظ لـ ' + repsToSave.length + ' مندوب ✔', 'success'); loadItemTargets(state.itMonth_); })
       .catch(onError);
   }
   function loadItemTargetsReport(){
