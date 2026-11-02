@@ -1216,6 +1216,7 @@
       <button type="button" class="c2Item" id="balancesLink" onclick="openScreen('balances')"><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path></svg></span><span class="title">أرصدتي</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="invoiceHistoryLink" onclick="openScreen('history')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg></span><span class="title">سجل فواتيري</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="repsTargetsLink" onclick="openScreen('repstargets')" hidden><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.5"></circle></svg></span><span class="title">مبيعات وتارجت المناديب</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="itemTargetsLink" onclick="openScreen('itemtargets')" hidden><span class="ic" style="background:#fdf1e0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#a8702f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg></span><span class="title">تارجت الأصناف</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="itemSalesLink" onclick="openScreen('itemsales')"><span class="ic" style="background:#eeeaf8"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5b4a9c" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg></span><span class="title">مبيعات الأصناف</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span class="title">تقرير أسباب الركود</span><span class="chev"></span></button>
     </div>
@@ -1436,6 +1437,7 @@
         <span>إجمالي القيمة</span>
         <span class="val" id="itemSalesTotalValue">0</span>
       </div>
+      <button class="whatsapp" style="margin-top:12px; width:100%;" onclick="exportItemSalesExcel()">📤 تصدير إكسل</button>
     </div>
     <div class="card">
       <div class="cardTitle">مبيعات الأصناف (الأكتر مبيعًا فوق)</div>
@@ -1538,6 +1540,35 @@
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
       الصافي = البيع − المرتجع (رجوع البضاعة للشركة مش بيتخصم) · النسبة = الصافي ÷ التارجت<br>
       "المتوقع آخر الشهر" = لو كمل بنفس معدل البيع لحد آخر الشهر
+    </div>
+  </div>
+
+  <!-- ============ شاشة تارجت الأصناف بالمندوب + بونص (للمشرفين) ============ -->
+  <div id="viewItemTargets" hidden>
+    <div class="card">
+      <div class="cardTitle">اختار الشهر</div>
+      <select id="itMonthSelect" onchange="loadItemTargets(this.value)"></select>
+    </div>
+    <div class="card">
+      <div class="cardTitle" id="itFormTitle">ضيف تارجت صنف</div>
+      <select id="itRepSelect" style="margin-bottom:8px;"></select>
+      <input list="itItemsList" id="itItemInput" placeholder="اكتب اسم الصنف أو اختاره" style="margin-bottom:8px;">
+      <datalist id="itItemsList"></datalist>
+      <input id="itTargetInput" type="number" inputmode="decimal" placeholder="التارجت (بالعدد)" style="margin-bottom:8px;">
+      <input id="itBonusInput" type="number" inputmode="decimal" placeholder="البونص (جنيه) لو حقق التارجت" style="margin-bottom:8px;">
+      <button type="button" class="ok" id="itSaveBtn" style="width:100%;" onclick="saveItemTarget_()">💾 حفظ</button>
+      <button type="button" id="itCancelEditBtn" style="width:100%; margin-top:6px;" onclick="itResetForm_()" hidden>إلغاء التعديل</button>
+    </div>
+    <div class="card">
+      <div class="cardTitle">التارجتات المتسجلة الشهر ده</div>
+      <div id="itRowsList"></div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">تقرير الإنجاز والبونص (كل المناديب)</div>
+      <button type="button" class="whatsapp" style="width:100%;" onclick="loadItemTargetsReport()">📊 اعرض التقرير</button>
+      <div id="itReportSummary" style="margin-top:10px;"></div>
+      <div id="itReportList"></div>
+      <button type="button" class="whatsapp" id="itReportExportBtn" style="margin-top:12px; width:100%;" onclick="exportItemTargetsExcel()" hidden>📤 تصدير إكسل</button>
     </div>
   </div>
 
@@ -2042,7 +2073,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -2513,6 +2544,7 @@
     document.getElementById('staleReasonsLink').hidden = !state.isOwner;
     document.getElementById('usageLink').hidden = !state.isOwner;
     document.getElementById('repsTargetsLink').hidden = !(state.isAdmin || state.isOwner);
+    document.getElementById('itemTargetsLink').hidden = !(state.isAdmin || state.isOwner);
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
@@ -3111,6 +3143,7 @@
     if(name === 'stalereasons'){ loadStaleReasons(); return; }
     if(name === 'usage'){ loadUsage(state.usageDays_ || 7); return; }
     if(name === 'repstargets'){ loadRepsTargets(state.rtMonth_ || ''); return; }
+    if(name === 'itemtargets'){ loadItemTargets(state.itMonth_ || ''); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
     if(name === 'profile'){ loadProfile(); return; }
@@ -3266,6 +3299,177 @@
       .then(function(){ showLoading(false); showMsg('تم حفظ التارجت ✔', 'success'); loadRepsTargets(mk); })
       .catch(onError);
   });
+  // ============ تارجت الأصناف بالمندوب + بونص (للمشرفين) — دوال جديدة بالكامل،
+  // بتنادي دوال SQL جديدة (api_item_targets_*) من غير ما تلمس api/api_core الأصليين ============
+  function callDirectRpc_(fn, args){
+    return fetch('https://llbvttieimysqxyrdwph.supabase.co/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SB_PUBLIC_KEY_ },
+      body: JSON.stringify({ p_args: args || [] }),
+    })
+      .then(function(res){ if(!res.ok) throw new Error('sb ' + res.status); return res.json(); })
+      .then(function(data){
+        if(!data || data.ok !== true) throw new Error((data && data.error) || 'حصل خطأ غير متوقع');
+        return data.result;
+      });
+  }
+  function itResetForm_(){
+    document.getElementById('itFormTitle').textContent = 'ضيف تارجت صنف';
+    document.getElementById('itItemInput').value = '';
+    document.getElementById('itItemInput').disabled = false;
+    document.getElementById('itTargetInput').value = '';
+    document.getElementById('itBonusInput').value = '';
+    document.getElementById('itCancelEditBtn').hidden = true;
+    state.itEditCode_ = null;
+  }
+  function loadItemTargets(monthKey){
+    document.getElementById('pageTitle').textContent = 'تارجت الأصناف';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callDirectRpc_('api_item_targets_bootstrap_', [state.auth, monthKey || ''])
+      .then(function(d){
+        showLoading(false);
+        state.itMonth_ = d.monthKey;
+        state.itReps_ = d.reps || [];
+        state.itItems_ = d.items || [];
+        document.getElementById('itMonthSelect').innerHTML = d.months.map(function(mk){
+          var p = mk.split('-');
+          return '<option value="' + mk + '"' + (mk === d.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
+        }).join('');
+        document.getElementById('itRepSelect').innerHTML = state.itReps_.map(function(r){
+          return '<option value="' + escapeHtml(r) + '">' + escapeHtml(r) + '</option>';
+        }).join('');
+        document.getElementById('itItemsList').innerHTML = state.itItems_.map(function(it){
+          return '<option value="' + escapeHtml(it.name) + '"></option>';
+        }).join('');
+        itResetForm_();
+        renderItemTargetsRows_(d.rows || []);
+        document.getElementById('itReportSummary').innerHTML = '';
+        document.getElementById('itReportList').innerHTML = '';
+        document.getElementById('itReportExportBtn').hidden = true;
+        setView('viewItemTargets');
+      })
+      .catch(onError);
+  }
+  function renderItemTargetsRows_(rows){
+    var el = document.getElementById('itRowsList');
+    if(!rows.length){ el.innerHTML = '<div class="empty">مفيش تارجت أصناف متسجل الشهر ده</div>'; return; }
+    var byRep = {};
+    rows.forEach(function(r){ (byRep[r.rep] = byRep[r.rep] || []).push(r); });
+    el.innerHTML = Object.keys(byRep).sort().map(function(rep){
+      return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) + '</div></div>' +
+        byRep[rep].map(function(r){
+          return '<div class="nums" style="margin-top:6px;"><span>' + escapeHtml(r.itemName || r.code) +
+            '<b style="margin-right:6px;">تارجت ' + fmt(r.target) + '</b>' +
+            (r.bonus ? '<span style="margin-right:6px;">بونص ' + fmt(r.bonus) + '</span>' : '') + '</span></div>' +
+            '<div class="aBtns" style="margin-top:4px;"><button type="button" onclick="editItemTargetRow_(' +
+              "'" + escapeHtml(rep).replace(/'/g, "\\'") + "','" + escapeHtml(r.code) + "'," +
+              Number(r.target) + ',' + Number(r.bonus || 0) + "," + "'" + escapeHtml(r.itemName || '').replace(/'/g, "\\'") + "'" +
+            ')">✏️ تعديل</button><button type="button" onclick="deleteItemTargetRow_(' +
+              "'" + escapeHtml(rep).replace(/'/g, "\\'") + "','" + escapeHtml(r.code) + "'" +
+            ')">🗑 حذف</button></div>';
+        }).join('<hr style="border:none; border-top:1px solid var(--line); margin:8px 0;">') +
+      '</div>';
+    }).join('');
+  }
+  function editItemTargetRow_(rep, code, target, bonus, itemName){
+    document.getElementById('itFormTitle').textContent = 'تعديل تارجت صنف';
+    document.getElementById('itRepSelect').value = rep;
+    document.getElementById('itItemInput').value = itemName || code;
+    document.getElementById('itItemInput').disabled = true;
+    document.getElementById('itTargetInput').value = target;
+    document.getElementById('itBonusInput').value = bonus;
+    document.getElementById('itCancelEditBtn').hidden = false;
+    state.itEditCode_ = code;
+    document.getElementById('viewItemTargets').scrollIntoView({ behavior: 'smooth' });
+  }
+  function deleteItemTargetRow_(rep, code){
+    if(!confirm('تشيل تارجت "' + rep + '" للصنف ده؟')) return;
+    showLoading(true);
+    callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, 0, 0])
+      .then(function(){ showLoading(false); showMsg('اتشال ✔', 'success'); loadItemTargets(state.itMonth_); })
+      .catch(onError);
+  }
+  function itFindItemCode_(typed){
+    var exact = (state.itItems_ || []).find(function(it){ return it.name === typed; });
+    if(exact) return exact;
+    var byCode = (state.itItems_ || []).find(function(it){ return it.code === typed; });
+    if(byCode) return byCode;
+    return null;
+  }
+  function saveItemTarget_(){
+    clearMsg();
+    var rep = document.getElementById('itRepSelect').value;
+    var typed = document.getElementById('itItemInput').value.trim();
+    var target = document.getElementById('itTargetInput').value;
+    var bonus = document.getElementById('itBonusInput').value || 0;
+    if(!rep){ showMsg('اختار المندوب', 'error'); return; }
+    var code = state.itEditCode_;
+    if(!code){
+      var found = itFindItemCode_(typed);
+      if(!found){ showMsg('اختار الصنف من القايمة', 'error'); return; }
+      code = found.code;
+    }
+    if(!target || Number(target) <= 0){ showMsg('اكتب التارجت (العدد)', 'error'); return; }
+    showLoading(true);
+    callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, Number(target), Number(bonus) || 0])
+      .then(function(){ showLoading(false); showMsg('اتحفظ ✔', 'success'); loadItemTargets(state.itMonth_); })
+      .catch(onError);
+  }
+  function loadItemTargetsReport(){
+    showLoading(true);
+    callDirectRpc_('api_item_targets_report_', [state.auth, state.itMonth_ || ''])
+      .then(function(d){
+        showLoading(false);
+        state.itReportData_ = d;
+        renderItemTargetsReport_(d);
+      })
+      .catch(onError);
+  }
+  function renderItemTargetsReport_(d){
+    var rows = d.rows || [];
+    document.getElementById('itReportSummary').innerHTML = rows.length
+      ? '<div class="totalBar"><span>إجمالي البونص المستحق</span><span class="val">' + fmt(d.totalBonus) + '</span></div>'
+      : '';
+    document.getElementById('itReportExportBtn').hidden = !rows.length;
+    if(!rows.length){ document.getElementById('itReportList').innerHTML = '<div class="empty">مفيش تارجت أصناف متسجل الشهر ده</div>'; return; }
+    var byRep = {};
+    rows.forEach(function(r){ (byRep[r.rep] = byRep[r.rep] || []).push(r); });
+    document.getElementById('itReportList').innerHTML = Object.keys(byRep).sort().map(function(rep){
+      var repBonus = byRep[rep].reduce(function(t, r){ return t + Number(r.bonusEarned || 0); }, 0);
+      return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) +
+        '<small>بونص مستحق: ' + fmt(repBonus) + '</small></div></div>' +
+        byRep[rep].map(function(r){
+          var ok = Number(r.achieved) >= Number(r.target);
+          return '<div class="nums" style="margin-top:6px; color:' + (ok ? '#2b7a4f' : 'var(--muted)') + ';">' +
+            '<span>' + escapeHtml(r.name || r.code) + '</span>' +
+            '<b>' + fmt(r.achieved) + ' / ' + fmt(r.target) + (r.pct != null ? ' (' + r.pct + '%)' : '') + '</b>' +
+            (ok ? '<span>✔ بونص ' + fmt(r.bonusEarned) + '</span>' : '<span>— مفيش بونص</span>') + '</div>';
+        }).join('') +
+      '</div>';
+    }).join('');
+  }
+  function exportItemTargetsExcel(){
+    var d = state.itReportData_;
+    if(!d || !d.rows || !d.rows.length){ showMsg('مفيش تقرير لتصديره', 'error'); return; }
+    showLoading(true);
+    var rows = d.rows.map(function(r){
+      return [r.rep, r.name || r.code, Number(r.target), Number(r.achieved), r.pct != null ? Number(r.pct) : '', Number(r.bonusEarned || 0)];
+    });
+    var opts = {
+      fileName: 'تارجت الأصناف - ' + d.monthKey,
+      reportTitle: 'تقرير تارجت الأصناف والبونص',
+      meta: [['الشهر', d.monthKey], ['التاريخ', new Date().toLocaleDateString('ar-EG')]],
+      headers: ['المندوب', 'الصنف', 'التارجت', 'المتحقق', 'النسبة %', 'البونص المستحق'],
+      rows: rows,
+      totalsLabel: 'إجمالي البونص المستحق',
+      totalsValue: Number(d.totalBonus || 0),
+      totalsIsCurrency: true,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
+      .catch(onError);
+  }
   // ============ استخدام السيرفر (صاحب الحساب بس) ============
   function fmtDur_(ms){
     ms = Number(ms) || 0;
@@ -3693,9 +3897,39 @@
         document.getElementById('itemSalesTotalQty').textContent = fmt(data.totals.netQty);
         document.getElementById('itemSalesTotalValue').textContent = fmt(data.totals.value);
 
+        state.itemSalesExportData_ = data;
         renderItemSalesList(data.items);
         setView('viewItemSales');
       })
+      .catch(onError);
+  }
+
+  function exportItemSalesExcel(){
+    var data = state.itemSalesExportData_;
+    if(!data || !data.items || !data.items.length){
+      showMsg('مفيش مبيعات أصناف لتصديرها دلوقتي', 'error');
+      return;
+    }
+    showLoading(true);
+    var rows = data.items.map(function(it){
+      return [it.code || '', it.name, Number(it.netQty), Number(it.value), Number(it.salesCount), Number(it.returnedQty || 0)];
+    });
+    var opts = {
+      fileName: 'مبيعات الأصناف - ' + (data.repName || state.user.name) + ' - ' + data.monthKey,
+      reportTitle: 'تقرير مبيعات الأصناف',
+      meta: [
+        ['المندوب', data.repName || state.user.name],
+        ['الشهر', data.monthKey],
+        ['التاريخ', new Date().toLocaleDateString('ar-EG')],
+      ],
+      headers: ['الكود', 'اسم الصنف', 'صافي الكمية', 'القيمة', 'عدد عمليات البيع', 'مرتجع'],
+      rows: rows,
+      totalsLabel: 'إجمالي القيمة',
+      totalsValue: Number(data.totals.value),
+      totalsIsCurrency: true,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
       .catch(onError);
   }
 
