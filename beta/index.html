@@ -1555,8 +1555,11 @@
       <input list="itItemsList" id="itItemInput" placeholder="اكتب اسم الصنف أو اختاره" style="margin-bottom:8px;">
       <datalist id="itItemsList"></datalist>
       <input list="itItemsList" id="itExtraCodesInput" placeholder="صنف إضافي بنفس التارجت (لو عنده اسم/كود تاني — افصل بفاصلة لو أكتر من واحد)" style="margin-bottom:8px;">
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:14px;">
+        <input type="checkbox" id="itNoTargetCheck" onchange="itToggleNoTarget_()"> بونص على كل قطعة تتباع (من غير تارجت)
+      </label>
       <input id="itTargetInput" type="number" inputmode="decimal" placeholder="التارجت (بالعدد)" style="margin-bottom:8px;">
-      <input id="itBonusInput" type="number" inputmode="decimal" placeholder="بونص القطعة (جنيه) — لو حقق التارجت ياخده على كل قطعة باعها" style="margin-bottom:8px;">
+      <input id="itBonusInput" type="number" inputmode="decimal" placeholder="بونص القطعة (جنيه) — ياخده على كل قطعة باعها لو حقق الشرط" style="margin-bottom:8px;">
       <button type="button" class="ok" id="itSaveBtn" style="width:100%;" onclick="saveItemTarget_()">💾 حفظ</button>
       <button type="button" id="itCancelEditBtn" style="width:100%; margin-top:6px;" onclick="itResetForm_()" hidden>إلغاء التعديل</button>
     </div>
@@ -3319,10 +3322,17 @@
     document.getElementById('itItemInput').value = '';
     document.getElementById('itItemInput').disabled = false;
     document.getElementById('itExtraCodesInput').value = '';
+    document.getElementById('itNoTargetCheck').checked = false;
     document.getElementById('itTargetInput').value = '';
+    document.getElementById('itTargetInput').hidden = false;
     document.getElementById('itBonusInput').value = '';
     document.getElementById('itCancelEditBtn').hidden = true;
     state.itEditCode_ = null;
+  }
+  function itToggleNoTarget_(){
+    var on = document.getElementById('itNoTargetCheck').checked;
+    document.getElementById('itTargetInput').hidden = on;
+    if(on) document.getElementById('itTargetInput').value = '';
   }
   function loadItemTargets(monthKey){
     document.getElementById('pageTitle').textContent = 'تارجت الأصناف';
@@ -3363,8 +3373,9 @@
       return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) + '</div></div>' +
         byRep[rep].map(function(r){
           var extraTxt = (r.extraCodes && r.extraCodes.length) ? ' + كود ' + r.extraCodes.join('، ') : '';
+          var targetTxt = r.noTarget ? 'من غير تارجت' : 'تارجت ' + fmt(r.target);
           return '<div class="nums" style="margin-top:6px;"><span>' + escapeHtml(r.itemName || r.code) + escapeHtml(extraTxt) +
-            '<b style="margin-right:6px;">تارجت ' + fmt(r.target) + '</b>' +
+            '<b style="margin-right:6px;">' + targetTxt + '</b>' +
             (r.bonus ? '<span style="margin-right:6px;">بونص ' + fmt(r.bonus) + '/قطعة</span>' : '') + '</span></div>' +
             '<div class="aBtns" style="margin-top:4px;"><button type="button" class="itEdit" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">✏️ تعديل</button>' +
             '<button type="button" class="itDel" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">🗑 حذف</button></div>';
@@ -3385,7 +3396,9 @@
         var it = (state.itItems_ || []).find(function(x){ return x.code === c; });
         return it ? it.name : c;
       }).join(', ');
-      document.getElementById('itTargetInput').value = row.target;
+      document.getElementById('itNoTargetCheck').checked = !!row.noTarget;
+      document.getElementById('itTargetInput').hidden = !!row.noTarget;
+      document.getElementById('itTargetInput').value = row.noTarget ? '' : row.target;
       document.getElementById('itBonusInput').value = row.bonus || '';
       document.getElementById('itCancelEditBtn').hidden = false;
       state.itEditCode_ = row.code;
@@ -3397,7 +3410,7 @@
       var rep = db.dataset.rep, code = db.dataset.code;
       if(!confirm('تشيل تارجت "' + rep + '" للصنف ده؟')) return;
       showLoading(true);
-      callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, 0, 0])
+      callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, '', 0, [], true])
         .then(function(){ showLoading(false); showMsg('اتشال ✔', 'success'); loadItemTargets(state.itMonth_); })
         .catch(onError);
     }
@@ -3416,7 +3429,8 @@
     var extraCodes = document.getElementById('itExtraCodesInput').value.split(',')
       .map(function(s){ return s.trim(); }).filter(Boolean)
       .map(function(s){ var found = itFindItemCode_(s); return found ? found.code : s; });
-    var target = document.getElementById('itTargetInput').value;
+    var noTarget = document.getElementById('itNoTargetCheck').checked;
+    var target = noTarget ? '' : document.getElementById('itTargetInput').value;
     var bonus = document.getElementById('itBonusInput').value || 0;
     if(!rep){ showMsg('اختار المندوب', 'error'); return; }
     var code = state.itEditCode_;
@@ -3425,9 +3439,10 @@
       if(!found){ showMsg('اختار الصنف من القايمة', 'error'); return; }
       code = found.code;
     }
-    if(!target || Number(target) <= 0){ showMsg('اكتب التارجت (العدد)', 'error'); return; }
+    if(!noTarget && (!target || Number(target) <= 0)){ showMsg('اكتب التارجت، أو اختار "من غير تارجت"', 'error'); return; }
+    if(!bonus || Number(bonus) <= 0){ showMsg('اكتب قيمة البونص', 'error'); return; }
     showLoading(true);
-    callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, Number(target), Number(bonus) || 0, extraCodes])
+    callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, noTarget ? '' : Number(target), Number(bonus), extraCodes, false])
       .then(function(){ showLoading(false); showMsg('اتحفظ ✔', 'success'); loadItemTargets(state.itMonth_); })
       .catch(onError);
   }
@@ -3456,10 +3471,10 @@
       return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) +
         '<small>' + (branch ? '📍 ' + escapeHtml(branch) + ' · ' : '') + 'بونص مستحق: ' + fmt(repBonus) + '</small></div></div>' +
         byRep[rep].map(function(r){
-          var ok = Number(r.achieved) >= Number(r.target);
+          var ok = r.target == null || Number(r.achieved) >= Number(r.target);
           return '<div class="nums" style="margin-top:6px; color:' + (ok ? '#2b7a4f' : 'var(--muted)') + ';">' +
             '<span>' + escapeHtml(r.name || r.code) + '</span>' +
-            '<b>' + fmt(r.achieved) + ' / ' + fmt(r.target) + (r.pct != null ? ' (' + r.pct + '%)' : '') + '</b>' +
+            '<b>' + fmt(r.achieved) + (r.target != null ? ' / ' + fmt(r.target) + (r.pct != null ? ' (' + r.pct + '%)' : '') : ' قطعة') + '</b>' +
             (ok ? '<span>✔ بونص ' + fmt(r.bonusEarned) + ' (' + fmt(r.bonus) + '/قطعة × ' + fmt(r.achieved) + ')</span>' : '<span>— مفيش بونص</span>') + '</div>';
         }).join('') +
       '</div>';
@@ -3477,7 +3492,7 @@
       var branch = repRows[0] && repRows[0].branch || '';
       var repBonus = repRows.reduce(function(t, r){ return t + Number(r.bonusEarned || 0); }, 0);
       repRows.forEach(function(r){
-        rows.push([r.rep, branch, r.name || r.code, Number(r.target), Number(r.achieved), r.pct != null ? Number(r.pct) : '', Number(r.bonusEarned || 0)]);
+        rows.push([r.rep, branch, r.name || r.code, r.target != null ? Number(r.target) : 'من غير تارجت', Number(r.achieved), r.pct != null ? Number(r.pct) : '', Number(r.bonusEarned || 0)]);
       });
       rows.push(['إجمالي ' + rep, '', '', '', '', '', Number(repBonus)]);
     });
