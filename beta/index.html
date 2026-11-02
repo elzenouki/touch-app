@@ -1554,6 +1554,7 @@
       <select id="itRepSelect" style="margin-bottom:8px;"></select>
       <input list="itItemsList" id="itItemInput" placeholder="اكتب اسم الصنف أو اختاره" style="margin-bottom:8px;">
       <datalist id="itItemsList"></datalist>
+      <input id="itExtraCodesInput" placeholder="أكواد إضافية لنفس الصنف (لو عنده أكتر من كود — افصل بفاصلة)" style="margin-bottom:8px;">
       <input id="itTargetInput" type="number" inputmode="decimal" placeholder="التارجت (بالعدد)" style="margin-bottom:8px;">
       <input id="itBonusInput" type="number" inputmode="decimal" placeholder="البونص (جنيه) لو حقق التارجت" style="margin-bottom:8px;">
       <button type="button" class="ok" id="itSaveBtn" style="width:100%;" onclick="saveItemTarget_()">💾 حفظ</button>
@@ -3317,6 +3318,7 @@
     document.getElementById('itFormTitle').textContent = 'ضيف تارجت صنف';
     document.getElementById('itItemInput').value = '';
     document.getElementById('itItemInput').disabled = false;
+    document.getElementById('itExtraCodesInput').value = '';
     document.getElementById('itTargetInput').value = '';
     document.getElementById('itBonusInput').value = '';
     document.getElementById('itCancelEditBtn').hidden = true;
@@ -3352,6 +3354,7 @@
       .catch(onError);
   }
   function renderItemTargetsRows_(rows){
+    state.itRowsCache_ = rows;
     var el = document.getElementById('itRowsList');
     if(!rows.length){ el.innerHTML = '<div class="empty">مفيش تارجت أصناف متسجل الشهر ده</div>'; return; }
     var byRep = {};
@@ -3359,37 +3362,43 @@
     el.innerHTML = Object.keys(byRep).sort().map(function(rep){
       return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) + '</div></div>' +
         byRep[rep].map(function(r){
-          return '<div class="nums" style="margin-top:6px;"><span>' + escapeHtml(r.itemName || r.code) +
+          var extraTxt = (r.extraCodes && r.extraCodes.length) ? ' + كود ' + r.extraCodes.join('، ') : '';
+          return '<div class="nums" style="margin-top:6px;"><span>' + escapeHtml(r.itemName || r.code) + escapeHtml(extraTxt) +
             '<b style="margin-right:6px;">تارجت ' + fmt(r.target) + '</b>' +
             (r.bonus ? '<span style="margin-right:6px;">بونص ' + fmt(r.bonus) + '</span>' : '') + '</span></div>' +
-            '<div class="aBtns" style="margin-top:4px;"><button type="button" onclick="editItemTargetRow_(' +
-              "'" + escapeHtml(rep).replace(/'/g, "\\'") + "','" + escapeHtml(r.code) + "'," +
-              Number(r.target) + ',' + Number(r.bonus || 0) + "," + "'" + escapeHtml(r.itemName || '').replace(/'/g, "\\'") + "'" +
-            ')">✏️ تعديل</button><button type="button" onclick="deleteItemTargetRow_(' +
-              "'" + escapeHtml(rep).replace(/'/g, "\\'") + "','" + escapeHtml(r.code) + "'" +
-            ')">🗑 حذف</button></div>';
+            '<div class="aBtns" style="margin-top:4px;"><button type="button" class="itEdit" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">✏️ تعديل</button>' +
+            '<button type="button" class="itDel" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">🗑 حذف</button></div>';
         }).join('<hr style="border:none; border-top:1px solid var(--line); margin:8px 0;">') +
       '</div>';
     }).join('');
   }
-  function editItemTargetRow_(rep, code, target, bonus, itemName){
-    document.getElementById('itFormTitle').textContent = 'تعديل تارجت صنف';
-    document.getElementById('itRepSelect').value = rep;
-    document.getElementById('itItemInput').value = itemName || code;
-    document.getElementById('itItemInput').disabled = true;
-    document.getElementById('itTargetInput').value = target;
-    document.getElementById('itBonusInput').value = bonus;
-    document.getElementById('itCancelEditBtn').hidden = false;
-    state.itEditCode_ = code;
-    document.getElementById('viewItemTargets').scrollIntoView({ behavior: 'smooth' });
-  }
-  function deleteItemTargetRow_(rep, code){
-    if(!confirm('تشيل تارجت "' + rep + '" للصنف ده؟')) return;
-    showLoading(true);
-    callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, 0, 0])
-      .then(function(){ showLoading(false); showMsg('اتشال ✔', 'success'); loadItemTargets(state.itMonth_); })
-      .catch(onError);
-  }
+  document.addEventListener('click', function(e){
+    var eb = e.target.closest('.itEdit[data-code]');
+    if(eb){
+      var row = (state.itRowsCache_ || []).find(function(r){ return r.rep === eb.dataset.rep && r.code === eb.dataset.code; });
+      if(!row) return;
+      document.getElementById('itFormTitle').textContent = 'تعديل تارجت صنف';
+      document.getElementById('itRepSelect').value = row.rep;
+      document.getElementById('itItemInput').value = row.itemName || row.code;
+      document.getElementById('itItemInput').disabled = true;
+      document.getElementById('itExtraCodesInput').value = (row.extraCodes || []).join(', ');
+      document.getElementById('itTargetInput').value = row.target;
+      document.getElementById('itBonusInput').value = row.bonus || '';
+      document.getElementById('itCancelEditBtn').hidden = false;
+      state.itEditCode_ = row.code;
+      document.getElementById('viewItemTargets').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    var db = e.target.closest('.itDel[data-code]');
+    if(db){
+      var rep = db.dataset.rep, code = db.dataset.code;
+      if(!confirm('تشيل تارجت "' + rep + '" للصنف ده؟')) return;
+      showLoading(true);
+      callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, 0, 0])
+        .then(function(){ showLoading(false); showMsg('اتشال ✔', 'success'); loadItemTargets(state.itMonth_); })
+        .catch(onError);
+    }
+  });
   function itFindItemCode_(typed){
     var exact = (state.itItems_ || []).find(function(it){ return it.name === typed; });
     if(exact) return exact;
@@ -3401,6 +3410,8 @@
     clearMsg();
     var rep = document.getElementById('itRepSelect').value;
     var typed = document.getElementById('itItemInput').value.trim();
+    var extraCodes = document.getElementById('itExtraCodesInput').value.split(',')
+      .map(function(s){ return s.trim(); }).filter(Boolean);
     var target = document.getElementById('itTargetInput').value;
     var bonus = document.getElementById('itBonusInput').value || 0;
     if(!rep){ showMsg('اختار المندوب', 'error'); return; }
@@ -3412,7 +3423,7 @@
     }
     if(!target || Number(target) <= 0){ showMsg('اكتب التارجت (العدد)', 'error'); return; }
     showLoading(true);
-    callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, Number(target), Number(bonus) || 0])
+    callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, Number(target), Number(bonus) || 0, extraCodes])
       .then(function(){ showLoading(false); showMsg('اتحفظ ✔', 'success'); loadItemTargets(state.itMonth_); })
       .catch(onError);
   }
