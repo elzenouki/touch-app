@@ -1554,7 +1554,7 @@
       <select id="itRepSelect" style="margin-bottom:8px;"></select>
       <input list="itItemsList" id="itItemInput" placeholder="اكتب اسم الصنف أو اختاره" style="margin-bottom:8px;">
       <datalist id="itItemsList"></datalist>
-      <input id="itExtraCodesInput" placeholder="أكواد إضافية لنفس الصنف (لو عنده أكتر من كود — افصل بفاصلة)" style="margin-bottom:8px;">
+      <input list="itItemsList" id="itExtraCodesInput" placeholder="صنف إضافي بنفس التارجت (لو عنده اسم/كود تاني — افصل بفاصلة لو أكتر من واحد)" style="margin-bottom:8px;">
       <input id="itTargetInput" type="number" inputmode="decimal" placeholder="التارجت (بالعدد)" style="margin-bottom:8px;">
       <input id="itBonusInput" type="number" inputmode="decimal" placeholder="البونص (جنيه) لو حقق التارجت" style="margin-bottom:8px;">
       <button type="button" class="ok" id="itSaveBtn" style="width:100%;" onclick="saveItemTarget_()">💾 حفظ</button>
@@ -3381,7 +3381,10 @@
       document.getElementById('itRepSelect').value = row.rep;
       document.getElementById('itItemInput').value = row.itemName || row.code;
       document.getElementById('itItemInput').disabled = true;
-      document.getElementById('itExtraCodesInput').value = (row.extraCodes || []).join(', ');
+      document.getElementById('itExtraCodesInput').value = (row.extraCodes || []).map(function(c){
+        var it = (state.itItems_ || []).find(function(x){ return x.code === c; });
+        return it ? it.name : c;
+      }).join(', ');
       document.getElementById('itTargetInput').value = row.target;
       document.getElementById('itBonusInput').value = row.bonus || '';
       document.getElementById('itCancelEditBtn').hidden = false;
@@ -3411,7 +3414,8 @@
     var rep = document.getElementById('itRepSelect').value;
     var typed = document.getElementById('itItemInput').value.trim();
     var extraCodes = document.getElementById('itExtraCodesInput').value.split(',')
-      .map(function(s){ return s.trim(); }).filter(Boolean);
+      .map(function(s){ return s.trim(); }).filter(Boolean)
+      .map(function(s){ var found = itFindItemCode_(s); return found ? found.code : s; });
     var target = document.getElementById('itTargetInput').value;
     var bonus = document.getElementById('itBonusInput').value || 0;
     if(!rep){ showMsg('اختار المندوب', 'error'); return; }
