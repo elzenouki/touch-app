@@ -1560,6 +1560,10 @@
       </label>
       <input id="itTargetInput" type="number" inputmode="decimal" placeholder="التارجت (بالعدد)" style="margin-bottom:8px;">
       <input id="itBonusInput" type="number" inputmode="decimal" placeholder="بونص القطعة (جنيه) — ياخده على كل قطعة باعها لو حقق الشرط" style="margin-bottom:8px;">
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:14px;">
+        <input type="checkbox" id="itMainPctCheck" onchange="itToggleMainPct_()"> يشترط كمان تحقيق نسبة من الهدف الأساسي (مبيعاته الكلية الشهرية)
+      </label>
+      <input id="itMainPctInput" type="number" inputmode="decimal" value="80" placeholder="النسبة المطلوبة من الهدف الأساسي %" style="margin-bottom:8px;" hidden>
       <button type="button" class="ok" id="itSaveBtn" style="width:100%;" onclick="saveItemTarget_()">💾 حفظ</button>
       <button type="button" id="itCancelEditBtn" style="width:100%; margin-top:6px;" onclick="itResetForm_()" hidden>إلغاء التعديل</button>
     </div>
@@ -3326,6 +3330,9 @@
     document.getElementById('itTargetInput').value = '';
     document.getElementById('itTargetInput').hidden = false;
     document.getElementById('itBonusInput').value = '';
+    document.getElementById('itMainPctCheck').checked = false;
+    document.getElementById('itMainPctInput').value = 80;
+    document.getElementById('itMainPctInput').hidden = true;
     document.getElementById('itCancelEditBtn').hidden = true;
     state.itEditCode_ = null;
   }
@@ -3333,6 +3340,10 @@
     var on = document.getElementById('itNoTargetCheck').checked;
     document.getElementById('itTargetInput').hidden = on;
     if(on) document.getElementById('itTargetInput').value = '';
+  }
+  function itToggleMainPct_(){
+    var on = document.getElementById('itMainPctCheck').checked;
+    document.getElementById('itMainPctInput').hidden = !on;
   }
   function loadItemTargets(monthKey){
     document.getElementById('pageTitle').textContent = 'تارجت الأصناف';
@@ -3374,9 +3385,11 @@
         byRep[rep].map(function(r){
           var extraTxt = (r.extraCodes && r.extraCodes.length) ? ' + كود ' + r.extraCodes.join('، ') : '';
           var targetTxt = r.noTarget ? 'من غير تارجت' : 'تارجت ' + fmt(r.target);
+          var mainTxt = r.requireMainPct != null ? ' + شرط ' + fmt(r.requireMainPct) + '% من الهدف الأساسي' : '';
           return '<div class="nums" style="margin-top:6px;"><span>' + escapeHtml(r.itemName || r.code) + escapeHtml(extraTxt) +
             '<b style="margin-right:6px;">' + targetTxt + '</b>' +
-            (r.bonus ? '<span style="margin-right:6px;">بونص ' + fmt(r.bonus) + '/قطعة</span>' : '') + '</span></div>' +
+            (r.bonus ? '<span style="margin-right:6px;">بونص ' + fmt(r.bonus) + '/قطعة</span>' : '') +
+            (mainTxt ? '<span style="margin-right:6px;">' + escapeHtml(mainTxt) + '</span>' : '') + '</span></div>' +
             '<div class="aBtns" style="margin-top:4px;"><button type="button" class="itEdit" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">✏️ تعديل</button>' +
             '<button type="button" class="itDel" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">🗑 حذف</button></div>';
         }).join('<hr style="border:none; border-top:1px solid var(--line); margin:8px 0;">') +
@@ -3400,6 +3413,9 @@
       document.getElementById('itTargetInput').hidden = !!row.noTarget;
       document.getElementById('itTargetInput').value = row.noTarget ? '' : row.target;
       document.getElementById('itBonusInput').value = row.bonus || '';
+      document.getElementById('itMainPctCheck').checked = row.requireMainPct != null;
+      document.getElementById('itMainPctInput').hidden = row.requireMainPct == null;
+      document.getElementById('itMainPctInput').value = row.requireMainPct != null ? row.requireMainPct : 80;
       document.getElementById('itCancelEditBtn').hidden = false;
       state.itEditCode_ = row.code;
       document.getElementById('viewItemTargets').scrollIntoView({ behavior: 'smooth' });
@@ -3432,6 +3448,8 @@
     var noTarget = document.getElementById('itNoTargetCheck').checked;
     var target = noTarget ? '' : document.getElementById('itTargetInput').value;
     var bonus = document.getElementById('itBonusInput').value || 0;
+    var mainPctOn = document.getElementById('itMainPctCheck').checked;
+    var mainPct = mainPctOn ? (document.getElementById('itMainPctInput').value || 80) : '';
     if(!rep){ showMsg('اختار المندوب', 'error'); return; }
     var code = state.itEditCode_;
     if(!code){
@@ -3447,7 +3465,7 @@
     var chain = Promise.resolve();
     repsToSave.forEach(function(r){
       chain = chain.then(function(){
-        return callDirectRpc_('api_item_targets_save_', [state.auth, r, code, state.itMonth_, noTarget ? '' : Number(target), Number(bonus), extraCodes, false]);
+        return callDirectRpc_('api_item_targets_save_', [state.auth, r, code, state.itMonth_, noTarget ? '' : Number(target), Number(bonus), extraCodes, false, mainPct === '' ? '' : Number(mainPct)]);
       });
     });
     chain
@@ -3479,9 +3497,11 @@
       return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) +
         '<small>' + (branch ? '📍 ' + escapeHtml(branch) + ' · ' : '') + 'بونص مستحق: ' + fmt(repBonus) + '</small></div></div>' +
         byRep[rep].map(function(r){
-          var ok = r.target == null || Number(r.achieved) >= Number(r.target);
+          var ok = Number(r.bonusEarned) > 0;
+          var mainNote = (r.requireMainPct != null && !r.mainOk)
+            ? '<small style="display:block; color:var(--muted);">محتاج ' + fmt(r.requireMainPct) + '% من الهدف الأساسي، وهو حقق ' + (r.mainPct != null ? fmt(r.mainPct) + '%' : 'مفيش هدف أساسي متسجل') + '</small>' : '';
           return '<div class="nums" style="margin-top:6px; color:' + (ok ? '#2b7a4f' : 'var(--muted)') + ';">' +
-            '<span>' + escapeHtml(r.name || r.code) + '</span>' +
+            '<span>' + escapeHtml(r.name || r.code) + mainNote + '</span>' +
             '<b>' + fmt(r.achieved) + (r.target != null ? ' / ' + fmt(r.target) + (r.pct != null ? ' (' + r.pct + '%)' : '') : ' قطعة') + '</b>' +
             (ok ? '<span>✔ بونص ' + fmt(r.bonusEarned) + ' (' + fmt(r.bonus) + '/قطعة × ' + fmt(r.achieved) + ')</span>' : '<span>— مفيش بونص</span>') + '</div>';
         }).join('') +
