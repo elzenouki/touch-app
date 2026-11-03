@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
@@ -283,6 +283,66 @@
   .evalPart .det{font-size:12px; color:var(--muted); font-weight:700; margin-top:2px;}
   .evalBar{height:6px; border-radius:5px; background:#eceae3; overflow:hidden; margin-top:5px;}
   .evalBar i{display:block; height:100%; border-radius:5px; background:var(--ec);}
+  .evalHowBtn{width:100%; display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; padding:13px 16px; border-radius:14px;
+    border:1.5px dashed var(--gold); background:var(--gold-bg); color:var(--gold-d); font-family:inherit; font-size:14.5px; font-weight:800; cursor:pointer;}
+  .evalHow p{margin:0 0 10px; font-size:13.5px; line-height:1.8; color:var(--text);}
+  .evalHowItem{font-size:13px; line-height:1.75; color:var(--muted2); padding:8px 0; border-bottom:1px dashed var(--border);}
+  .evalHowItem:last-of-type{border-bottom:none; margin-bottom:8px;}
+  .evalHowItem b{display:block; color:var(--navy); font-size:14px;}
+  .evalHist{display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;}
+  .evalHist span{font-size:11.5px; font-weight:800; background:#f4f2ec; border:1px solid var(--border); border-radius:12px; padding:2px 9px; color:var(--navy);}
+  .evalPart.off .row span:last-child{color:var(--muted);}
+  .rtSum{background:var(--navy); color:#fbf8ee; border-radius:20px; padding:16px; margin-bottom:12px; box-shadow:inset 0 0 0 2px var(--gold-light);}
+  .rtSum .row{display:flex; justify-content:space-between; align-items:flex-end; gap:10px;}
+  .rtSum .big b{display:block; font-size:30px; font-weight:900; line-height:1.1; color:var(--gold-light);}
+  .rtSum .big span, .rtSum .side span{font-size:12px; font-weight:700; opacity:.85;}
+  .rtSum .side{text-align:left;}
+  .rtSum .side b{display:block; font-size:16px; font-weight:900;}
+  .rtSum .bar{height:9px; border-radius:6px; background:rgba(255,255,255,.18); overflow:hidden; margin:12px 0 8px;}
+  .rtSum .bar i{display:block; height:100%; border-radius:6px; background:var(--gold-light);}
+  .rtSum .foot{display:flex; justify-content:space-between; flex-wrap:wrap; gap:6px; font-size:12px; font-weight:700; opacity:.9;}
+  .rtRow{background:var(--card); border:1px solid var(--border); border-radius:16px; padding:12px 14px; margin-bottom:8px;}
+  .rtRow .top{display:flex; justify-content:space-between; align-items:center; gap:10px;}
+  .rtRow .rk{flex:none; width:28px; height:28px; border-radius:14px; background:var(--card2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:900; color:var(--navy);}
+  .rtRow .nm{flex:1; min-width:0; font-size:15.5px; font-weight:900; color:var(--navy); overflow-wrap:anywhere;}
+  .rtRow .nm small{display:block; font-size:11.5px; font-weight:700; color:var(--muted);}
+  .rtRow .pc{flex:none; font-size:20px; font-weight:900;}
+  .rtRow .bar{position:relative; height:8px; border-radius:5px; background:#eceae3; overflow:hidden; margin:9px 0 7px;}
+  .rtRow .bar i{display:block; height:100%; border-radius:5px;}
+  .rtRow .bar u{position:absolute; top:0; bottom:0; width:2px; background:var(--navy); opacity:.45;}
+  .rtRow .nums{display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px 10px; font-size:12.5px; font-weight:700; color:var(--muted2);}
+  .rtRow .nums b{color:var(--navy);}
+  .rtRow .hint{margin-top:5px; font-size:12px; font-weight:800;}
+  .rtRow.noT .pc{font-size:13px; color:var(--muted);}
+  .rtRow .rtEdit{display:inline-block; margin:2px 0 6px; padding:4px 12px; border-radius:10px; border:1px dashed var(--border); background:var(--card2); color:var(--navy); font:inherit; font-size:12px; font-weight:800; cursor:pointer;}
+  .usePeriods{display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:6px; margin-bottom:12px;}
+  .usePeriods button{height:44px; border:1px solid var(--border); border-radius:14px; background:var(--card); color:var(--navy); font-family:inherit; font-size:14px; font-weight:800; cursor:pointer;}
+  .usePeriods button.on{background:var(--navy); color:#fbf8ee; border-color:var(--navy);}
+  .useTiles{display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; margin-bottom:12px;}
+  .useTile{background:var(--card); border:1px solid var(--border); border-radius:14px; padding:10px 12px;}
+  .useTile b{display:block; font-size:20px; font-weight:900; color:var(--navy);}
+  .useTile span{font-size:12px; font-weight:700; color:var(--muted2);}
+  .useUser{padding:11px 0; border-bottom:1px dashed var(--border);}
+  .useUser:last-child{border-bottom:none;}
+  .useUser .top{display:flex; justify-content:space-between; align-items:center; gap:8px;}
+  .useUser .nm{font-size:15px; font-weight:900; color:var(--navy); min-width:0; overflow-wrap:anywhere;}
+  .useUser .nm small{display:block; font-size:11.5px; font-weight:700; color:var(--muted); direction:ltr; text-align:right;}
+  .useUser .cnt{text-align:left; flex:none; font-size:16px; font-weight:900; color:var(--gold-d);}
+  .useUser .cnt small{display:block; font-size:11px; color:var(--muted); font-weight:700;}
+  .useBar{height:7px; border-radius:5px; background:#eceae3; overflow:hidden; margin:7px 0 6px;}
+  .useBar i{display:block; height:100%; border-radius:5px; background:var(--navy);}
+  .useUser.heavy .useBar i{background:var(--gold);}
+  .useMeta{font-size:12px; font-weight:700; color:var(--muted2); line-height:1.7;}
+  .useMeta .bad{color:var(--red);}
+  .useActs{display:flex; flex-wrap:wrap; gap:5px; margin-top:6px;}
+  .useActs span{font-size:11.5px; font-weight:800; background:#f4f2ec; border:1px solid var(--border); border-radius:12px; padding:2px 9px; color:var(--navy);}
+  .useTag{display:inline-block; font-size:11px; font-weight:900; padding:1px 8px; border-radius:10px; background:var(--gold-bg); color:var(--gold-d); border:1px solid var(--gold); margin-inline-start:6px; vertical-align:middle;}
+  .useHours{display:flex; align-items:flex-end; gap:2px; height:90px; direction:ltr;}
+  .useHours i{flex:1; background:var(--navy); border-radius:3px 3px 0 0; min-height:2px; opacity:.85;}
+  .useHoursAxis{display:flex; justify-content:space-between; direction:ltr; font-size:10.5px; font-weight:700; color:var(--muted); margin-top:4px;}
+  .useAct{display:flex; justify-content:space-between; gap:8px; padding:8px 0; border-bottom:1px solid #f0ece2; font-size:13.5px; font-weight:700; color:var(--navy);}
+  .useAct:last-child{border-bottom:none;}
+  .useAct small{color:var(--muted); font-weight:700;}
   .evalToggle{font-size:12.5px; font-weight:800; color:var(--blue); margin-top:10px; cursor:pointer; background:none; border:none; padding:0; font-family:inherit;}
   .adminLink.ic-prices .icon{background:var(--blue-bg); color:var(--blue);}
   .adminLink.ic-admin .icon{background:var(--gold-bg); color:var(--gold-d);}
@@ -1155,6 +1215,8 @@
       <button type="button" class="c2Item" id="myStatsLink" onclick="openScreen('mystats')"><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span><span class="title">مبيعاتي</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="balancesLink" onclick="openScreen('balances')"><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path></svg></span><span class="title">أرصدتي</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="invoiceHistoryLink" onclick="openScreen('history')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg></span><span class="title">سجل فواتيري</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="repsTargetsLink" onclick="openScreen('repstargets')" hidden><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.5"></circle></svg></span><span class="title">مبيعات وتارجت المناديب</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="itemTargetsLink" onclick="openScreen('itemtargets')" hidden><span class="ic" style="background:#fdf1e0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#a8702f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg></span><span class="title">تارجت الأصناف</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="itemSalesLink" onclick="openScreen('itemsales')"><span class="ic" style="background:#eeeaf8"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5b4a9c" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg></span><span class="title">مبيعات الأصناف</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span class="title">تقرير أسباب الركود</span><span class="chev"></span></button>
     </div>
@@ -1172,6 +1234,7 @@
         <button type="button" class="c2Item" id="suggestionLink" onclick="openScreen('suggestion')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9V16h7v-2.1A6 6 0 0 0 12 3z"></path></svg></span><span class="title">ابعت اقتراح</span><span class="chev"></span></button>
         <button type="button" class="c2Item" id="profileLink" onclick="openScreen('profile')"><span class="ic" style="background:#eceef3"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#3d465e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"></path></svg></span><span class="title">إعداداتي</span><span class="chev"></span></button>
         <button type="button" class="c2Item" id="adminLink" onclick="openScreen('admin')" hidden><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"></circle><path d="M2.5 20c1.2-3.5 3.6-5 6.5-5s5.3 1.5 6.5 5"></path><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2 .6 3.2 2.2 3.8 5"></path></svg></span><span class="title">إدارة المناديب والمشرفين</span><span class="chev"></span></button>
+        <button type="button" class="c2Item" id="usageLink" onclick="openScreen('usage')" hidden><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="7" rx="2"></rect><rect x="3" y="13" width="18" height="7" rx="2"></rect><path d="M7 7.5h.01M7 16.5h.01"></path></svg></span><span class="title">استخدام السيرفر</span><span class="chev"></span></button>
         <button type="button" class="c2Item logout" onclick="handleLogout()"><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4h4v16h-4"></path><path d="M10 17l-5-5 5-5M5 12h11"></path></svg></span><span class="title">تسجيل خروج</span></button>
       </div>
     </div>
@@ -1374,6 +1437,7 @@
         <span>إجمالي القيمة</span>
         <span class="val" id="itemSalesTotalValue">0</span>
       </div>
+      <button class="whatsapp" style="margin-top:12px; width:100%;" onclick="exportItemSalesExcel()">📤 تصدير إكسل</button>
     </div>
     <div class="card">
       <div class="cardTitle">مبيعات الأصناف (الأكتر مبيعًا فوق)</div>
@@ -1388,8 +1452,23 @@
       <select id="evalMonthSelect" onchange="loadEval(this.value)"></select>
       <div class="pulseNote" id="evalSummary" style="margin:0;"></div>
     </div>
+    <div id="evalHowWrap" hidden>
+      <button type="button" class="evalHowBtn" onclick="toggleEvalHow_()"><span>💡 إزاي بيتحسب تقييمي؟</span><span id="evalHowArrow">▾</span></button>
+      <div class="card evalHow" id="evalHow" hidden>
+        <p>التقييم من <b>100 درجة</b>، والفكرة إنك تتقيم على <b>شغلك إنت</b> مش على حجم فرعك — المندوب في فرع صغير ممكن ياخد درجة أعلى من مندوب في فرع كبير لو اشتغل أحسن من المعتاد.</p>
+        <div class="evalHowItem"><b>1. أداء فرعك — 35</b>بيعك في اليوم مقارنة بالمعتاد في نفس فرعك (آخر 3 شهور). ولو السوق كله هادي (زي آخر الموسم) ده مش بيتحسب عليك. 110% من المتوقع أو أكتر = الدرجة كاملة.</div>
+        <div class="evalHowItem"><b>2. التارجت — 15</b>نسبة اللي حققته من تارجت الشهر.</div>
+        <div class="evalHowItem"><b>3. التصريف — 20</b>بعت كام من البضاعة اللي كانت معاك: اللي بعته ÷ (اللي بعته + رصيدك آخر الشهر)، مقارنة بمتوسط المناديب.</div>
+        <div class="evalHowItem"><b>4. الرواكد — 15</b>نسبة الأصناف اللي معاك ومتباعتش من 21 يوم. الراكد اللي عدّى 30 يوم من غير ما تكتب سببه بيتحسب مرتين — والمندوب الجديد (أول 30 يوم) مش بتتحسب عليه.</div>
+        <div class="evalHowItem"><b>5. المرتجع — 10</b>المرتجع السليم من العملاء بس، على آخر 3 شهور. التالف ورجوع البضاعة للشركة مش بيتحسبوا عليك — اختار نوع المرتجع صح.</div>
+        <div class="evalHowItem"><b>6. الالتزام — 5</b>الجرد كل أسبوع.</div>
+        <p>أي بند مش متاح ليك (فرع جديد، مفيش تارجت، مندوب جديد) مش بيتحسب، ودرجتك بتتحسب من الباقي على 100.</p>
+        <p><b>غير مكتمل:</b> لو أيام بيعك في الشهر قليلة، أو فرعك جديد ومفيش تارجت — بيبان تقييمك بس من غير ترتيب.</p>
+        <p><b>الترتيب</b> على آخر 3 شهور (الشهر الحالي 50% · اللي قبله 30% · اللي قبله 20%)، عشان شهر واحد مايقلبش ترتيبك.</p>
+      </div>
+    </div>
     <div id="evalList"></div>
-    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
+    <div id="evalOldNote" style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
       التقييم من 100: تحقيق التارجت 30 · حجم البيع 15 · متوسط بيع الصنف 20 · الرواكد 20 · المرتجع 15<br>
       متوسط بيع الصنف = كميتك من كل صنف معاك مقارنة بمتوسط باقي المناديب اللي باعوه<br>
       الرواكد = نسبة الأصناف الراكدة من الأصناف اللي معاك (30% أو أكتر = صفر) — ومش بتتحسب على المندوب الجديد أول 30 يوم<br>
@@ -1446,6 +1525,85 @@
         وهيترفع القفل عنه على طول.
       </div>
       <div id="staleBlockList"></div>
+    </div>
+  </div>
+
+  <!-- ============ شاشة مبيعات وتارجت المناديب (للمشرفين) ============ -->
+  <div id="viewRepsTargets" hidden>
+    <div class="card">
+      <div class="cardTitle">اختار الشهر</div>
+      <select id="rtMonthSelect" onchange="loadRepsTargets(this.value)"></select>
+      <div class="pulseNote" id="rtSummaryNote" style="margin:0;"></div>
+    </div>
+    <div class="rtSum" id="rtSum"></div>
+    <div id="rtList"></div>
+    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
+      الصافي = البيع − المرتجع (رجوع البضاعة للشركة مش بيتخصم) · النسبة = الصافي ÷ التارجت<br>
+      "المتوقع آخر الشهر" = لو كمل بنفس معدل البيع لحد آخر الشهر
+    </div>
+  </div>
+
+  <!-- ============ شاشة تارجت الأصناف بالمندوب + بونص (للمشرفين) ============ -->
+  <div id="viewItemTargets" hidden>
+    <div class="card">
+      <div class="cardTitle">اختار الشهر</div>
+      <select id="itMonthSelect" onchange="loadItemTargets(this.value)"></select>
+    </div>
+    <div class="card">
+      <div class="cardTitle" id="itFormTitle">ضيف تارجت صنف</div>
+      <select id="itRepSelect" style="margin-bottom:8px;"></select>
+      <input list="itItemsList" id="itItemInput" placeholder="اكتب اسم الصنف أو اختاره" style="margin-bottom:8px;">
+      <datalist id="itItemsList"></datalist>
+      <input list="itItemsList" id="itExtraCodesInput" placeholder="صنف إضافي بنفس التارجت (لو عنده اسم/كود تاني — افصل بفاصلة لو أكتر من واحد)" style="margin-bottom:8px;">
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:14px;">
+        <input type="checkbox" id="itNoTargetCheck" onchange="itToggleNoTarget_()"> بونص على كل قطعة تتباع (من غير تارجت)
+      </label>
+      <input id="itTargetInput" type="number" inputmode="decimal" placeholder="التارجت (بالعدد)" style="margin-bottom:8px;">
+      <input id="itBonusInput" type="number" inputmode="decimal" placeholder="بونص القطعة (جنيه) — ياخده على كل قطعة باعها لو حقق الشرط" style="margin-bottom:8px;">
+      <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:14px;">
+        <input type="checkbox" id="itMainPctCheck" onchange="itToggleMainPct_()"> يشترط كمان تحقيق نسبة من الهدف الأساسي (مبيعاته الكلية الشهرية)
+      </label>
+      <input id="itMainPctInput" type="number" inputmode="decimal" value="80" placeholder="النسبة المطلوبة من الهدف الأساسي %" style="margin-bottom:8px;" hidden>
+      <button type="button" class="ok" id="itSaveBtn" style="width:100%;" onclick="saveItemTarget_()">💾 حفظ</button>
+      <button type="button" id="itCancelEditBtn" style="width:100%; margin-top:6px;" onclick="itResetForm_()" hidden>إلغاء التعديل</button>
+    </div>
+    <div class="card">
+      <div class="cardTitle">التارجتات المتسجلة الشهر ده</div>
+      <div id="itRowsList"></div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">تقرير الإنجاز والبونص (كل المناديب)</div>
+      <button type="button" class="whatsapp" style="width:100%;" onclick="loadItemTargetsReport()">📊 اعرض التقرير</button>
+      <div id="itReportSummary" style="margin-top:10px;"></div>
+      <div id="itReportList"></div>
+      <button type="button" class="whatsapp" id="itReportExportBtn" style="margin-top:12px; width:100%;" onclick="exportItemTargetsExcel()" hidden>📤 تصدير إكسل</button>
+    </div>
+  </div>
+
+  <!-- ============ شاشة استخدام السيرفر (صاحب الحساب بس) ============ -->
+  <div id="viewUsage" hidden>
+    <div class="usePeriods" id="usePeriods">
+      <button type="button" data-days="1" onclick="loadUsage(1)">النهارده</button>
+      <button type="button" data-days="7" onclick="loadUsage(7)">آخر 7 أيام</button>
+      <button type="button" data-days="30" onclick="loadUsage(30)">آخر 30 يوم</button>
+    </div>
+    <div class="useTiles" id="useTiles"></div>
+    <div class="card">
+      <div class="cardTitle">مين بيستخدم السيرفر أكتر</div>
+      <div id="useUsers"></div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">الطلبات حسب الساعة</div>
+      <div class="useHours" id="useHours"></div>
+      <div class="useHoursAxis"><span>12 ص</span><span>6 ص</span><span>12 م</span><span>6 م</span><span>11 م</span></div>
+    </div>
+    <div class="card">
+      <div class="cardTitle">أكتر الطلبات تقلًا على السيرفر</div>
+      <div id="useActions"></div>
+    </div>
+    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
+      بيتحسب كل طلب بيعدّي على السيرفر (Supabase) — الدخول وحفظ الإعدادات اللي على جوجل مش محسوبين هنا.<br>
+      "وقت السيرفر" = مجموع الوقت اللي السيرفر قعده يشتغل للمستخدم ده. الصفحة دي بتبان ليك إنت بس.
     </div>
   </div>
 
@@ -1562,6 +1720,7 @@
           <button type="button" id="rsAdminBtn" onclick="rsToggleAdmin_()"></button>
           <button type="button" onclick="rsSetPin_()">🔑 كود الدخول</button>
         </div>
+        <div class="rsRow" style="margin-bottom:8px;"><button type="button" onclick="rsSetBranch_()">📍 الفرع</button></div>
         <div class="rsRow"><button type="button" class="danger" id="rsDelBtn" onclick="rsDelete_()">حذف المندوب</button></div>
       </div>
     </div>
@@ -1727,11 +1886,11 @@
   // الويب بتاع Apps Script كـ API عادي (JSON)، بدل ما يكون Apps Script هو اللي بيعرض الصفحة.
   // ملحوظة: لو عملت Deploy جديد (deployment جديد خالص، مش تعديل نفس القديم) هيتغيّر اللينك،
   // وهتحتاج تحدّث القيمة دي بس.
-  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbwCd28GkMFnonxGWs4TfX2Kuszj5KUYn2i5HRj1WDZVfiesp47OaDk-e6ehV_Csl9JI/exec';
+  const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxa1Uz2Nk1nGhmKuW1t4UQvJaQXw_nZ7p1vDlET_lQKcYH4xKatecTGjzeoRPdMufqZ/exec';
 
   // رقم إصدار التطبيق — غيّره كل ما تعمل تحديث حقيقي، بيظهر في شاشة "إعداداتي" تحت زرار الحفظ
   // عشان لو مندوب فيه مشكلة تقدر تسأله "شايف إصدار كام؟" وتعرف على طول لو لسه شايل نسخة قديمة
-  const APP_VERSION_ = 'v2.5.1';
+  const APP_VERSION_ = 'v2.6.0';
 
   // ============ عدّاد سرعة التطبيق ============
   // بيسجل آخر 25 طلب: الوقت الكلي، ووقت السيرفر (جوجل) لوحده — الفرق بينهم = وقت النت.
@@ -1757,14 +1916,17 @@
   const SB_PUBLIC_KEY_ = 'sb_publishable_upUxZo453bAsS73Rsm0fXA_T9xtIfyy';
   const SB_READ_ACTIONS_ = {bootstrapHome:1, bootstrapMyStats:1, bootstrapStale:1, listMyInvoices:1, getInvoiceDetails:1, getMyBalances:1,
     bootstrapBalances:1, bootstrapItemSalesReport:1, bootstrapRepEvaluation:1, bootstrapProfile:1, listSuggestions:1, listProductDescriptions:1,
-    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1};
+    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1, serverUsage:1, repsTargets:1};
   // طلبات بتكتب في الشيت: بنطلب من جوجل ينسخ التغيير لـ Supabase فورًا (عشان الشاشات تبان محدثة على طول)
   const SB_WRITE_ACTIONS_ = {addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, savePrices:1,
     saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
     addProductDescription:1, deleteProductDescription:1, setAdProduct:1, clearAd:1, passkeyRegisterFinish:1, passkeyClearMine:1, setRepSupervisors:1};
   // التسجيل نفسه (فاتورة/جرد/توريد) بقى على Supabase بس — ومفيش نسخة بتروح لجوجل شيت.
   // لو النت قطع، بنعيد نفس الطلب (بنفس رقمه المرجعي، فمستحيل يتسجل مرتين) — ومنبعتهوش لجوجل أبدًا.
-  const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1};
+  const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1,
+    // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
+    listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
+    addRep:1, setRepPin:1, setRepBranch:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, saveTarget:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
       method: 'POST',
@@ -1817,7 +1979,7 @@
       // text/plain مهم عشان المتصفح ميبعتش طلب OPTIONS (preflight) قبل الطلب الحقيقي —
       // Apps Script مش بيعرف يرد على OPTIONS، فلو بعتنا application/json هنا هيفشل الطلب.
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-      body: JSON.stringify({ action: action, args: args || [], mirror: !!SB_WRITE_ACTIONS_[action] }),
+      body: JSON.stringify({ action: action, args: args || [] }),
     })
       .then(function(res){ return res.json(); })
       .then(function(data){
@@ -1919,7 +2081,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -2388,6 +2550,9 @@
     document.getElementById('profileLink').hidden = false; // إعداداتي متاحة للكل (مندوب ومشرف وصاحب الحساب)
     document.getElementById('suggestionLink').hidden = state.isAdmin;
     document.getElementById('staleReasonsLink').hidden = !state.isOwner;
+    document.getElementById('usageLink').hidden = !state.isOwner;
+    document.getElementById('repsTargetsLink').hidden = !(state.isAdmin || state.isOwner);
+    document.getElementById('itemTargetsLink').hidden = !(state.isAdmin || state.isOwner);
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
@@ -2984,6 +3149,9 @@
     if(name === 'eval'){ loadEval(); return; }
     if(name === 'stale'){ loadStale(''); return; }
     if(name === 'stalereasons'){ loadStaleReasons(); return; }
+    if(name === 'usage'){ loadUsage(state.usageDays_ || 7); return; }
+    if(name === 'repstargets'){ loadRepsTargets(state.rtMonth_ || ''); return; }
+    if(name === 'itemtargets'){ loadItemTargets(state.itMonth_ || ''); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
     if(name === 'profile'){ loadProfile(); return; }
@@ -3059,6 +3227,394 @@
   }
 
   // ============ تقرير أسباب الركود (للمشرفين فقط) ============
+  // ============ مبيعات وتارجت المناديب (للمشرفين) ============
+  function rtColor_(p){ return p >= 100 ? '#2b7a4f' : p >= 80 ? '#4f9a3a' : p >= 60 ? '#b6862f' : p >= 40 ? '#c77b1e' : '#b83a3a'; }
+  function loadRepsTargets(monthKey){
+    document.getElementById('pageTitle').textContent = 'مبيعات وتارجت المناديب';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('repsTargets', [state.auth, monthKey || ''])
+      .then(function(d){
+        showLoading(false);
+        state.rtMonth_ = d.monthKey;
+        document.getElementById('rtMonthSelect').innerHTML = d.months.map(function(mk){
+          const p = mk.split('-');
+          return '<option value="' + mk + '"' + (mk === d.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
+        }).join('');
+        renderRepsTargets_(d);
+        setView('viewRepsTargets');
+      })
+      .catch(onError);
+  }
+  function renderRepsTargets_(d){
+    const T = d.totals || {};
+    document.getElementById('rtSummaryNote').textContent = d.current
+      ? ('عدّى ' + d.elapsed + ' يوم من ' + d.totalDays + ' · فاضل ' + d.daysLeft + ' يوم بالنهارده')
+      : 'الشهر خلص';
+    const tp = T.pct == null ? null : Number(T.pct);
+    document.getElementById('rtSum').innerHTML =
+      '<div class="row"><div class="big"><span>صافي مبيعات المناديب</span><b>' + fmt(T.net) + '</b></div>' +
+        '<div class="side"><span>التارجت</span><b>' + (T.target ? fmt(T.target) : '—') + '</b></div></div>' +
+      (tp != null ? '<div class="bar"><i style="width:' + Math.min(100, Math.max(0, tp)) + '%"></i></div>' : '<div style="height:10px"></div>') +
+      '<div class="foot">' +
+        (tp != null ? '<span>اتحقق ' + tp + '% من التارجت</span>' : '<span>مفيش تارجت متسجل للشهر ده</span>') +
+        (T.forecast != null ? '<span>المتوقع آخر الشهر ' + T.forecast + '%</span>' : '') +
+        (T.withTarget ? '<span>' + T.achieved + ' من ' + T.withTarget + ' حققوا التارجت</span>' : '') +
+        (d.current && T.today ? '<span>النهارده ' + fmt(T.today) + '</span>' : '') +
+      '</div>';
+
+    const rows = d.rows || [];
+    if(!rows.length){ document.getElementById('rtList').innerHTML = '<div class="card"><div class="empty">مفيش مناديب</div></div>'; return; }
+    let rank = 0;
+    document.getElementById('rtList').innerHTML = rows.map(function(r){
+      const hasT = r.target != null && Number(r.target) > 0;
+      const p = hasT ? Number(r.pct) : null;
+      const c = hasT ? rtColor_(p) : 'var(--muted)';
+      if(hasT) rank++;
+      const expMark = (hasT && d.current) ? '<u style="left:' + Math.min(100, Math.round(d.elapsed / d.totalDays * 100)) + '%"></u>' : '';
+      let hint = '';
+      if(hasT && d.current){
+        hint = p >= 100 ? '<div class="hint" style="color:#2b7a4f">✔ حقق التارجت</div>'
+          : '<div class="hint" style="color:' + rtColor_(Number(r.forecast)) + '">محتاج ' + fmt(r.needPerDay) + ' في اليوم · المتوقع آخر الشهر ' + r.forecast + '%</div>';
+      } else if(hasT && !d.current){
+        hint = p >= 100 ? '<div class="hint" style="color:#2b7a4f">✔ حقق التارجت</div>' : '<div class="hint" style="color:' + c + '">فضل ' + fmt(r.remaining) + '</div>';
+      }
+      return '<div class="rtRow' + (hasT ? '' : ' noT') + '">' +
+        '<div class="top">' +
+          '<span class="rk">' + (hasT ? rank : '–') + '</span>' +
+          '<div class="nm">' + escapeHtml(r.name) + '<small>📍 ' + escapeHtml((r.branches || []).join('، ') || '—') + ' · ' + r.days + ' يوم بيع</small></div>' +
+          '<span class="pc" style="color:' + c + '">' + (hasT ? p + '%' : 'مفيش تارجت') + '</span>' +
+        '</div>' +
+        (hasT ? '<div class="bar"><i style="width:' + Math.min(100, Math.max(0, p)) + '%; background:' + c + '"></i>' + expMark + '</div>' : '<div style="height:8px"></div>') +
+        (state.isOwner ? '<button type="button" class="rtEdit" data-rtname="' + escapeHtml(r.name) + '" data-rtt="' + (hasT ? r.target : '') + '">✏️ ' + (hasT ? 'تعديل التارجت' : 'حط تارجت') + '</button>' : '') +
+        '<div class="nums"><span>الصافي <b>' + fmt(r.net) + '</b></span>' +
+          (hasT ? '<span>التارجت <b>' + fmt(r.target) + '</b></span>' : '') +
+          (Number(r.ret) > 0 ? '<span>مرتجع ' + fmt(r.ret) + '</span>' : '') +
+          (d.current && Number(r.today) ? '<span>النهارده ' + fmt(r.today) + '</span>' : '') +
+        '</div>' + hint +
+      '</div>';
+    }).join('');
+  }
+
+  document.addEventListener('click', function(e){
+    const b = e.target.closest('.rtEdit[data-rtname]');
+    if(!b) return;
+    const name = b.dataset.rtname, mk = state.rtMonth_ || '';
+    const v = prompt('تارجت "' + name + '" لشهر ' + mk + ' (اكتب 0 أو سيبها فاضية عشان تشيله):', b.dataset.rtt || '');
+    if(v == null) return;
+    showLoading(true);
+    callApi('saveTarget', [state.auth, name, mk, String(v).replace(/[٠-٩]/g, function(d){ return String(d.charCodeAt(0) - 0x660); })])
+      .then(function(){ showLoading(false); showMsg('تم حفظ التارجت ✔', 'success'); loadRepsTargets(mk); })
+      .catch(onError);
+  });
+  // ============ تارجت الأصناف بالمندوب + بونص (للمشرفين) — دوال جديدة بالكامل،
+  // بتنادي دوال SQL جديدة (api_item_targets_*) من غير ما تلمس api/api_core الأصليين ============
+  function callDirectRpc_(fn, args){
+    return fetch('https://llbvttieimysqxyrdwph.supabase.co/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SB_PUBLIC_KEY_ },
+      body: JSON.stringify({ p_args: args || [] }),
+    })
+      .then(function(res){ if(!res.ok) throw new Error('sb ' + res.status); return res.json(); })
+      .then(function(data){
+        if(!data || data.ok !== true) throw new Error((data && data.error) || 'حصل خطأ غير متوقع');
+        return data.result;
+      });
+  }
+  function itResetForm_(){
+    document.getElementById('itFormTitle').textContent = 'ضيف تارجت صنف';
+    document.getElementById('itItemInput').value = '';
+    document.getElementById('itItemInput').disabled = false;
+    document.getElementById('itExtraCodesInput').value = '';
+    document.getElementById('itNoTargetCheck').checked = false;
+    document.getElementById('itTargetInput').value = '';
+    document.getElementById('itTargetInput').hidden = false;
+    document.getElementById('itBonusInput').value = '';
+    document.getElementById('itMainPctCheck').checked = false;
+    document.getElementById('itMainPctInput').value = 80;
+    document.getElementById('itMainPctInput').hidden = true;
+    document.getElementById('itCancelEditBtn').hidden = true;
+    state.itEditCode_ = null;
+  }
+  function itToggleNoTarget_(){
+    var on = document.getElementById('itNoTargetCheck').checked;
+    document.getElementById('itTargetInput').hidden = on;
+    if(on) document.getElementById('itTargetInput').value = '';
+  }
+  function itToggleMainPct_(){
+    var on = document.getElementById('itMainPctCheck').checked;
+    document.getElementById('itMainPctInput').hidden = !on;
+  }
+  function loadItemTargets(monthKey){
+    document.getElementById('pageTitle').textContent = 'تارجت الأصناف';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callDirectRpc_('api_item_targets_bootstrap_', [state.auth, monthKey || ''])
+      .then(function(d){
+        showLoading(false);
+        state.itMonth_ = d.monthKey;
+        state.itReps_ = d.reps || [];
+        state.itItems_ = d.items || [];
+        document.getElementById('itMonthSelect').innerHTML = d.months.map(function(mk){
+          var p = mk.split('-');
+          return '<option value="' + mk + '"' + (mk === d.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
+        }).join('');
+        document.getElementById('itRepSelect').innerHTML = '<option value="__all__">🌟 كل المناديب</option>' + state.itReps_.map(function(r){
+          return '<option value="' + escapeHtml(r) + '">' + escapeHtml(r) + '</option>';
+        }).join('');
+        document.getElementById('itItemsList').innerHTML = state.itItems_.map(function(it){
+          return '<option value="' + escapeHtml(it.name) + '"></option>';
+        }).join('');
+        itResetForm_();
+        renderItemTargetsRows_(d.rows || []);
+        document.getElementById('itReportSummary').innerHTML = '';
+        document.getElementById('itReportList').innerHTML = '';
+        document.getElementById('itReportExportBtn').hidden = true;
+        setView('viewItemTargets');
+      })
+      .catch(onError);
+  }
+  function renderItemTargetsRows_(rows){
+    state.itRowsCache_ = rows;
+    var el = document.getElementById('itRowsList');
+    if(!rows.length){ el.innerHTML = '<div class="empty">مفيش تارجت أصناف متسجل الشهر ده</div>'; return; }
+    var byRep = {};
+    rows.forEach(function(r){ (byRep[r.rep] = byRep[r.rep] || []).push(r); });
+    el.innerHTML = Object.keys(byRep).sort().map(function(rep){
+      return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) + '</div></div>' +
+        byRep[rep].map(function(r){
+          var extraTxt = (r.extraCodes && r.extraCodes.length) ? ' + كود ' + r.extraCodes.join('، ') : '';
+          var targetTxt = r.noTarget ? 'من غير تارجت' : 'تارجت ' + fmt(r.target);
+          var mainTxt = r.requireMainPct != null ? ' + شرط ' + fmt(r.requireMainPct) + '% من الهدف الأساسي' : '';
+          return '<div class="nums" style="margin-top:6px;"><span>' + escapeHtml(r.itemName || r.code) + escapeHtml(extraTxt) +
+            '<b style="margin-right:6px;">' + targetTxt + '</b>' +
+            (r.bonus ? '<span style="margin-right:6px;">بونص ' + fmt(r.bonus) + '/قطعة</span>' : '') +
+            (mainTxt ? '<span style="margin-right:6px;">' + escapeHtml(mainTxt) + '</span>' : '') + '</span></div>' +
+            '<div class="aBtns" style="margin-top:4px;"><button type="button" class="itEdit" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">✏️ تعديل</button>' +
+            '<button type="button" class="itDel" data-rep="' + escapeHtml(rep) + '" data-code="' + escapeHtml(r.code) + '">🗑 حذف</button></div>';
+        }).join('<hr style="border:none; border-top:1px solid var(--line); margin:8px 0;">') +
+      '</div>';
+    }).join('');
+  }
+  document.addEventListener('click', function(e){
+    var eb = e.target.closest('.itEdit[data-code]');
+    if(eb){
+      var row = (state.itRowsCache_ || []).find(function(r){ return r.rep === eb.dataset.rep && r.code === eb.dataset.code; });
+      if(!row) return;
+      document.getElementById('itFormTitle').textContent = 'تعديل تارجت صنف';
+      document.getElementById('itRepSelect').value = row.rep;
+      document.getElementById('itItemInput').value = row.itemName || row.code;
+      document.getElementById('itItemInput').disabled = true;
+      document.getElementById('itExtraCodesInput').value = (row.extraCodes || []).map(function(c){
+        var it = (state.itItems_ || []).find(function(x){ return x.code === c; });
+        return it ? it.name : c;
+      }).join(', ');
+      document.getElementById('itNoTargetCheck').checked = !!row.noTarget;
+      document.getElementById('itTargetInput').hidden = !!row.noTarget;
+      document.getElementById('itTargetInput').value = row.noTarget ? '' : row.target;
+      document.getElementById('itBonusInput').value = row.bonus || '';
+      document.getElementById('itMainPctCheck').checked = row.requireMainPct != null;
+      document.getElementById('itMainPctInput').hidden = row.requireMainPct == null;
+      document.getElementById('itMainPctInput').value = row.requireMainPct != null ? row.requireMainPct : 80;
+      document.getElementById('itCancelEditBtn').hidden = false;
+      state.itEditCode_ = row.code;
+      document.getElementById('viewItemTargets').scrollIntoView({ behavior: 'smooth' });
+      return;
+    }
+    var db = e.target.closest('.itDel[data-code]');
+    if(db){
+      var rep = db.dataset.rep, code = db.dataset.code;
+      if(!confirm('تشيل تارجت "' + rep + '" للصنف ده؟')) return;
+      showLoading(true);
+      callDirectRpc_('api_item_targets_save_', [state.auth, rep, code, state.itMonth_, '', 0, [], true])
+        .then(function(){ showLoading(false); showMsg('اتشال ✔', 'success'); loadItemTargets(state.itMonth_); })
+        .catch(onError);
+    }
+  });
+  function itFindItemCode_(typed){
+    var exact = (state.itItems_ || []).find(function(it){ return it.name === typed; });
+    if(exact) return exact;
+    var byCode = (state.itItems_ || []).find(function(it){ return it.code === typed; });
+    if(byCode) return byCode;
+    return null;
+  }
+  function saveItemTarget_(){
+    clearMsg();
+    var rep = document.getElementById('itRepSelect').value;
+    var typed = document.getElementById('itItemInput').value.trim();
+    var extraCodes = document.getElementById('itExtraCodesInput').value.split(',')
+      .map(function(s){ return s.trim(); }).filter(Boolean)
+      .map(function(s){ var found = itFindItemCode_(s); return found ? found.code : s; });
+    var noTarget = document.getElementById('itNoTargetCheck').checked;
+    var target = noTarget ? '' : document.getElementById('itTargetInput').value;
+    var bonus = document.getElementById('itBonusInput').value || 0;
+    var mainPctOn = document.getElementById('itMainPctCheck').checked;
+    var mainPct = mainPctOn ? (document.getElementById('itMainPctInput').value || 80) : '';
+    if(!rep){ showMsg('اختار المندوب', 'error'); return; }
+    var code = state.itEditCode_;
+    if(!code){
+      var found = itFindItemCode_(typed);
+      if(!found){ showMsg('اختار الصنف من القايمة', 'error'); return; }
+      code = found.code;
+    }
+    if(!noTarget && (!target || Number(target) <= 0)){ showMsg('اكتب التارجت، أو اختار "من غير تارجت"', 'error'); return; }
+    if(!bonus || Number(bonus) <= 0){ showMsg('اكتب قيمة البونص', 'error'); return; }
+    showLoading(true);
+    var repsToSave = rep === '__all__' ? (state.itReps_ || []) : [rep];
+    if(!repsToSave.length){ showLoading(false); showMsg('مفيش مناديب', 'error'); return; }
+    var chain = Promise.resolve();
+    repsToSave.forEach(function(r){
+      chain = chain.then(function(){
+        return callDirectRpc_('api_item_targets_save_', [state.auth, r, code, state.itMonth_, noTarget ? '' : Number(target), Number(bonus), extraCodes, false, mainPct === '' ? '' : Number(mainPct)]);
+      });
+    });
+    chain
+      .then(function(){ showLoading(false); showMsg('اتحفظ لـ ' + repsToSave.length + ' مندوب ✔', 'success'); loadItemTargets(state.itMonth_); })
+      .catch(onError);
+  }
+  function loadItemTargetsReport(){
+    showLoading(true);
+    callDirectRpc_('api_item_targets_report_', [state.auth, state.itMonth_ || ''])
+      .then(function(d){
+        showLoading(false);
+        state.itReportData_ = d;
+        renderItemTargetsReport_(d);
+      })
+      .catch(onError);
+  }
+  function renderItemTargetsReport_(d){
+    var rows = d.rows || [];
+    document.getElementById('itReportSummary').innerHTML = rows.length
+      ? '<div class="totalBar"><span>إجمالي البونص المستحق</span><span class="val">' + fmt(d.totalBonus) + '</span></div>'
+      : '';
+    document.getElementById('itReportExportBtn').hidden = !rows.length;
+    if(!rows.length){ document.getElementById('itReportList').innerHTML = '<div class="empty">مفيش تارجت أصناف متسجل الشهر ده</div>'; return; }
+    var byRep = {};
+    rows.forEach(function(r){ (byRep[r.rep] = byRep[r.rep] || []).push(r); });
+    document.getElementById('itReportList').innerHTML = Object.keys(byRep).sort().map(function(rep){
+      var repBonus = byRep[rep].reduce(function(t, r){ return t + Number(r.bonusEarned || 0); }, 0);
+      var branch = byRep[rep][0] && byRep[rep][0].branch;
+      return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) +
+        '<small>' + (branch ? '📍 ' + escapeHtml(branch) + ' · ' : '') + 'بونص مستحق: ' + fmt(repBonus) + '</small></div></div>' +
+        byRep[rep].map(function(r){
+          var ok = Number(r.bonusEarned) > 0;
+          var mainNote = (r.requireMainPct != null && !r.mainOk)
+            ? '<small style="display:block; color:var(--muted);">محتاج ' + fmt(r.requireMainPct) + '% من الهدف الأساسي، وهو حقق ' + (r.mainPct != null ? fmt(r.mainPct) + '%' : 'مفيش هدف أساسي متسجل') + '</small>' : '';
+          return '<div class="nums" style="margin-top:6px; color:' + (ok ? '#2b7a4f' : 'var(--muted)') + ';">' +
+            '<span>' + escapeHtml(r.name || r.code) + mainNote + '</span>' +
+            '<b>' + fmt(r.achieved) + (r.target != null ? ' / ' + fmt(r.target) + (r.pct != null ? ' (' + r.pct + '%)' : '') : ' قطعة') + '</b>' +
+            (ok ? '<span>✔ بونص ' + fmt(r.bonusEarned) + ' (' + fmt(r.bonus) + '/قطعة × ' + fmt(r.achieved) + ')</span>' : '<span>— مفيش بونص</span>') + '</div>';
+        }).join('') +
+      '</div>';
+    }).join('');
+  }
+  function exportItemTargetsExcel(){
+    var d = state.itReportData_;
+    if(!d || !d.rows || !d.rows.length){ showMsg('مفيش تقرير لتصديره', 'error'); return; }
+    showLoading(true);
+    var byRep = {};
+    d.rows.forEach(function(r){ (byRep[r.rep] = byRep[r.rep] || []).push(r); });
+    var rows = [];
+    Object.keys(byRep).sort().forEach(function(rep){
+      var repRows = byRep[rep];
+      var branch = repRows[0] && repRows[0].branch || '';
+      var repBonus = repRows.reduce(function(t, r){ return t + Number(r.bonusEarned || 0); }, 0);
+      repRows.forEach(function(r){
+        rows.push([r.rep, branch, r.name || r.code, r.target != null ? Number(r.target) : 'من غير تارجت', Number(r.achieved), r.pct != null ? Number(r.pct) : '', Number(r.bonusEarned || 0)]);
+      });
+      rows.push(['إجمالي ' + rep, '', '', '', '', '', Number(repBonus)]);
+    });
+    var opts = {
+      fileName: 'تارجت الأصناف - ' + d.monthKey,
+      reportTitle: 'تقرير تارجت الأصناف والبونص',
+      meta: [['الشهر', d.monthKey], ['التاريخ', new Date().toLocaleDateString('ar-EG')]],
+      headers: ['المندوب', 'الفرع', 'الصنف', 'التارجت', 'المتحقق', 'النسبة %', 'البونص المستحق'],
+      rows: rows,
+      totalsLabel: 'إجمالي البونص المستحق (كل المناديب)',
+      totalsValue: Number(d.totalBonus || 0),
+      totalsIsCurrency: true,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
+      .catch(onError);
+  }
+  // ============ استخدام السيرفر (صاحب الحساب بس) ============
+  function fmtDur_(ms){
+    ms = Number(ms) || 0;
+    if(ms < 1000) return ms + ' مللي';
+    const s = ms / 1000;
+    if(s < 60) return (Math.round(s * 10) / 10) + ' ث';
+    const m = s / 60;
+    if(m < 60) return (Math.round(m * 10) / 10) + ' دقيقة';
+    return (Math.round(m / 6) / 10) + ' ساعة';
+  }
+  function fmtAgo_(iso){
+    const t = Date.parse(iso);
+    if(!t) return '';
+    const min = Math.round((Date.now() - t) / 60000);
+    if(min < 1) return 'دلوقتي';
+    if(min < 60) return 'من ' + min + ' دقيقة';
+    const h = Math.round(min / 60);
+    if(h < 24) return 'من ' + h + ' ساعة';
+    return 'من ' + Math.round(h / 24) + ' يوم';
+  }
+  function useActName_(a){
+    const n = SPEED_NAMES_[a];
+    return n || a;
+  }
+  function loadUsage(days){
+    state.usageDays_ = days;
+    document.getElementById('pageTitle').textContent = 'استخدام السيرفر';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.querySelectorAll('#usePeriods button').forEach(function(b){ b.classList.toggle('on', Number(b.dataset.days) === days); });
+    showLoading(true);
+    callApi('serverUsage', [state.auth, days])
+      .then(function(d){
+        showLoading(false);
+        renderUsage_(d);
+        setView('viewUsage');
+      })
+      .catch(onError);
+  }
+  function renderUsage_(d){
+    const users = (d.byUser || []).filter(function(u){ return u.email; });
+    const anon = (d.byUser || []).find(function(u){ return !u.email; });
+    document.getElementById('useTiles').innerHTML =
+      '<div class="useTile"><b>' + fmt(d.total) + '</b><span>طلب على السيرفر</span></div>' +
+      '<div class="useTile"><b>' + fmtDur_(d.serverMs) + '</b><span>وقت شغل السيرفر</span></div>' +
+      '<div class="useTile"><b>' + fmt(d.users) + '</b><span>مستخدم</span></div>' +
+      '<div class="useTile"><b' + (d.errors ? ' style="color:var(--red)"' : '') + '>' + fmt(d.errors) + '</b><span>طلب فشل</span></div>';
+
+    const max = users.reduce(function(m, u){ return Math.max(m, u.requests); }, 1);
+    document.getElementById('useUsers').innerHTML = users.length ? users.map(function(u){
+      const acts = (u.actions || []).map(function(a){ return '<span>' + escapeHtml(useActName_(a.a)) + ' ' + fmt(a.n) + '</span>'; }).join('');
+      return '<div class="useUser' + (u.heavy ? ' heavy' : '') + '">' +
+        '<div class="top"><div class="nm">' + escapeHtml(u.name || 'مش في المناديب') + (u.heavy ? '<span class="useTag">استخدام عالي</span>' : '') +
+          '<small>' + escapeHtml(u.email) + '</small></div>' +
+          '<div class="cnt">' + fmt(u.requests) + '<small>' + u.share + '% من الطلبات</small></div></div>' +
+        '<div class="useBar"><i style="width:' + Math.max(2, Math.round(u.requests / max * 100)) + '%"></i></div>' +
+        '<div class="useMeta">وقت السيرفر ' + fmtDur_(u.serverMs) + ' · متوسط الطلب ' + fmtDur_(u.avgMs) +
+          ' · آخر استخدام ' + fmtAgo_(u.lastAt) +
+          (d.days > 1 ? ' · نشط ' + u.activeDays + ' يوم' : '') +
+          ' · ' + u.devices + (u.devices > 1 ? ' أجهزة' : ' جهاز') +
+          (u.errors ? ' · <span class="bad">' + fmt(u.errors) + ' طلب فشل</span>' : '') + '</div>' +
+        (acts ? '<div class="useActs">' + acts + '</div>' : '') +
+      '</div>';
+    }).join('') + (anon ? '<div class="useMeta" style="margin-top:8px;">طلبات من غير تسجيل دخول (شاشة الدخول): ' + fmt(anon.requests) + '</div>' : '')
+      : '<div class="empty">لسه مفيش طلبات متسجلة في الفترة دي</div>';
+
+    const hrs = d.byHour || [];
+    const hmax = hrs.reduce(function(m, v){ return Math.max(m, v); }, 1);
+    document.getElementById('useHours').innerHTML = hrs.map(function(v, h){
+      return '<i title="' + h + ':00 — ' + v + ' طلب" style="height:' + Math.round(v / hmax * 100) + '%"></i>';
+    }).join('');
+
+    const acts = (d.byAction || []).slice().sort(function(a, b){ return b.ms - a.ms; });
+    document.getElementById('useActions').innerHTML = acts.length ? acts.map(function(a){
+      return '<div class="useAct"><span>' + escapeHtml(useActName_(a.a)) + ' <small>· ' + fmt(a.n) + ' مرة · متوسط ' + fmtDur_(a.avgMs) + '</small></span><span>' + fmtDur_(a.ms) + '</span></div>';
+    }).join('') : '<div class="empty">—</div>';
+  }
+
   function loadStaleReasons(){
     document.getElementById('pageTitle').textContent = 'تقرير أسباب الركود';
     document.getElementById('pageSub').textContent = state.user.name;
@@ -3225,21 +3781,38 @@
   function evalColor_(s){
     return s >= 85 ? '#2b7a4f' : s >= 70 ? '#4f9a3a' : s >= 55 ? '#b6862f' : s >= 40 ? '#c77b1e' : '#b83a3a';
   }
+  // التقييم العادل (v2): اتفعّل للكل بعد ما جرّبناه في البيتا
+  const EVAL_V2_ = true;
+  function toggleEvalHow_(){
+    const box = document.getElementById('evalHow');
+    box.hidden = !box.hidden;
+    document.getElementById('evalHowArrow').textContent = box.hidden ? '▾' : '▴';
+  }
   function loadEval(monthKey){
     document.getElementById('pageTitle').textContent = state.isAdmin ? 'تقييم المناديب' : 'تقييمي';
     document.getElementById('pageSub').textContent = state.user.name;
     showLoading(true);
-    callApi('bootstrapRepEvaluation', [state.auth, monthKey || ''])
+    callApi('bootstrapRepEvaluation', [state.auth, (EVAL_V2_ ? 'v2:' : '') + (monthKey || '')])
       .then(function(data){
         showLoading(false);
         document.getElementById('evalMonthSelect').innerHTML = data.months.map(function(mk){
           const p = mk.split('-');
           return '<option value="' + mk + '"' + (mk === data.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
         }).join('');
-        document.getElementById('evalSummary').textContent = state.isAdmin
-          ? (data.list.length + ' مندوب · متوسط صافي مبيعات المناديب ' + fmt(Math.round(data.avgNet)))
-          : ('متوسط صافي مبيعات المناديب الشهر ده ' + fmt(Math.round(data.avgNet)));
-        renderEvalList_(data);
+        document.getElementById('evalHowWrap').hidden = !data.v2;
+        document.getElementById('evalOldNote').hidden = !!data.v2;
+        if(data.v2){
+          const sea = Math.round((Number(data.season) || 1) * 100);
+          document.getElementById('evalSummary').textContent =
+            (state.isAdmin ? data.list.length + ' مندوب · ' : '') +
+            'السوق الشهر ده ' + sea + '% من المعتاد' + (sea < 100 ? ' — ومش بيتحسب على حد' : '');
+          renderEvalListV2_(data);
+        } else {
+          document.getElementById('evalSummary').textContent = state.isAdmin
+            ? (data.list.length + ' مندوب · متوسط صافي مبيعات المناديب ' + fmt(Math.round(data.avgNet)))
+            : ('متوسط صافي مبيعات المناديب الشهر ده ' + fmt(Math.round(data.avgNet)));
+          renderEvalList_(data);
+        }
         setView('viewEval');
       })
       .catch(onError);
@@ -3289,6 +3862,70 @@
       '</div>';
     }).join('');
   }
+  function renderEvalListV2_(data){
+    const el = document.getElementById('evalList');
+    if(!data.list.length){
+      el.innerHTML = '<div class="card"><div class="empty">مفيش تقييم متاح للشهر ده</div></div>';
+      return;
+    }
+    const single = !state.isAdmin || data.list.length === 1;
+    const part = function(label, p, det, offText){
+      if(!p) return '<div class="evalPart off"><div class="row"><span>' + label + '</span><span>مش محسوب</span></div><div class="det">' + offText + '</div></div>';
+      const w = p.max ? Math.round(p.score / p.max * 100) : 0;
+      return '<div class="evalPart"><div class="row"><span>' + label + '</span><span>' + fmt(p.score) + ' / ' + p.max + '</span></div>' +
+        '<div class="evalBar"><i style="width:' + w + '%"></i></div><div class="det">' + det + '</div></div>';
+    };
+    el.innerHTML = data.list.map(function(r, idx){
+      const c = evalColor_(r.score);
+      const P = r.parts || {};
+      const parts =
+        part('أداء فرعك', P.perf,
+          'بعت ' + fmt(r.perDay) + ' في اليوم — المتوقع في فرعك ' + fmt(r.expPerDay) + ' = ' + r.perfPct + '% من المتوقع',
+          'فرعك جديد ولسه مالوش تاريخ نقارن بيه') +
+        part('التارجت', P.target,
+          'اتحقق ' + r.targetPct + '% من ' + fmt(r.target) + ' (صافي ' + fmt(r.net) + ')',
+          'مفيش تارجت متسجل الشهر ده') +
+        part('التصريف', P.sell,
+          'بعت ' + fmt(r.sold) + ' قطعة، وفضل معاك ' + fmt(r.endStock) + ' = ' + r.sellPct + '%' + (data.stMedian != null ? ' · متوسط المناديب ' + data.stMedian + '%' : ''),
+          'مفيش بيانات مخزون كفاية (جرد) نحسب منها') +
+        part('الرواكد', P.stale,
+          r.stale ? (r.stale + ' صنف راكد من ' + fmt(Math.max(r.carried || 0, r.stale)) + ' صنف معاك' + (r.unresolved ? ' · ' + r.unresolved + ' منهم عدّى 30 يوم من غير سبب (بيتحسب مرتين)' : '')) : 'مفيش رواكد 👌',
+          'مندوب جديد (أقل من 30 يوم)') +
+        part('المرتجع', P.returns,
+          'مرتجع العملاء السليم آخر 3 شهور = ' + r.retRate3 + '% من البيع' +
+            (r.retDamaged > 0 ? ' · التالف ' + fmt(r.retDamaged) + ' مش محسوب' : '') +
+            (r.retCompany > 0 ? ' · رجوع للشركة ' + fmt(r.retCompany) + ' مش محسوب' : ''),
+          'بيعك آخر 3 شهور أقل من 50 ألف — مش بيتحسب عليك') +
+        part('الالتزام', P.commit, 'جرد ' + r.jardWeeks + ' من ' + data.weeks + ' أسابيع', '');
+      const hist = (r.history || []).length > 1
+        ? '<div class="evalHist">' + r.history.map(function(h){
+            const p = String(h.mk).split('-');
+            return '<span>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ': ' + h.score + '</span>';
+          }).join('') + '<span>متوسط 3 شهور: ' + r.score3 + '</span></div>'
+        : '';
+      const why = r.incomplete
+        ? '<div class="pulseNote" style="margin:10px 0 0; color:var(--gold-d);">⏳ غير مكتمل — ' +
+            (r.fewDays ? 'أيام بيع قليلة الشهر ده (' + r.days + ' يوم)' : 'فرع جديد ومفيش تارجت نقيس بيهم البيع') + '، فمش داخل الترتيب</div>'
+        : '';
+      const rankHtml = r.rank
+        ? '<div class="evalRank"><b>#' + r.rank + '</b><span>من ' + data.total + (state.isAdmin ? '' : ' مندوب') + '</span></div>'
+        : '<div class="evalRank"><b style="font-size:15px;">—</b><span>غير مكتمل</span></div>';
+      return '<div class="evalCard" style="--ec:' + c + '">' +
+        '<div class="evalHead">' +
+          '<div class="evalRing" style="--ep:' + Math.max(0, Math.min(100, r.score)) + '"><b>' + r.score + '</b></div>' +
+          '<div style="min-width:0;">' +
+            '<div class="evalName">' + escapeHtml(r.name) + '</div>' +
+            '<div class="evalMeta">📍 ' + escapeHtml((r.branches || []).join('، ') || '—') + ' · ' + r.days + ' يوم بيع</div>' +
+            '<span class="evalGrade">' + escapeHtml(r.grade) + '</span>' +
+          '</div>' +
+          rankHtml +
+        '</div>' +
+        why + hist +
+        '<div class="evalParts" id="evalParts_' + idx + '"' + (single ? '' : ' hidden') + '>' + parts + '</div>' +
+        (single ? '' : '<button class="evalToggle" onclick="toggleEvalParts_(' + idx + ', this)">التفاصيل ▾</button>') +
+      '</div>';
+    }).join('');
+  }
   function toggleEvalParts_(idx, btn){
     const box = document.getElementById('evalParts_' + idx);
     box.hidden = !box.hidden;
@@ -3328,9 +3965,39 @@
         document.getElementById('itemSalesTotalQty').textContent = fmt(data.totals.netQty);
         document.getElementById('itemSalesTotalValue').textContent = fmt(data.totals.value);
 
+        state.itemSalesExportData_ = data;
         renderItemSalesList(data.items);
         setView('viewItemSales');
       })
+      .catch(onError);
+  }
+
+  function exportItemSalesExcel(){
+    var data = state.itemSalesExportData_;
+    if(!data || !data.items || !data.items.length){
+      showMsg('مفيش مبيعات أصناف لتصديرها دلوقتي', 'error');
+      return;
+    }
+    showLoading(true);
+    var rows = data.items.map(function(it){
+      return [it.code || '', it.name, Number(it.netQty), Number(it.value), Number(it.salesCount), Number(it.returnedQty || 0)];
+    });
+    var opts = {
+      fileName: 'مبيعات الأصناف - ' + (data.repName || state.user.name) + ' - ' + data.monthKey,
+      reportTitle: 'تقرير مبيعات الأصناف',
+      meta: [
+        ['المندوب', data.repName || state.user.name],
+        ['الشهر', data.monthKey],
+        ['التاريخ', new Date().toLocaleDateString('ar-EG')],
+      ],
+      headers: ['الكود', 'اسم الصنف', 'صافي الكمية', 'القيمة', 'عدد عمليات البيع', 'مرتجع'],
+      rows: rows,
+      totalsLabel: 'إجمالي القيمة',
+      totalsValue: Number(data.totals.value),
+      totalsIsCurrency: true,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
       .catch(onError);
   }
 
@@ -3781,6 +4448,18 @@
   }
   function rsToggleAdmin_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleToggleAdmin(r.email, !r.isAdmin); }
   function rsSetPin_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleSetRepPin(r.email, r.name); }
+  // الفرع (أو أكتر من فرع مفصولين بفاصلة) — كان بيتكتب في الشيت، دلوقتي من هنا
+  function rsSetBranch_(){
+    const r = state.adminReps_[rsIdx_];
+    if(!r) return;
+    const v = prompt('فرع "' + r.name + '" — لو ماسك أكتر من فرع افصل بينهم بفاصلة (،):', r.branch || '');
+    if(v == null) return;
+    closeRepSheet_();
+    showLoading(true);
+    callApi('setRepBranch', [state.auth, r.email, v])
+      .then(function(res){ showLoading(false); showMsg('تم حفظ الفرع ✔' + (res.branch ? ' — ' + res.branch : ''), 'success'); refreshRepsList(); })
+      .catch(onError);
+  }
   function rsDelete_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleDeleteRep(r.email, r.name); }
   function renderRepsListOld_(reps){
     const el = document.getElementById('repsList');
@@ -4852,7 +5531,7 @@
   const SPEED_NAMES_ = { bootstrapHome:'فتح التطبيق', bootstrapInvoice:'تحميل الأصناف', finalizeInvoice:'ترحيل فاتورة', bootstrapJard:'فتح الجرد',
     saveJard:'حفظ الجرد', bootstrapTawrid:'فتح التوريد', saveTawrid:'حفظ التوريد', bootstrapMyStats:'مبيعاتي', bootstrapBalances:'أرصدتي',
     bootstrapStale:'الرواكد', listMyInvoices:'سجل فواتيري', getInvoiceDetails:'تفاصيل فاتورة', bootstrapItemSalesReport:'مبيعات الأصناف', bootstrapRepEvaluation:'التقييم',
-    listProductDescriptions:'وصف المنتجات', bootstrapAdmin:'شاشة الإدارة', bootstrapProfile:'إعداداتي', login:'تسجيل الدخول' };
+    listProductDescriptions:'وصف المنتجات', bootstrapAdmin:'شاشة الإدارة', bootstrapProfile:'إعداداتي', login:'تسجيل الدخول', serverUsage:'استخدام السيرفر', repsTargets:'تارجت المناديب', getSaleStock:'أصناف البيع', getMyBalances:'أرصدتي', bootstrapPrices:'أسعاري', getStaleReasonsReport:'أسباب الركود', listSuggestions:'المقترحات', listReps:'المناديب', listAsnaf:'الأصناف' };
   function renderSpeedLog_(){
     const el = document.getElementById('speedLogList');
     let log = [];
