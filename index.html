@@ -1744,6 +1744,10 @@
           <button type="button" onclick="rsSetPin_()">🔑 كود الدخول</button>
         </div>
         <div class="rsRow" style="margin-bottom:8px;"><button type="button" onclick="rsSetBranch_()">📍 الفرع</button></div>
+        <div class="rsRow" style="margin-bottom:8px;">
+          <button type="button" onclick="rsSetFullName_()">📝 الاسم الكامل</button>
+          <button type="button" onclick="rsSetJobCode_()">🔢 الكود الوظيفي</button>
+        </div>
         <div class="rsRow"><button type="button" class="danger" id="rsDelBtn" onclick="rsDelete_()">حذف المندوب</button></div>
       </div>
     </div>
@@ -1950,7 +1954,7 @@
   const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1,
     // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
     listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
-    addRep:1, setRepPin:1, setRepBranch:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, saveTarget:1};
+    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, saveTarget:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
       method: 'POST',
@@ -3596,9 +3600,15 @@
     rows.forEach(function(r){ (byRep[r.rep] = byRep[r.rep] || []).push(r); });
     document.getElementById('itReportList').innerHTML = Object.keys(byRep).sort().map(function(rep){
       var repBonus = byRep[rep].reduce(function(t, r){ return t + Number(r.bonusEarned || 0); }, 0);
-      var branch = byRep[rep][0] && byRep[rep][0].branch;
-      return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(rep) +
-        '<small>' + (branch ? '📍 ' + escapeHtml(branch) + ' · ' : '') + 'بونص مستحق: ' + fmt(repBonus) + '</small></div></div>' +
+      var first = byRep[rep][0] || {};
+      var branch = first.branch;
+      var dispName = first.fullName || rep;
+      var subBits = [];
+      if(first.fullName) subBits.push(rep);
+      if(first.jobCode) subBits.push('كود ' + first.jobCode);
+      if(branch) subBits.push('📍 ' + branch);
+      return '<div class="rtRow"><div class="top"><div class="nm">' + escapeHtml(dispName) +
+        '<small>' + (subBits.length ? escapeHtml(subBits.join(' · ')) + ' · ' : '') + 'بونص مستحق: ' + fmt(repBonus) + '</small></div></div>' +
         byRep[rep].map(function(r){
           var ok = Number(r.bonusEarned) > 0;
           var mainNote = (r.requireMainPct != null && !r.mainOk)
@@ -3620,18 +3630,21 @@
     var rows = [];
     Object.keys(byRep).sort().forEach(function(rep){
       var repRows = byRep[rep];
-      var branch = repRows[0] && repRows[0].branch || '';
+      var first = repRows[0] || {};
+      var branch = first.branch || '';
+      var fullName = first.fullName || '';
+      var jobCode = first.jobCode || '';
       var repBonus = repRows.reduce(function(t, r){ return t + Number(r.bonusEarned || 0); }, 0);
       repRows.forEach(function(r){
-        rows.push([r.rep, branch, r.name || r.code, r.target != null ? Number(r.target) : 'من غير تارجت', Number(r.achieved), r.pct != null ? Number(r.pct) : '', Number(r.bonusEarned || 0)]);
+        rows.push([r.rep, fullName, jobCode, branch, r.name || r.code, r.target != null ? Number(r.target) : 'من غير تارجت', Number(r.achieved), r.pct != null ? Number(r.pct) : '', Number(r.bonusEarned || 0)]);
       });
-      rows.push(['إجمالي ' + rep, '', '', '', '', '', Number(repBonus)]);
+      rows.push(['إجمالي ' + rep, '', '', '', '', '', '', '', Number(repBonus)]);
     });
     var opts = {
       fileName: 'تارجت الأصناف - ' + d.monthKey,
       reportTitle: 'تقرير تارجت الأصناف والبونص',
       meta: [['الشهر', d.monthKey], ['التاريخ', new Date().toLocaleDateString('ar-EG')]],
-      headers: ['المندوب', 'الفرع', 'الصنف', 'التارجت', 'المتحقق', 'النسبة %', 'البونص المستحق'],
+      headers: ['المندوب', 'الاسم الكامل', 'الكود الوظيفي', 'الفرع', 'الصنف', 'التارجت', 'المتحقق', 'النسبة %', 'البونص المستحق'],
       rows: rows,
       totalsLabel: 'إجمالي البونص المستحق (كل المناديب)',
       totalsValue: Number(d.totalBonus || 0),
@@ -4561,6 +4574,29 @@
     showLoading(true);
     callApi('setRepBranch', [state.auth, r.email, v])
       .then(function(res){ showLoading(false); showMsg('تم حفظ الفرع ✔' + (res.branch ? ' — ' + res.branch : ''), 'success'); refreshRepsList(); })
+      .catch(onError);
+  }
+  // الاسم الكامل والكود الوظيفي — بيبانوا في تقارير البونص (تارجت الأصناف) بدل الاسم المختصر
+  function rsSetFullName_(){
+    const r = state.adminReps_[rsIdx_];
+    if(!r) return;
+    const v = prompt('الاسم الكامل لـ "' + r.name + '" (هيبان في تقارير البونص):', r.fullName || '');
+    if(v == null) return;
+    closeRepSheet_();
+    showLoading(true);
+    callApi('setRepFullName', [state.auth, r.email, v])
+      .then(function(){ showLoading(false); showMsg('تم حفظ الاسم الكامل ✔', 'success'); refreshRepsList(); })
+      .catch(onError);
+  }
+  function rsSetJobCode_(){
+    const r = state.adminReps_[rsIdx_];
+    if(!r) return;
+    const v = prompt('الكود الوظيفي لـ "' + r.name + '":', r.jobCode || '');
+    if(v == null) return;
+    closeRepSheet_();
+    showLoading(true);
+    callApi('setRepJobCode', [state.auth, r.email, v])
+      .then(function(){ showLoading(false); showMsg('تم حفظ الكود الوظيفي ✔', 'success'); refreshRepsList(); })
       .catch(onError);
   }
   function rsDelete_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleDeleteRep(r.email, r.name); }
