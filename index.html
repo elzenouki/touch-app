@@ -1218,6 +1218,7 @@
       <button type="button" class="c2Item" id="repsTargetsLink" onclick="openScreen('repstargets')" hidden><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.5"></circle></svg></span><span class="title">مبيعات وتارجت المناديب</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="itemTargetsLink" onclick="openScreen('itemtargets')" hidden><span class="ic" style="background:#fdf1e0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#a8702f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg></span><span class="title">تارجت الأصناف</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="itemSalesLink" onclick="openScreen('itemsales')"><span class="ic" style="background:#eeeaf8"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5b4a9c" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg></span><span class="title">مبيعات الأصناف</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="itemBalancesLink" onclick="openScreen('itembalances')" hidden><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"></path><path d="M12 13v8"></path><path d="M3 8v8l9 5 9-5V8"></path></svg></span><span class="title">رصيد الأصناف بالمندوب</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span class="title">تقرير أسباب الركود</span><span class="chev"></span></button>
     </div>
   </div>
@@ -1512,6 +1513,28 @@
     </div>
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
       الرصيد = آخر جرد مسجّل + التوريد بعده − صافي المبيعات بعده (المرتجع بيتحسب لصالح الرصيد) — شاشة مشاهدة فقط
+    </div>
+  </div>
+
+  <!-- ============ شاشة رصيد الأصناف بالمندوب (فلترة بالصنف — للمشرفين) ============ -->
+  <div id="viewItemBalances" hidden>
+    <div class="card">
+      <div class="cardTitle">اختار الصنف</div>
+      <input list="ibItemsList" id="ibItemInput" placeholder="اكتب اسم الصنف أو اختاره" style="margin-bottom:8px;">
+      <datalist id="ibItemsList"></datalist>
+      <button type="button" class="primary" id="ibShowBtn" onclick="loadItemBalancesReport_()">اعرض الرصيد</button>
+    </div>
+    <div class="card" id="ibResultCard" hidden>
+      <div class="cardTitle" id="ibResultTitle"></div>
+      <div id="ibList"></div>
+      <div class="totalBar">
+        <span>إجمالي الرصيد عند كل المناديب</span>
+        <span class="val" id="ibTotal">0</span>
+      </div>
+      <button class="whatsapp" id="ibExportBtn" style="margin-top:12px; width:100%;" onclick="exportItemBalancesExcel()">📤 تصدير إكسل</button>
+    </div>
+    <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
+      نفس حساب "أرصدتي" بالظبط، بس بيورّي الصنف ده عند كل المناديب مع بعض — المناديب اللي رصيدهم صفر مش بيظهروا
     </div>
   </div>
 
@@ -1916,7 +1939,8 @@
   const SB_PUBLIC_KEY_ = 'sb_publishable_upUxZo453bAsS73Rsm0fXA_T9xtIfyy';
   const SB_READ_ACTIONS_ = {bootstrapHome:1, bootstrapMyStats:1, bootstrapStale:1, listMyInvoices:1, getInvoiceDetails:1, getMyBalances:1,
     bootstrapBalances:1, bootstrapItemSalesReport:1, bootstrapRepEvaluation:1, bootstrapProfile:1, listSuggestions:1, listProductDescriptions:1,
-    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1, serverUsage:1, repsTargets:1};
+    getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1, serverUsage:1, repsTargets:1,
+    itemBalancesBootstrap:1, itemBalancesReport:1};
   // طلبات بتكتب في الشيت: بنطلب من جوجل ينسخ التغيير لـ Supabase فورًا (عشان الشاشات تبان محدثة على طول)
   const SB_WRITE_ACTIONS_ = {addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, savePrices:1,
     saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
@@ -2081,7 +2105,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets','viewItemBalances'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -2552,6 +2576,7 @@
     document.getElementById('staleReasonsLink').hidden = !state.isOwner;
     document.getElementById('usageLink').hidden = !state.isOwner;
     document.getElementById('repsTargetsLink').hidden = !(state.isAdmin || state.isOwner);
+    document.getElementById('itemBalancesLink').hidden = !(state.isAdmin || state.isOwner);
     document.getElementById('itemTargetsLink').hidden = !(state.isAdmin || state.isOwner);
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
@@ -3152,6 +3177,7 @@
     if(name === 'usage'){ loadUsage(state.usageDays_ || 7); return; }
     if(name === 'repstargets'){ loadRepsTargets(state.rtMonth_ || ''); return; }
     if(name === 'itemtargets'){ loadItemTargets(state.itMonth_ || ''); return; }
+    if(name === 'itembalances'){ loadItemBalances_(); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
     if(name === 'profile'){ loadProfile(); return; }
@@ -3344,6 +3370,83 @@
   function itToggleMainPct_(){
     var on = document.getElementById('itMainPctCheck').checked;
     document.getElementById('itMainPctInput').hidden = !on;
+  }
+  // ============ رصيد الأصناف بالمندوب — فلترة بالصنف (للمشرفين) ============
+  function loadItemBalances_(){
+    document.getElementById('pageTitle').textContent = 'رصيد الأصناف بالمندوب';
+    document.getElementById('pageSub').textContent = state.user.name;
+    document.getElementById('ibResultCard').hidden = true;
+    showLoading(true);
+    callApi('itemBalancesBootstrap', [state.auth])
+      .then(function(d){
+        showLoading(false);
+        state.ibItems_ = d.items || [];
+        document.getElementById('ibItemsList').innerHTML = state.ibItems_.map(function(it){
+          return '<option value="' + escapeHtml(it.name) + '"></option>';
+        }).join('');
+        setView('viewItemBalances');
+      })
+      .catch(onError);
+  }
+  function ibFindItemCode_(typed){
+    var exact = (state.ibItems_ || []).find(function(it){ return it.name === typed; });
+    if(exact) return exact;
+    return (state.ibItems_ || []).find(function(it){ return it.code === typed; }) || null;
+  }
+  function loadItemBalancesReport_(){
+    clearMsg();
+    var typed = document.getElementById('ibItemInput').value.trim();
+    var found = ibFindItemCode_(typed);
+    if(!found){ showMsg('اختار الصنف من القايمة', 'error'); return; }
+    showLoading(true);
+    callApi('itemBalancesReport', [state.auth, found.code])
+      .then(function(d){
+        showLoading(false);
+        state.ibReportData_ = d;
+        renderItemBalancesReport_(d);
+      })
+      .catch(onError);
+  }
+  function renderItemBalancesReport_(d){
+    var rows = d.rows || [];
+    document.getElementById('ibResultCard').hidden = false;
+    document.getElementById('ibResultTitle').textContent = 'رصيد "' + d.itemName + '" — ' + rows.length + ' مندوب';
+    document.getElementById('ibTotal').textContent = fmt(d.total);
+    if(!rows.length){
+      document.getElementById('ibList').innerHTML = '<div class="empty">مفيش رصيد من الصنف ده عند أي مندوب دلوقتي</div>';
+      return;
+    }
+    document.getElementById('ibList').innerHTML = rows.map(function(r){
+      var neg = Number(r.balance) < 0;
+      var note = !r.hasBaseline ? '<div class="meta">من غير جرد رسمي (اعتمادًا على التوريد/المبيعات)</div>' : '';
+      return '<div class="itemRow' + (neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:2px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+          '<div class="name">' + escapeHtml(r.rep) + (r.branch ? ' <span style="color:var(--gold-d); font-size:13px;">📍 ' + escapeHtml(r.branch) + '</span>' : '') + '</div>' +
+          '<div class="total">' + fmt(r.balance) + '</div>' +
+        '</div>' + note +
+      '</div>';
+    }).join('');
+  }
+  function exportItemBalancesExcel(){
+    var d = state.ibReportData_;
+    if(!d || !d.rows || !d.rows.length){ showMsg('مفيش رصيد لتصديره دلوقتي', 'error'); return; }
+    showLoading(true);
+    var rows = d.rows.map(function(r){
+      return [r.rep, r.branch || '—', Number(r.balance), r.hasBaseline ? 'بجرد رسمي' : 'من غير جرد رسمي'];
+    });
+    var opts = {
+      fileName: 'رصيد ' + d.itemName + ' بالمندوب',
+      reportTitle: 'تقرير الأرصدة — ' + d.itemName,
+      meta: [['الصنف', d.itemName], ['التاريخ', new Date().toLocaleDateString('ar-EG')]],
+      headers: ['المندوب', 'الفرع', 'الرصيد', 'ملاحظة'],
+      rows: rows,
+      totalsLabel: 'إجمالي الرصيد عند كل المناديب',
+      totalsValue: Number(d.total || 0),
+      totalsIsCurrency: false,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
+      .catch(onError);
   }
   function loadItemTargets(monthKey){
     document.getElementById('pageTitle').textContent = 'تارجت الأصناف';
