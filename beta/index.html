@@ -1506,6 +1506,15 @@
       <div class="cardTitle">اختار المندوب</div>
       <select id="balancesRepSelect" onchange="loadBalances(this.value)"></select>
     </div>
+    <div class="card" id="balancesSeasonFilterCard" hidden>
+      <div class="cardTitle">فلتر الأصناف الموسمية</div>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px;">
+        <input type="checkbox" id="balancesHideWinter_" onchange="applyBalancesSeasonFilter_()" style="width:auto;"> ❄️ إخفاء الأصناف الموسمية الشتوية
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:600;">
+        <input type="checkbox" id="balancesHideSummer_" onchange="applyBalancesSeasonFilter_()" style="width:auto;"> ☀️ إخفاء الأصناف الموسمية الصيفية
+      </label>
+    </div>
     <div class="card">
       <div class="cardTitle">رصيد الأصناف الحالي</div>
       <div id="balancesList"></div>
@@ -1954,7 +1963,7 @@
   const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1,
     // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
     listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
-    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, saveTarget:1};
+    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1, saveTarget:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
       method: 'POST',
@@ -4243,33 +4252,72 @@
           pickerCard.hidden = true;
         }
 
-        var items = data.balances || [];
-        // بنحتفظ بالبيانات اللي وصلت فعلاً عشان زرار "تصدير إكسل" يستخدمها على طول من غير أي طلب جديد للسيرفر
-        state.balancesExportData_ = { items: items, repName: data.repName || state.user.name, branch: data.branch || '' };
-        var list = document.getElementById('balancesList');
-        if(!items.length){
-          list.innerHTML = '<div class="empty">مفيش أصناف مسجلة حاليًا</div>';
-        } else {
-          list.innerHTML = items.map(function(it){
-            var neg = Number(it.balance) < 0;
-            // لو مفيش جرد رسمي متسجل لهذا الصنف لسه، الرقم ده معتمد بس على توريد/مبيعات
-            // التطبيق (مش مؤكد بجرد فعلي) — بنوضح كده تحته من غير ما نخفيه كـ"غير محدد"
-            var note = !it.hasBaseline ? '<div class="meta">من غير جرد رسمي (اعتمادًا على التوريد/المبيعات)</div>' : '';
-            return (
-              '<div class="itemRow' + (neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:2px;">' +
-                '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-                  '<div class="name">' + escapeHtml(it.name) + '</div>' +
-                  '<div class="total">' + fmt(it.balance) + '</div>' +
-                '</div>' +
-                note +
-              '</div>'
-            );
-          }).join('');
+        // بنحتفظ بكل الأصناف (قبل أي فلترة موسمية) عشان الفلتر يشتغل محليًا من غير طلب جديد للسيرفر
+        state.balancesAllItems_ = data.balances || [];
+        state.balancesRepName_ = data.repName || state.user.name;
+        state.balancesBranch_ = data.branch || '';
+
+        // فلتر الأصناف الموسمية: للمشرفين بس (مراجعة أسهل)، وبيفتكر آخر اختيار من المرة اللي فاتت
+        var filterCard = document.getElementById('balancesSeasonFilterCard');
+        filterCard.hidden = !state.isAdmin;
+        if(state.isAdmin){
+          try{
+            var saved = JSON.parse(localStorage.getItem('balancesSeasonFilter_') || '{}');
+            document.getElementById('balancesHideWinter_').checked = !!saved.hideWinter;
+            document.getElementById('balancesHideSummer_').checked = !!saved.hideSummer;
+          }catch(e){}
         }
 
+        renderBalancesList_();
         setView('viewBalances');
       })
       .catch(onError);
+  }
+
+  // بيرندر قايمة الأرصدة من state.balancesAllItems_ بعد تطبيق فلتر الأصناف الموسمية (لو مفعّل) —
+  // وبيحدّث state.balancesExportData_ عشان "تصدير إكسل" يصدّر نفس اللي ظاهر على الشاشة بالظبط
+  function renderBalancesList_(){
+    var hideWinter = state.isAdmin && document.getElementById('balancesHideWinter_').checked;
+    var hideSummer = state.isAdmin && document.getElementById('balancesHideSummer_').checked;
+    var items = (state.balancesAllItems_ || []).filter(function(it){
+      if(hideWinter && it.season === 'شتوي') return false;
+      if(hideSummer && it.season === 'صيفي') return false;
+      return true;
+    });
+    // بنحتفظ بالبيانات اللي ظاهرة فعلاً عشان زرار "تصدير إكسل" يستخدمها على طول من غير أي طلب جديد للسيرفر
+    state.balancesExportData_ = { items: items, repName: state.balancesRepName_, branch: state.balancesBranch_ };
+    var list = document.getElementById('balancesList');
+    if(!items.length){
+      list.innerHTML = '<div class="empty">' + ((state.balancesAllItems_ || []).length ? 'كل الأصناف متخفية بالفلتر الحالي' : 'مفيش أصناف مسجلة حاليًا') + '</div>';
+    } else {
+      list.innerHTML = items.map(function(it){
+        var neg = Number(it.balance) < 0;
+        // لو مفيش جرد رسمي متسجل لهذا الصنف لسه، الرقم ده معتمد بس على توريد/مبيعات
+        // التطبيق (مش مؤكد بجرد فعلي) — بنوضح كده تحته من غير ما نخفيه كـ"غير محدد"
+        var note = !it.hasBaseline ? '<div class="meta">من غير جرد رسمي (اعتمادًا على التوريد/المبيعات)</div>' : '';
+        var seasonBadge = it.season === 'شتوي' ? ' ❄️' : it.season === 'صيفي' ? ' ☀️' : '';
+        return (
+          '<div class="itemRow' + (neg ? ' neg' : '') + '" style="flex-direction:column; align-items:stretch; gap:2px;">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+              '<div class="name">' + escapeHtml(it.name) + seasonBadge + '</div>' +
+              '<div class="total">' + fmt(it.balance) + '</div>' +
+            '</div>' +
+            note +
+          '</div>'
+        );
+      }).join('');
+    }
+  }
+
+  // بيتنادى لما المشرف يغيّر فلتر الأصناف الموسمية — بيعيد الرندر محليًا وبيفتكر الاختيار للمرة الجاية
+  function applyBalancesSeasonFilter_(){
+    try{
+      localStorage.setItem('balancesSeasonFilter_', JSON.stringify({
+        hideWinter: document.getElementById('balancesHideWinter_').checked,
+        hideSummer: document.getElementById('balancesHideSummer_').checked,
+      }));
+    }catch(e){}
+    renderBalancesList_();
   }
 
   // بيصدّر شاشة "أرصدتي" لملف إكسل من غير ما يعمل أي طلب جديد للسيرفر — بيستخدم نفس البيانات
@@ -5498,6 +5546,7 @@
   }
 
   function renderAsnafList(items){
+    state.asnafAdmin_ = items || [];
     const el = document.getElementById('asnafList');
     if(!items || !items.length){
       el.innerHTML = '<div class="empty">مفيش أصناف مسجلة</div>';
@@ -5510,9 +5559,31 @@
             '<div class="name">' + escapeHtml(a.name) + '</div>' +
             '<div class="email">' + escapeHtml(a.code || '—') + '</div>' +
           '</div>' +
+          '<select data-code="' + escapeHtml(a.code || '') + '" onchange="handleSetItemSeason_(this)" style="width:auto; margin:0;">' +
+            '<option value=""' + (!a.season ? ' selected' : '') + '>دائم (كل السنة)</option>' +
+            '<option value="شتوي"' + (a.season === 'شتوي' ? ' selected' : '') + '>❄️ موسمي شتوي</option>' +
+            '<option value="صيفي"' + (a.season === 'صيفي' ? ' selected' : '') + '>☀️ موسمي صيفي</option>' +
+          '</select>' +
         '</div>'
       );
     }).join('');
+  }
+
+  // بيحفظ موسم الصنف (دائم/شتوي/صيفي) — بيستخدم فلتر "أرصدتي" و"رصيد الأصناف" ده بعدين
+  // عشان يخفوا الأصناف الموسمية غير الفعالة وقت المراجعة
+  function handleSetItemSeason_(sel){
+    const code = sel.dataset.code;
+    if(!code){ showMsg('الصنف ده من غير كود، مينفعش يتحدد موسمه', 'error'); sel.value = ''; return; }
+    const season = sel.value;
+    showLoading(true);
+    callApi('setItemSeason', [state.auth, code, season])
+      .then(function(){
+        showLoading(false);
+        showMsg('تم حفظ موسم الصنف ✔', 'success');
+        const it = (state.asnafAdmin_ || []).find(function(x){ return x.code === code; });
+        if(it) it.season = season;
+      })
+      .catch(function(err){ onError(err); refreshAsnafList(); });
   }
 
   function handleAddAsnaf(){
