@@ -3503,13 +3503,12 @@
       }, durationMs);
     });
   }
+  // لو إذن الحركة اتمنع أو مش متاح (زي الكمبيوتر)، منوقفش الاختبار كله — نكمل من غير قياس حركة بس
   function fctRequestMotionPermission_(){
     if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
-      return DeviceMotionEvent.requestPermission().then(function(state2){
-        if(state2 !== 'granted') throw new Error('رفضت إذن الحركة — جرب تاني ووافق عليه');
-      });
+      return DeviceMotionEvent.requestPermission().catch(function(){ return 'denied'; });
     }
-    return Promise.resolve();
+    return Promise.resolve('granted');
   }
   function fctGetPosition_(){
     return new Promise(function(resolve, reject){
