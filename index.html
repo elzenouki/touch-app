@@ -4065,13 +4065,14 @@
       .then(function(data){
         showLoading(false);
         state_itemSalesRepName_ = data.repName;
-        document.getElementById('pageSub').textContent = data.repName || state.user.name;
+        document.getElementById('pageSub').textContent = data.repName === '__ALL__' ? 'كل المناديب (الإجمالي)' : (data.repName || state.user.name);
 
         var pickerCard = document.getElementById('itemSalesRepPickerCard');
         if(data.reps && data.reps.length){
           pickerCard.hidden = false;
           var sel = document.getElementById('itemSalesRepSelect');
-          sel.innerHTML = data.reps.map(function(r){
+          var allOpt = '<option value="__ALL__"' + (data.repName === '__ALL__' ? ' selected' : '') + '>📊 كل المناديب (الإجمالي)</option>';
+          sel.innerHTML = allOpt + data.reps.map(function(r){
             var sel2 = (r === data.repName) ? ' selected' : '';
             return '<option value="' + escapeHtml(r) + '"' + sel2 + '>' + escapeHtml(r) + '</option>';
           }).join('');
@@ -4107,11 +4108,12 @@
     var rows = data.items.map(function(it){
       return [it.code || '', it.name, Number(it.netQty), Number(it.value), Number(it.salesCount), Number(it.returnedQty || 0)];
     });
+    var repLabel = data.repName === '__ALL__' ? 'كل المناديب (الإجمالي)' : (data.repName || state.user.name);
     var opts = {
-      fileName: 'مبيعات الأصناف - ' + (data.repName || state.user.name) + ' - ' + data.monthKey,
+      fileName: 'مبيعات الأصناف - ' + repLabel + ' - ' + data.monthKey,
       reportTitle: 'تقرير مبيعات الأصناف',
       meta: [
-        ['المندوب', data.repName || state.user.name],
+        ['المندوب', repLabel],
         ['الشهر', data.monthKey],
         ['التاريخ', new Date().toLocaleDateString('ar-EG')],
       ],
