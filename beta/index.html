@@ -3562,17 +3562,20 @@
     var btn = document.getElementById('fctStartBtn');
     var status = document.getElementById('fctStatus');
     btn.disabled = true; btn.textContent = 'جاري الفحص...';
-    status.textContent = '📍 بياخد إذن الموقع والحركة...';
+    status.textContent = '📷 هتفتح الكاميرا دلوقتي — التقط صورة وكمّل';
     var coords = null, motion = null, photoDataUrl = null;
-    fctRequestMotionPermission_()
-      .then(function(){ return Promise.all([fctReadMotion_(2500), fctGetPosition_()]); })
-      .then(function(r){
-        motion = r[0]; coords = r[1];
-        status.textContent = '📷 هتفتح الكاميرا دلوقتي — التقط صورة وكمّل';
-        return fctCapturePhoto_();
-      })
+    // لازم نفتح الكاميرا الأول وفوري (من غير أي انتظار قبلها) — المتصفحات بتمنع فتح الكاميرا/اختيار
+    // ملف لو مكانش استجابة مباشرة لضغطة المستخدم؛ أي تأخير (زي استنى GPS الأول) بيبوّظ الفتح وتفضل
+    // الشاشة عالقة من غير ما يحصل حاجة خالص
+    fctCapturePhoto_()
       .then(function(photo){
         photoDataUrl = photo;
+        status.textContent = '📍 بياخد إذن الموقع والحركة...';
+        return fctRequestMotionPermission_()
+          .then(function(){ return Promise.all([fctReadMotion_(2500), fctGetPosition_()]); });
+      })
+      .then(function(r){
+        motion = r[0]; coords = r[1];
         status.textContent = '';
         btn.disabled = false; btn.textContent = 'ابدأ الاختبار';
         var suspicious = [];
