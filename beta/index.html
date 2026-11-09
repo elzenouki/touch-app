@@ -3680,12 +3680,13 @@
   async function buildAttendanceCardImage_(opts){
     await ensureHtml2CanvasLoaded_();
     var C_BANNER = '#0c1730', C_GOLD = '#d9a21b';
-    // جدول مش flex — html2canvas بيرسم الـflex مع RTL غلط أحيانًا (بيختفي عمود كامل)، والجدول مضمون
+    // جدول مش flex — html2canvas بيرسم الـflex مع RTL غلط أحيانًا (بيختفي عمود كامل). وكمان لازم
+    // table-layout:fixed + عرض ثابت لكل عمود، وإلا الجدول بيتمدد أكتر من الحاوية ويقطع النص برّه الصورة
     var statsHtml = opts.stats.map(function(s, i){
       var bg = (i % 2 === 1) ? '#f7f6f2' : '#ffffff';
       return '<tr>' +
-        '<td style="padding:11px 16px; font-size:18px; font-weight:800; color:#1a1a1a; text-align:right; background:' + bg + '; border-bottom:1px solid #eee;">' + escapeHtml_(s[0]) + '</td>' +
-        '<td style="padding:11px 16px; font-size:18px; font-weight:800; color:' + C_BANNER + '; text-align:left; background:' + bg + '; border-bottom:1px solid #eee; white-space:nowrap;">' + escapeHtml_(String(s[1])) + '</td>' +
+        '<td style="width:300px; padding:11px 14px; font-size:17px; font-weight:800; color:#1a1a1a; text-align:right; background:' + bg + '; border-bottom:1px solid #eee; word-break:break-word;">' + escapeHtml_(s[0]) + '</td>' +
+        '<td style="width:224px; padding:11px 14px; font-size:17px; font-weight:800; color:' + C_BANNER + '; text-align:left; background:' + bg + '; border-bottom:1px solid #eee; word-break:break-word;">' + escapeHtml_(String(s[1])) + '</td>' +
       '</tr>';
     }).join('');
     var container = document.createElement('div');
@@ -3700,7 +3701,7 @@
           '</div>' +
         '</div>' +
         '<div style="text-align:center; font-size:19px; font-weight:900; color:#1a1a1a; margin-bottom:14px;">' + escapeHtml_(opts.name) + '</div>' +
-        '<table style="width:524px; margin:0 18px; border-collapse:collapse; border:2px solid ' + C_BANNER + ';">' + statsHtml + '</table>' +
+        '<table style="width:524px; table-layout:fixed; margin:0 18px; border-collapse:collapse; border:2px solid ' + C_BANNER + ';">' + statsHtml + '</table>' +
         '<div style="text-align:center; font-size:11px; color:#9a9a9a; font-style:italic; margin-top:14px;">' + escapeHtml_(opts.stamp) + '</div>' +
       '</div>';
     document.body.appendChild(container);
