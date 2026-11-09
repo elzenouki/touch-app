@@ -3675,28 +3675,58 @@
   // ============ الحضور والانصراف ============
   // بيحوّل صورة base64 لملف ويحاول يفتح شاشة المشاركة الأصلية (زي باقي التطبيق) عشان المندوب
   // يختار واتساب بنفسه ويبعتها — مفيش إرسال تلقائي (واتساب نفسه مش بيسمح بيه من غير لمسة المستخدم)
-  // المتصفحات بترفض تفتح شاشة المشاركة إلا لو ده استجابة مباشرة لضغطة المستخدم — فمش بننادي
-  // المشاركة تلقائي بعد الحضور/الانصراف (زي ما حصل مع الكاميرا بالظبط)، إحنا بس بنجهّز البيانات
-  // وبنظهر زرار "شارك على واتساب"، ولما يدوس عليه هو هيبقى أول حاجة بتحصل من ضغطته فتفتح صح
-  function setPendingAttendanceShare_(photoDataUrl, caption){
-    state.attPendingShare_ = { photo: photoDataUrl, caption: caption };
+  // بيبني صورة واحدة فيها صورة المندوب + كل أرقام الحضور (الوقت، قرب الموقع، أيام العمل، الغياب،
+  // الإجازات، ساعات العمل الشهر ده) — بنفس أسلوب صور الفواتير بالظبط (html2canvas) عشان العربي يتكتب صح
+  async function buildAttendanceCardImage_(opts){
+    await ensureHtml2CanvasLoaded_();
+    var C_BANNER = '#0c1730', C_GOLD = '#d9a21b';
+    var statsHtml = opts.stats.map(function(s){
+      return '<div style="display:flex; justify-content:space-between; padding:11px 16px; border-bottom:1px solid #eee; font-size:18px; font-weight:800; color:#1a1a1a;">' +
+        '<span>' + escapeHtml_(s[0]) + '</span><span style="color:' + C_BANNER + ';">' + escapeHtml_(String(s[1])) + '</span></div>';
+    }).join('');
+    var container = document.createElement('div');
+    container.style.cssText = 'position:fixed; top:0; left:-99999px; width:560px; background:#fff; direction:rtl; font-family:"Cairo","Tajawal",Arial,sans-serif;';
+    container.innerHTML =
+      '<div style="padding:0 0 20px;">' +
+        '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; font-size:20px; font-weight:900; padding:16px;">تاتش الزنوكي</div>' +
+        '<div style="background:' + C_GOLD + '; color:#1a1a1a; text-align:center; font-size:16px; font-weight:800; padding:10px;">' + escapeHtml_(opts.title) + '</div>' +
+        '<div style="text-align:center; padding:18px 0 10px;"><img src="' + opts.photo + '" style="width:200px; height:200px; object-fit:cover; border-radius:50%; border:4px solid ' + C_GOLD + ';"></div>' +
+        '<div style="text-align:center; font-size:19px; font-weight:900; color:#1a1a1a; margin-bottom:14px;">' + escapeHtml_(opts.name) + '</div>' +
+        '<div style="border:2px solid ' + C_BANNER + '; border-radius:10px; overflow:hidden; margin:0 18px;">' + statsHtml + '</div>' +
+        '<div style="text-align:center; font-size:11px; color:#9a9a9a; font-style:italic; margin-top:14px;">' + escapeHtml_(opts.stamp) + '</div>' +
+      '</div>';
+    document.body.appendChild(container);
+    var blob;
+    try{
+      var canvas = await html2canvas(container, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+      blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
+    } finally {
+      document.body.removeChild(container);
+    }
+    return blob;
+  }
+  function fmtHoursMin_(mins){
+    mins = Math.round(mins || 0);
+    return Math.floor(mins / 60) + 'س ' + (mins % 60) + 'د';
+  }
+  // بنجهّز الصورة بمجرد ما الرد يرجع (مش محتاجة ضغطة مستخدم لأنها شغل رسم بس)، وبنفضل الزرار هو
+  // اللي بيفتح واتساب الفعلي — عشان ده اللي لازم يكون استجابة مباشرة لضغطة
+  function setPendingAttendanceShare_(blob, caption){
+    state.attPendingShareBlob_ = blob;
+    state.attPendingShareCaption_ = caption;
     var btn = document.getElementById('attShareBtn');
     if(btn) btn.hidden = false;
   }
   function shareLastAttendance_(){
     clearMsg();
-    var pending = state.attPendingShare_;
-    if(!pending){ showMsg('مفيش صورة جاهزة للمشاركة دلوقتي', 'error'); return; }
-    try{
-      var arr = pending.photo.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
-      while(n--) u8[n] = bstr.charCodeAt(n);
-      var file = new File([u8], 'attendance.jpg', { type: mime });
-      if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
-        navigator.share({ files: [file], title: pending.caption, text: pending.caption }).catch(function(){});
-      } else {
-        showMsg('المشاركة المباشرة مش متاحة على المتصفح ده', 'error');
-      }
-    }catch(e){ showMsg('حصلت مشكلة في تجهيز الصورة للمشاركة', 'error'); }
+    var blob = state.attPendingShareBlob_;
+    if(!blob){ showMsg('مفيش صورة جاهزة للمشاركة دلوقتي', 'error'); return; }
+    var file = new File([blob], 'attendance.png', { type: 'image/png' });
+    if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+      navigator.share({ files: [file], title: state.attPendingShareCaption_, text: state.attPendingShareCaption_ }).catch(function(){});
+    } else {
+      showMsg('المشاركة المباشرة مش متاحة على المتصفح ده', 'error');
+    }
   }
   function refreshAttendanceStatus_(){
     if(!state.auth) return;
@@ -3720,6 +3750,28 @@
       }
     }).catch(function(){});
   }
+  // بيجيب ملخص الشهر الحالي للمندوب نفسه، ويبني صورة المشاركة الكاملة (صورة + كل الأرقام)
+  function buildAndSetAttendanceShare_(title, result, photo){
+    return callApi('attendanceReport', [state.auth, '', ''])
+      .then(function(rep){
+        var distanceText = result.distance != null ? (fmt(result.distance) + ' متر من الفرع') : 'الفرع مش محدد الموقع';
+        var stats = [
+          ['الوقت', result.time],
+          ['قرب الموقع من الفرع', distanceText],
+          ['أيام العمل الشهر ده', rep.presentDays + ' من ' + rep.expectedDays],
+          ['الغياب', rep.expectedDays - rep.presentDays > 0 ? (rep.expectedDays - rep.presentDays) + ' يوم' : 'مفيش'],
+          ['الإجازات الأسبوعية', rep.daysOff + ' يوم'],
+          ['ساعات العمل المسجلة الشهر ده', fmtHoursMin_(rep.workedMinutes)],
+        ];
+        if(result.branch) stats.splice(1, 0, ['الفرع', result.branch]);
+        var now = new Date();
+        var pad2 = function(n){ return String(n).padStart(2, '0'); };
+        var stamp = pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear() + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
+        return buildAttendanceCardImage_({ title: title, name: state.user.name, photo: photo, stats: stats, stamp: stamp });
+      })
+      .then(function(blob){ setPendingAttendanceShare_(blob, title + ' — ' + state.user.name); })
+      .catch(function(){}); // لو فشل بناء الصورة، التسجيل نفسه خلاص اتسجل، بس من غير زرار مشاركة
+  }
   function handleCheckIn_(){
     clearMsg();
     var btn = document.getElementById('checkInBtn');
@@ -3731,10 +3783,7 @@
       .then(function(result){
         showMsg('تم تسجيل الحضور الساعة ' + result.time + ' ✔', 'success');
         refreshAttendanceStatus_();
-        var cap = 'تسجيل حضور: ' + state.user.name + '\nالساعة: ' + result.time +
-          (result.branch ? ('\nالفرع: ' + result.branch) : '') +
-          (result.distance != null ? ('\nبعد ' + fmt(result.distance) + ' متر من موقع الفرع') : '');
-        setPendingAttendanceShare_(photo, cap);
+        buildAndSetAttendanceShare_('✅ تسجيل حضور', result, photo);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
@@ -3749,9 +3798,7 @@
       .then(function(result){
         showMsg('تم تسجيل الانصراف الساعة ' + result.time + ' ✔', 'success');
         refreshAttendanceStatus_();
-        var cap = 'تسجيل انصراف: ' + state.user.name + '\nالساعة: ' + result.time +
-          (result.distance != null ? ('\nبعد ' + fmt(result.distance) + ' متر من موقع الفرع') : '');
-        setPendingAttendanceShare_(photo, cap);
+        buildAndSetAttendanceShare_('🚪 تسجيل انصراف', result, photo);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
