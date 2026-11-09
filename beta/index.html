@@ -3559,6 +3559,7 @@
           : '<div style="background:#e6f3eb; color:#2b7a4f; padding:10px 14px; border-radius:10px; font-weight:800; margin-bottom:10px;">✔️ النتائج طبيعية</div>';
         document.getElementById('fctResult').innerHTML = verdict +
           '<div class="itemRow"><div class="name">الإحداثيات</div><div class="total">' + coords.latitude.toFixed(6) + ', ' + coords.longitude.toFixed(6) + '</div></div>' +
+          '<a href="https://www.google.com/maps?q=' + coords.latitude + ',' + coords.longitude + '" target="_blank" class="whatsapp" style="display:block; text-align:center; text-decoration:none; margin:10px 0;">📍 افتح الموقع على خرائط جوجل</a>' +
           '<div class="itemRow"><div class="name">دقة GPS</div><div class="total">' + fmt(coords.accuracy) + ' متر</div></div>' +
           '<div class="itemRow"><div class="name">الارتفاع</div><div class="total">' + (coords.altitude != null ? fmt(coords.altitude) + ' م' : '—') + '</div></div>' +
           '<div class="itemRow"><div class="name">السرعة</div><div class="total">' + (coords.speed != null ? fmt(coords.speed) + ' م/ث' : '—') + '</div></div>' +
