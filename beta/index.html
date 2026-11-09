@@ -1201,6 +1201,7 @@
         <button type="button" class="primary" id="checkInBtn" onclick="handleCheckIn_()" style="flex:1; margin:0;">✅ تسجيل حضور</button>
         <button type="button" class="whatsapp" id="checkOutBtn" onclick="handleCheckOut_()" style="flex:1; margin:0;" disabled>🚪 تسجيل انصراف</button>
       </div>
+      <button type="button" class="whatsapp" id="attShareBtn" onclick="shareLastAttendance_()" style="width:100%; margin-top:10px;" hidden>📤 شارك على واتساب</button>
     </div>
 
     <div class="c2Stats" id="homeStats">
@@ -3674,17 +3675,28 @@
   // ============ الحضور والانصراف ============
   // بيحوّل صورة base64 لملف ويحاول يفتح شاشة المشاركة الأصلية (زي باقي التطبيق) عشان المندوب
   // يختار واتساب بنفسه ويبعتها — مفيش إرسال تلقائي (واتساب نفسه مش بيسمح بيه من غير لمسة المستخدم)
-  function shareAttendancePhoto_(photoDataUrl, caption){
+  // المتصفحات بترفض تفتح شاشة المشاركة إلا لو ده استجابة مباشرة لضغطة المستخدم — فمش بننادي
+  // المشاركة تلقائي بعد الحضور/الانصراف (زي ما حصل مع الكاميرا بالظبط)، إحنا بس بنجهّز البيانات
+  // وبنظهر زرار "شارك على واتساب"، ولما يدوس عليه هو هيبقى أول حاجة بتحصل من ضغطته فتفتح صح
+  function setPendingAttendanceShare_(photoDataUrl, caption){
+    state.attPendingShare_ = { photo: photoDataUrl, caption: caption };
+    var btn = document.getElementById('attShareBtn');
+    if(btn) btn.hidden = false;
+  }
+  function shareLastAttendance_(){
+    clearMsg();
+    var pending = state.attPendingShare_;
+    if(!pending){ showMsg('مفيش صورة جاهزة للمشاركة دلوقتي', 'error'); return; }
     try{
-      var arr = photoDataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
+      var arr = pending.photo.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
       while(n--) u8[n] = bstr.charCodeAt(n);
       var file = new File([u8], 'attendance.jpg', { type: mime });
       if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
-        navigator.share({ files: [file], title: caption, text: caption }).catch(function(){});
+        navigator.share({ files: [file], title: pending.caption, text: pending.caption }).catch(function(){});
       } else {
-        showMsg('المشاركة المباشرة مش متاحة على المتصفح ده — الصورة متسجلة، وتقدر تبعتها يدويًا من سجل الحضور', 'error');
+        showMsg('المشاركة المباشرة مش متاحة على المتصفح ده', 'error');
       }
-    }catch(e){}
+    }catch(e){ showMsg('حصلت مشكلة في تجهيز الصورة للمشاركة', 'error'); }
   }
   function refreshAttendanceStatus_(){
     if(!state.auth) return;
@@ -3722,7 +3734,7 @@
         var cap = 'تسجيل حضور: ' + state.user.name + '\nالساعة: ' + result.time +
           (result.branch ? ('\nالفرع: ' + result.branch) : '') +
           (result.distance != null ? ('\nبعد ' + fmt(result.distance) + ' متر من موقع الفرع') : '');
-        shareAttendancePhoto_(photo, cap);
+        setPendingAttendanceShare_(photo, cap);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
@@ -3739,7 +3751,7 @@
         refreshAttendanceStatus_();
         var cap = 'تسجيل انصراف: ' + state.user.name + '\nالساعة: ' + result.time +
           (result.distance != null ? ('\nبعد ' + fmt(result.distance) + ' متر من موقع الفرع') : '');
-        shareAttendancePhoto_(photo, cap);
+        setPendingAttendanceShare_(photo, cap);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
