@@ -1191,6 +1191,18 @@
     <div class="c2Hadith"><span class="hadithText" id="homeHadithText"></span><span class="hadithRef hiddenRef" id="homeHadithRef"></span></div>
     </div>
 
+    <div class="card" id="attendanceCard" style="margin:14px 0 0;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+        <div class="cardTitle" style="margin:0;">⏱️ الحضور والانصراف</div>
+        <button type="button" onclick="openScreen('attendance')" style="background:none; border:none; color:var(--navy); font-weight:700; font-size:13px; cursor:pointer; padding:0;">السجل ›</button>
+      </div>
+      <div id="attendanceStatusLine" style="font-size:13px; color:var(--muted); margin-bottom:10px;">...</div>
+      <div style="display:flex; gap:10px;">
+        <button type="button" class="primary" id="checkInBtn" onclick="handleCheckIn_()" style="flex:1; margin:0;">✅ تسجيل حضور</button>
+        <button type="button" class="whatsapp" id="checkOutBtn" onclick="handleCheckOut_()" style="flex:1; margin:0;" disabled>🚪 تسجيل انصراف</button>
+      </div>
+    </div>
+
     <div class="c2Stats" id="homeStats">
       <div class="c2Ring" id="targetProgressWrap" hidden><div><b id="targetProgressPct"></b><small>من الهدف</small></div></div>
       <div class="c2Tiles">
@@ -1213,6 +1225,7 @@
       <span class="grip"></span>
       <button type="button" class="c2Item" id="staleLink" onclick="openScreen('stale')"><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg></span><span class="title">الرواكد</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="myStatsLink" onclick="openScreen('mystats')"><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg></span><span class="title">مبيعاتي</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="attendanceLink" onclick="openScreen('attendance')"><span class="ic" style="background:#fdf1e0"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#a8702f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 3"></path></svg></span><span class="title">الحضور والانصراف</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="balancesLink" onclick="openScreen('balances')"><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path></svg></span><span class="title">أرصدتي</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="invoiceHistoryLink" onclick="openScreen('history')"><span class="ic" style="background:#f6eedb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#9a6f1f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path></svg></span><span class="title">سجل فواتيري</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="repsTargetsLink" onclick="openScreen('repstargets')" hidden><span class="ic" style="background:#e6f3eb"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b7a4f" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.5"></circle></svg></span><span class="title">مبيعات وتارجت المناديب</span><span class="chev"></span></button>
@@ -1565,6 +1578,31 @@
     </div>
   </div>
 
+  <!-- ============ شاشة سجل الحضور والانصراف ============ -->
+  <div id="viewAttendance" hidden>
+    <div class="card" id="attRepPickerCard" hidden>
+      <div class="cardTitle">اختار المندوب</div>
+      <select id="attRepSelect" onchange="loadAttendance_(this.value, document.getElementById('attMonthSelect').value)"></select>
+    </div>
+    <div class="card">
+      <div class="cardTitle">اختار الشهر</div>
+      <select id="attMonthSelect" onchange="loadAttendance_(state.attRepName_, this.value)"></select>
+    </div>
+    <div class="card" id="attSummaryCard" hidden>
+      <div class="totalBar"><span>أيام الحضور</span><span class="val" id="attPresentDays">0</span></div>
+      <div class="totalBar" style="margin-top:6px;"><span>أيام الغياب</span><span class="val" id="attAbsentDays">0</span></div>
+      <div style="color:var(--muted); font-size:12px; margin-top:8px;" id="attExpectedNote"></div>
+    </div>
+    <div class="card" id="attListCard" hidden>
+      <div class="cardTitle">تفاصيل الأيام</div>
+      <div id="attList"></div>
+    </div>
+    <div class="card" id="attAllCard" hidden>
+      <div class="cardTitle">كل المناديب</div>
+      <div id="attAllList"></div>
+    </div>
+  </div>
+
   <!-- ============ شاشة بلوك الأصناف الراكدة (لازم سبب قبل ما تفتح مبيعاتي/أرصدتي) ============ -->
   <div id="viewStaleBlock" hidden>
     <div class="card">
@@ -1684,6 +1722,7 @@
     <div class="admTabs" role="tablist">
       <button type="button" class="on" data-adm="reps" onclick="admTab_('reps')">المناديب</button>
       <button type="button" data-adm="asnaf" onclick="admTab_('asnaf')">الأصناف</button>
+      <button type="button" data-adm="branches" onclick="admTab_('branches')">مواقع الفروع</button>
       <button type="button" data-adm="sugg" onclick="admTab_('sugg')">المقترحات<span class="n" id="admSuggN" hidden></span></button>
       <button type="button" data-adm="prod" onclick="admTab_('prod')">المنتجات</button>
     </div>
@@ -1716,6 +1755,17 @@
       <div class="card">
         <div class="cardTitle">كل الأصناف الحالية</div>
         <div id="asnafList"><div class="empty">جاري التحميل...</div></div>
+      </div>
+    </div>
+
+    <div class="admSection" data-sec="branches" hidden>
+      <div class="card">
+        <div class="cardTitle">تحديد موقع كل فرع (إحداثيات GPS)</div>
+        <div style="color:var(--muted); font-size:12.5px; line-height:1.8; margin-bottom:10px;">
+          لازم تحدد موقع الفرع مرة واحدة عشان نقدر نحسب بعد المندوب عنه وقت تسجيل الحضور/الانصراف.
+          تقدر تجيب الإحداثيات من خرائط جوجل: افتح الفرع على الخريطة، اضغط مطوّل على النقطة، وهتظهرلك الأرقام.
+        </div>
+        <div id="branchesList"><div class="empty">جاري التحميل...</div></div>
       </div>
     </div>
 
@@ -1971,7 +2021,7 @@
   const SB_READ_ACTIONS_ = {bootstrapHome:1, bootstrapMyStats:1, bootstrapStale:1, listMyInvoices:1, getInvoiceDetails:1, getMyBalances:1,
     bootstrapBalances:1, bootstrapItemSalesReport:1, bootstrapRepEvaluation:1, bootstrapProfile:1, listSuggestions:1, listProductDescriptions:1,
     getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1, serverUsage:1, repsTargets:1,
-    itemBalancesBootstrap:1, itemBalancesReport:1};
+    itemBalancesBootstrap:1, itemBalancesReport:1, attendanceReport:1, attendanceToday:1, attendanceBranches:1};
   // طلبات بتكتب في الشيت: بنطلب من جوجل ينسخ التغيير لـ Supabase فورًا (عشان الشاشات تبان محدثة على طول)
   const SB_WRITE_ACTIONS_ = {addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, savePrices:1,
     saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
@@ -1981,7 +2031,8 @@
   const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1,
     // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
     listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
-    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1, saveTarget:1};
+    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1,
+    setBranchLocation:1, checkIn:1, checkOut:1, saveTarget:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
       method: 'POST',
@@ -2136,7 +2187,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets','viewItemBalances','viewFieldCheckTest'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets','viewItemBalances','viewFieldCheckTest','viewAttendance'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -2427,6 +2478,7 @@
     setView('viewHome');
     prefetchCatalogSoon_();
     maybeAskBranch_();
+    refreshAttendanceStatus_();
     // مرة واحدة: نعرض على المندوب اللي داخل من قبل كده يفعّل البصمة
     if(!_pkOfferShownThisSession_) setTimeout(function(){ maybeOfferPasskey_(false); }, 2500);
   }
@@ -3211,6 +3263,7 @@
     if(name === 'itemtargets'){ loadItemTargets(state.itMonth_ || ''); return; }
     if(name === 'itembalances'){ loadItemBalances_(); return; }
     if(name === 'fieldchecktest'){ setView('viewFieldCheckTest'); return; }
+    if(name === 'attendance'){ loadAttendance_(state.isAdmin ? '__ALL__' : '', state.attMonth_ || ''); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
     if(name === 'profile'){ loadProfile(); return; }
@@ -3536,7 +3589,24 @@
         var f = inp.files && inp.files[0];
         if(!f){ finish(function(){ reject(new Error('متفتحتش كاميرا ولا اتلقطت صورة')); }); return; }
         var reader = new FileReader();
-        reader.onload = function(){ finish(function(){ resolve(reader.result); }); };
+        reader.onload = function(){
+          // بنصغّر الصورة قبل ما نرجّعها — صورة الكاميرا الخام ممكن توصل لميجابايتات، وده تقيل جدًا
+          // لأي استخدام بعدين (حفظ في قاعدة البيانات، إرسال على واتساب)
+          var img = new Image();
+          img.onload = function(){
+            var w = img.width, h = img.height, maxDim = 900;
+            if(w > maxDim || h > maxDim){
+              if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
+              else { w = Math.round(w * maxDim / h); h = maxDim; }
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            finish(function(){ resolve(canvas.toDataURL('image/jpeg', 0.75)); });
+          };
+          img.onerror = function(){ finish(function(){ reject(new Error('فشل تحميل الصورة')); }); };
+          img.src = reader.result;
+        };
         reader.onerror = function(){ finish(function(){ reject(new Error('فشل قراءة الصورة')); }); };
         reader.readAsDataURL(f);
       });
@@ -3599,6 +3669,142 @@
         btn.disabled = false; btn.textContent = 'ابدأ الاختبار';
         onError(err);
       });
+  }
+
+  // ============ الحضور والانصراف ============
+  // بيحوّل صورة base64 لملف ويحاول يفتح شاشة المشاركة الأصلية (زي باقي التطبيق) عشان المندوب
+  // يختار واتساب بنفسه ويبعتها — مفيش إرسال تلقائي (واتساب نفسه مش بيسمح بيه من غير لمسة المستخدم)
+  function shareAttendancePhoto_(photoDataUrl, caption){
+    try{
+      var arr = photoDataUrl.split(','), mime = arr[0].match(/:(.*?);/)[1], bstr = atob(arr[1]), n = bstr.length, u8 = new Uint8Array(n);
+      while(n--) u8[n] = bstr.charCodeAt(n);
+      var file = new File([u8], 'attendance.jpg', { type: mime });
+      if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+        navigator.share({ files: [file], title: caption, text: caption }).catch(function(){});
+      } else {
+        showMsg('المشاركة المباشرة مش متاحة على المتصفح ده — الصورة متسجلة، وتقدر تبعتها يدويًا من سجل الحضور', 'error');
+      }
+    }catch(e){}
+  }
+  function refreshAttendanceStatus_(){
+    if(!state.auth) return;
+    callApi('attendanceToday', [state.auth]).then(function(d){
+      var line = document.getElementById('attendanceStatusLine');
+      var inBtn = document.getElementById('checkInBtn'), outBtn = document.getElementById('checkOutBtn');
+      if(!line || !inBtn || !outBtn) return;
+      if(d.checkIn){
+        inBtn.disabled = true; inBtn.textContent = '✅ حضرت ' + d.checkIn;
+        if(d.checkOut){
+          outBtn.disabled = true; outBtn.textContent = '🚪 انصرفت ' + d.checkOut;
+          line.textContent = 'اليوم كامل — حضور ' + d.checkIn + '، انصراف ' + d.checkOut + (d.branch ? (' — ' + d.branch) : '');
+        } else {
+          outBtn.disabled = false; outBtn.textContent = '🚪 تسجيل انصراف';
+          line.textContent = 'حاضر من الساعة ' + d.checkIn + (d.branch ? (' — ' + d.branch) : '');
+        }
+      } else {
+        inBtn.disabled = false; inBtn.textContent = '✅ تسجيل حضور';
+        outBtn.disabled = true; outBtn.textContent = '🚪 تسجيل انصراف';
+        line.textContent = 'لسه ما سجلتش حضور النهارده';
+      }
+    }).catch(function(){});
+  }
+  function handleCheckIn_(){
+    clearMsg();
+    var btn = document.getElementById('checkInBtn');
+    btn.disabled = true; btn.textContent = 'جاري التسجيل...';
+    var coords = null, photo = null;
+    fctCapturePhoto_()
+      .then(function(p){ photo = p; return fctGetPosition_(); })
+      .then(function(c){ coords = c; return callApi('checkIn', [state.auth, coords.latitude, coords.longitude, photo]); })
+      .then(function(result){
+        showMsg('تم تسجيل الحضور الساعة ' + result.time + ' ✔', 'success');
+        refreshAttendanceStatus_();
+        var cap = 'تسجيل حضور: ' + state.user.name + '\nالساعة: ' + result.time +
+          (result.branch ? ('\nالفرع: ' + result.branch) : '') +
+          (result.distance != null ? ('\nبعد ' + fmt(result.distance) + ' متر من موقع الفرع') : '');
+        shareAttendancePhoto_(photo, cap);
+      })
+      .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
+  }
+  function handleCheckOut_(){
+    clearMsg();
+    var btn = document.getElementById('checkOutBtn');
+    btn.disabled = true; btn.textContent = 'جاري التسجيل...';
+    var coords = null, photo = null;
+    fctCapturePhoto_()
+      .then(function(p){ photo = p; return fctGetPosition_(); })
+      .then(function(c){ coords = c; return callApi('checkOut', [state.auth, coords.latitude, coords.longitude, photo]); })
+      .then(function(result){
+        showMsg('تم تسجيل الانصراف الساعة ' + result.time + ' ✔', 'success');
+        refreshAttendanceStatus_();
+        var cap = 'تسجيل انصراف: ' + state.user.name + '\nالساعة: ' + result.time +
+          (result.distance != null ? ('\nبعد ' + fmt(result.distance) + ' متر من موقع الفرع') : '');
+        shareAttendancePhoto_(photo, cap);
+      })
+      .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
+  }
+  function loadAttendance_(repName, monthKey){
+    document.getElementById('pageTitle').textContent = 'الحضور والانصراف';
+    document.getElementById('pageSub').textContent = state.user.name;
+    showLoading(true);
+    callApi('attendanceReport', [state.auth, repName || '', monthKey || ''])
+      .then(function(data){
+        showLoading(false);
+        state.attRepName_ = data.repName; state.attMonth_ = data.monthKey;
+        var pickerCard = document.getElementById('attRepPickerCard');
+        if(data.isAdmin && data.reps && data.reps.length){
+          pickerCard.hidden = false;
+          var sel = document.getElementById('attRepSelect');
+          var allOpt = '<option value="__ALL__"' + (data.repName === '__ALL__' ? ' selected' : '') + '>📊 كل المناديب</option>';
+          sel.innerHTML = allOpt + data.reps.map(function(r){
+            return '<option value="' + escapeHtml(r) + '"' + (r === data.repName ? ' selected' : '') + '>' + escapeHtml(r) + '</option>';
+          }).join('');
+        } else {
+          pickerCard.hidden = true;
+        }
+        document.getElementById('attMonthSelect').innerHTML = data.months.map(function(mk){
+          var p = mk.split('-');
+          return '<option value="' + mk + '"' + (mk === data.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
+        }).join('');
+        document.getElementById('pageSub').textContent = data.repName === '__ALL__' ? 'كل المناديب' : (data.repName || state.user.name);
+
+        document.getElementById('attAllCard').hidden = !data.allMode;
+        document.getElementById('attSummaryCard').hidden = !!data.allMode;
+        document.getElementById('attListCard').hidden = !!data.allMode;
+
+        if(data.allMode){
+          renderAttendanceAll_(data.summaryRows);
+        } else {
+          document.getElementById('attPresentDays').textContent = fmt(data.presentDays);
+          document.getElementById('attAbsentDays').textContent = fmt(Math.max(data.expectedDays - data.presentDays, 0));
+          document.getElementById('attExpectedNote').textContent = 'مفروض يحضر ' + data.expectedDays + ' يوم الشهر ده (بعد استبعاد الإجازة الأسبوعية)';
+          renderAttendanceList_(data.rows);
+        }
+        setView('viewAttendance');
+      })
+      .catch(onError);
+  }
+  function renderAttendanceAll_(rows){
+    var list = document.getElementById('attAllList');
+    if(!rows.length){ list.innerHTML = '<div class="empty">مفيش بيانات</div>'; return; }
+    list.innerHTML = rows.map(function(r){
+      return '<div class="itemRow"><div><div class="name">' + escapeHtml(r.name) + '</div>' +
+        '<div class="meta">' + r.presentDays + ' من ' + r.expectedDays + ' يوم متوقع</div></div>' +
+        '<div class="total" style="color:' + (r.absentDays > 0 ? 'var(--red)' : 'var(--green)') + '">' +
+        (r.absentDays > 0 ? ('غايب ' + r.absentDays) : 'كامل') + '</div></div>';
+    }).join('');
+  }
+  function renderAttendanceList_(rows){
+    var list = document.getElementById('attList');
+    if(!rows.length){ list.innerHTML = '<div class="empty">مفيش تسجيلات في الشهر ده</div>'; return; }
+    function distNote(d){ return d != null ? (' (' + fmt(d) + ' م)') : ''; }
+    list.innerHTML = rows.map(function(r){
+      return '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:2px;">' +
+        '<div class="name">' + r.day + (r.branch ? (' — ' + escapeHtml(r.branch)) : '') + '</div>' +
+        '<div class="meta">دخول: ' + (r.checkIn || '—') + distNote(r.checkInDistance) + ' · خروج: ' + (r.checkOut || '—') + distNote(r.checkOutDistance) +
+        (r.durationMin != null ? (' · المدة: ' + Math.floor(r.durationMin / 60) + 'س ' + (r.durationMin % 60) + 'د') : '') + '</div>' +
+      '</div>';
+    }).join('');
   }
 
   function loadItemTargets(monthKey){
@@ -4673,6 +4879,41 @@
   function admTab_(name){
     document.querySelectorAll('.admTabs button').forEach(function(b){ b.classList.toggle('on', b.dataset.adm === name); });
     document.querySelectorAll('.admSection').forEach(function(sec){ sec.hidden = sec.dataset.sec !== name; });
+    if(name === 'branches') refreshBranchesList_();
+  }
+  function refreshBranchesList_(){
+    document.getElementById('branchesList').innerHTML = '<div class="empty">جاري التحميل...</div>';
+    callApi('attendanceBranches', [state.auth])
+      .then(renderBranchesList_)
+      .catch(onError);
+  }
+  function renderBranchesList_(branches){
+    var el = document.getElementById('branchesList');
+    if(!branches || !branches.length){ el.innerHTML = '<div class="empty">مفيش فروع مسجلة لسه — ضيف فرع لمندوب الأول</div>'; return; }
+    el.innerHTML = branches.map(function(b, i){
+      var hasLoc = b.lat != null && b.lng != null;
+      return '<div class="repRow" style="flex-direction:column; align-items:stretch; gap:8px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+          '<div class="name">' + escapeHtml(b.name) + '</div>' +
+          '<span style="font-size:12px; color:' + (hasLoc ? 'var(--green)' : 'var(--red)') + '; font-weight:700;">' + (hasLoc ? '✔️ محدد' : '⚠️ مش محدد') + '</span>' +
+        '</div>' +
+        '<div style="display:flex; gap:8px;">' +
+          '<input type="text" inputmode="decimal" dir="ltr" class="ltrNum" placeholder="Latitude" id="brLat' + i + '" value="' + (hasLoc ? b.lat : '') + '" style="margin:0;">' +
+          '<input type="text" inputmode="decimal" dir="ltr" class="ltrNum" placeholder="Longitude" id="brLng' + i + '" value="' + (hasLoc ? b.lng : '') + '" style="margin:0;">' +
+        '</div>' +
+        '<button type="button" class="primary" style="margin:0;" onclick="handleSetBranchLocation_(\'' + escapeHtml(b.name).replace(/'/g, "\\'") + '\', ' + i + ')">حفظ موقع الفرع</button>' +
+      '</div>';
+    }).join('');
+  }
+  function handleSetBranchLocation_(name, i){
+    clearMsg();
+    var lat = document.getElementById('brLat' + i).value.trim();
+    var lng = document.getElementById('brLng' + i).value.trim();
+    if(!lat || !lng || isNaN(Number(lat)) || isNaN(Number(lng))){ showMsg('اكتب Latitude و Longitude صحيحين', 'error'); return; }
+    showLoading(true);
+    callApi('setBranchLocation', [state.auth, name, lat, lng])
+      .then(function(){ showLoading(false); showMsg('تم حفظ موقع الفرع ✔', 'success'); refreshBranchesList_(); })
+      .catch(onError);
   }
   function toggleAdmAdd_(id){
     const el = document.getElementById(id);
