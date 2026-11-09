@@ -1220,6 +1220,7 @@
       <button type="button" class="c2Item" id="itemSalesLink" onclick="openScreen('itemsales')"><span class="ic" style="background:#eeeaf8"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5b4a9c" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"></path><path d="M7 15l4-4 3 3 5-6"></path></svg></span><span class="title">مبيعات الأصناف</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="itemBalancesLink" onclick="openScreen('itembalances')" hidden><span class="ic" style="background:#e7eefa"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#2b5fa8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8 12 3 3 8l9 5 9-5z"></path><path d="M12 13v8"></path><path d="M3 8v8l9 5 9-5V8"></path></svg></span><span class="title">رصيد الأصناف بالمندوب</span><span class="chev"></span></button>
       <button type="button" class="c2Item" id="staleReasonsLink" onclick="openScreen('stalereasons')" hidden><span class="ic" style="background:#fbe9e5"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#b3412e" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H8l-4 4z"></path></svg></span><span class="title">تقرير أسباب الركود</span><span class="chev"></span></button>
+      <button type="button" class="c2Item" id="fieldCheckTestLink" onclick="openScreen('fieldchecktest')" hidden><span class="ic" style="background:#eeeaf8"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#5b4a9c" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"></path></svg></span><span class="title">🧪 اختبار فحص الموقع (تجريبي)</span><span class="chev"></span></button>
     </div>
   </div>
 
@@ -1544,6 +1545,22 @@
     </div>
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px;">
       نفس حساب "أرصدتي" بالظبط، بس بيورّي الصنف ده عند كل المناديب مع بعض — المناديب اللي رصيدهم صفر مش بيظهروا
+    </div>
+  </div>
+
+  <!-- ============ شاشة تجريبية: اختبار فحص الموقع (كاميرا + GPS + حركة) — تجربة داخلية بس، مش متصلة بأي حفظ ============ -->
+  <div id="viewFieldCheckTest" hidden>
+    <div class="card">
+      <div class="cardTitle">🧪 اختبار فحص الموقع</div>
+      <div style="color:var(--muted); font-size:13px; line-height:1.8; margin-bottom:12px;">
+        ده اختبار تجريبي بس (مش متسجل في أي مكان ولا متصل بأي بيع). هيطلب منك إذن الموقع، وبعدين هيفتح الكاميرا
+        يلتقط صورة فورية، وبعدين هيقيس حركة الموبايل لثانيتين. جرّبه وانت ماشي شوية وانت واقف تاني عشان تشوف الفرق.
+      </div>
+      <button type="button" class="primary" id="fctStartBtn" onclick="fctStart_()">ابدأ الاختبار</button>
+    </div>
+    <div class="card" id="fctResultCard" hidden>
+      <div class="cardTitle">النتيجة</div>
+      <div id="fctResult"></div>
     </div>
   </div>
 
@@ -2118,7 +2135,7 @@
   });
 
   function setView(name){
-    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets','viewItemBalances'].forEach(id=>{
+    ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets','viewItemBalances','viewFieldCheckTest'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
     document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
@@ -2591,6 +2608,7 @@
     document.getElementById('repsTargetsLink').hidden = !(state.isAdmin || state.isOwner);
     document.getElementById('itemBalancesLink').hidden = !(state.isAdmin || state.isOwner);
     document.getElementById('itemTargetsLink').hidden = !(state.isAdmin || state.isOwner);
+    document.getElementById('fieldCheckTestLink').hidden = !state.isOwner;
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
@@ -3191,6 +3209,7 @@
     if(name === 'repstargets'){ loadRepsTargets(state.rtMonth_ || ''); return; }
     if(name === 'itemtargets'){ loadItemTargets(state.itMonth_ || ''); return; }
     if(name === 'itembalances'){ loadItemBalances_(); return; }
+    if(name === 'fieldchecktest'){ setView('viewFieldCheckTest'); return; }
     if(name === 'balances'){ loadBalances(); return; }
     if(name === 'history'){ loadInvoiceHistory(); return; }
     if(name === 'profile'){ loadProfile(); return; }
@@ -3461,6 +3480,98 @@
       .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
       .catch(onError);
   }
+
+  // ============ شاشة تجريبية: اختبار فحص الموقع (كاميرا + GPS + حركة) ============
+  // تجربة داخلية بس — بتاخد صلاحيات الموقع/الكاميرا/الحركة وتعرض النتيجة الخام على الشاشة،
+  // من غير ما تحفظ أي حاجة في أي مكان. الهدف إننا نجرب شكل التجربة فعليًا على موبايل حقيقي الأول.
+  function fctReadMotion_(durationMs){
+    return new Promise(function(resolve){
+      var score = 0, samples = 0, last = null;
+      function onMotion(e){
+        var a = e.accelerationIncludingGravity || e.acceleration;
+        if(!a || a.x == null){ return; }
+        if(last){
+          score += Math.abs(a.x - last.x) + Math.abs(a.y - last.y) + Math.abs(a.z - last.z);
+        }
+        last = { x: a.x, y: a.y, z: a.z };
+        samples++;
+      }
+      window.addEventListener('devicemotion', onMotion);
+      setTimeout(function(){
+        window.removeEventListener('devicemotion', onMotion);
+        resolve({ score: Math.round(score * 100) / 100, samples: samples });
+      }, durationMs);
+    });
+  }
+  function fctRequestMotionPermission_(){
+    if(typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function'){
+      return DeviceMotionEvent.requestPermission().then(function(state2){
+        if(state2 !== 'granted') throw new Error('رفضت إذن الحركة — جرب تاني ووافق عليه');
+      });
+    }
+    return Promise.resolve();
+  }
+  function fctGetPosition_(){
+    return new Promise(function(resolve, reject){
+      if(!navigator.geolocation){ reject(new Error('المتصفح ده مش بيدعم تحديد الموقع')); return; }
+      navigator.geolocation.getCurrentPosition(
+        function(pos){ resolve(pos.coords); },
+        function(err){ reject(new Error('رفضت إذن الموقع أو حصلت مشكلة: ' + err.message)); },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    });
+  }
+  function fctCapturePhoto_(){
+    return new Promise(function(resolve, reject){
+      var inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
+      inp.style.display = 'none';
+      inp.addEventListener('change', function(){
+        var f = inp.files && inp.files[0];
+        document.body.removeChild(inp);
+        if(!f){ reject(new Error('متفتحتش كاميرا ولا اتلقطت صورة')); return; }
+        var reader = new FileReader();
+        reader.onload = function(){ resolve(reader.result); };
+        reader.onerror = function(){ reject(new Error('فشل قراءة الصورة')); };
+        reader.readAsDataURL(f);
+      });
+      document.body.appendChild(inp);
+      inp.click();
+    });
+  }
+  function fctStart_(){
+    clearMsg();
+    document.getElementById('fctResultCard').hidden = true;
+    var btn = document.getElementById('fctStartBtn');
+    btn.disabled = true; btn.textContent = 'جاري الفحص... (اوافق على الأذونات اللي هتظهر)';
+    var coords = null, motion = null, photoDataUrl = null;
+    fctRequestMotionPermission_()
+      .then(function(){ return Promise.all([fctReadMotion_(2500), fctGetPosition_()]); })
+      .then(function(r){ motion = r[0]; coords = r[1]; return fctCapturePhoto_(); })
+      .then(function(photo){
+        photoDataUrl = photo;
+        btn.disabled = false; btn.textContent = 'ابدأ الاختبار';
+        var suspicious = [];
+        if(coords.accuracy != null && coords.accuracy <= 1) suspicious.push('دقة GPS مثالية أوي (' + coords.accuracy + ' م) — ده غريب لموقع حقيقي');
+        if(motion.samples === 0) suspicious.push('مفيش قراءات حركة خالص — يمكن المتصفح مش بيدعمها على الجهاز ده');
+        var verdict = suspicious.length
+          ? '<div style="background:#fbe9e5; color:#b3412e; padding:10px 14px; border-radius:10px; font-weight:800; margin-bottom:10px;">⚠️ ' + suspicious.join('<br>') + '</div>'
+          : '<div style="background:#e6f3eb; color:#2b7a4f; padding:10px 14px; border-radius:10px; font-weight:800; margin-bottom:10px;">✔️ النتائج طبيعية</div>';
+        document.getElementById('fctResult').innerHTML = verdict +
+          '<div class="itemRow"><div class="name">الإحداثيات</div><div class="total">' + coords.latitude.toFixed(6) + ', ' + coords.longitude.toFixed(6) + '</div></div>' +
+          '<div class="itemRow"><div class="name">دقة GPS</div><div class="total">' + fmt(coords.accuracy) + ' متر</div></div>' +
+          '<div class="itemRow"><div class="name">الارتفاع</div><div class="total">' + (coords.altitude != null ? fmt(coords.altitude) + ' م' : '—') + '</div></div>' +
+          '<div class="itemRow"><div class="name">السرعة</div><div class="total">' + (coords.speed != null ? fmt(coords.speed) + ' م/ث' : '—') + '</div></div>' +
+          '<div class="itemRow"><div class="name">درجة الحركة (ثانيتين)</div><div class="total">' + motion.score + ' (' + motion.samples + ' قراءة)</div></div>' +
+          '<img src="' + photoDataUrl + '" style="width:100%; border-radius:12px; margin-top:10px; display:block;">';
+        document.getElementById('fctResultCard').hidden = false;
+      })
+      .catch(function(err){
+        btn.disabled = false; btn.textContent = 'ابدأ الاختبار';
+        onError(err);
+      });
+  }
+
   function loadItemTargets(monthKey){
     document.getElementById('pageTitle').textContent = 'تارجت الأصناف';
     document.getElementById('pageSub').textContent = state.user.name;
