@@ -3576,57 +3576,67 @@
       );
     });
   }
-  // لو المندوب لغى الكاميرا من غير ما يصور، مفيش ضمان إن المتصفح يبعت أي event (خصوصًا على آيفون) —
-  // فبنستخدم 'cancel' (مدعومة في المتصفحات الحديثة) وكمان fallback بالـfocus رجوع للصفحة عشان
-  // الشاشة متفضلش عالقة على "جاري الفحص" من غير ما تقول للمستخدم حصل إيه
+  // بيفتح كاميرا حية جوه التطبيق نفسه (getUserMedia) بدل ما يفتح منتقي ملفات النظام — عشان نضمن
+  // إن المندوب يصور دلوقتي بس، ومش يقدر يختار صورة قديمة من معرض الصور خالص (مفيش زرار "اختر من
+  // المعرض" أصلًا، لأن مفيش منتقي ملفات ظاهر للمستخدم في الطريقة دي)
   function fctCapturePhoto_(){
-    return new Promise(function(resolve, reject){
-      var done = false;
-      var inp = document.createElement('input');
-      inp.type = 'file'; inp.accept = 'image/*'; inp.capture = 'environment';
-      inp.style.display = 'none';
-      function cleanup(){ if(inp.parentNode) document.body.removeChild(inp); window.removeEventListener('focus', onFocus); }
-      function finish(fn){ if(done) return; done = true; cleanup(); fn(); }
-      inp.addEventListener('change', function(){
-        var f = inp.files && inp.files[0];
-        if(!f){ finish(function(){ reject(new Error('متفتحتش كاميرا ولا اتلقطت صورة')); }); return; }
-        var reader = new FileReader();
-        reader.onload = function(){
-          // بنصغّر الصورة قبل ما نرجّعها — صورة الكاميرا الخام ممكن توصل لميجابايتات، وده تقيل جدًا
-          // لأي استخدام بعدين (حفظ في قاعدة البيانات، إرسال على واتساب)
-          var img = new Image();
-          img.onload = function(){
-            var w = img.width, h = img.height, maxDim = 900;
+    if(!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)){
+      return Promise.reject(new Error('المتصفح ده مش بيدعم فتح الكاميرا — حدّث المتصفح أو جرب متصفح تاني'));
+    }
+    return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false })
+      .catch(function(){
+        // لو الكاميرا الأمامية مش متاحة، نجرب أي كاميرا موجودة
+        return navigator.mediaDevices.getUserMedia({ video: true, audio: false });
+      })
+      .then(function(stream){
+        return new Promise(function(resolve, reject){
+          var done = false;
+          var overlay = document.createElement('div');
+          overlay.style.cssText = 'position:fixed; inset:0; background:#000; z-index:700; display:flex; flex-direction:column; align-items:center; justify-content:center;';
+          var video = document.createElement('video');
+          video.autoplay = true; video.playsInline = true; video.muted = true;
+          video.style.cssText = 'width:100%; flex:1; object-fit:cover; min-height:0;';
+          video.srcObject = stream;
+          var bar = document.createElement('div');
+          bar.style.cssText = 'display:flex; align-items:center; justify-content:center; gap:16px; padding:18px; background:#000; width:100%;';
+          var snapBtn = document.createElement('button');
+          snapBtn.type = 'button'; snapBtn.textContent = '📸 التقط الصورة';
+          snapBtn.style.cssText = 'padding:15px 28px; font-size:17px; font-weight:800; border-radius:14px; border:none; background:#d9a21b; color:#1a1a1a; cursor:pointer;';
+          var cancelBtn = document.createElement('button');
+          cancelBtn.type = 'button'; cancelBtn.textContent = 'إلغاء';
+          cancelBtn.style.cssText = 'padding:15px 20px; font-size:15px; font-weight:700; border-radius:14px; border:1px solid #fff; background:transparent; color:#fff; cursor:pointer;';
+          bar.appendChild(cancelBtn); bar.appendChild(snapBtn);
+          overlay.appendChild(video); overlay.appendChild(bar);
+          document.body.appendChild(overlay);
+          function cleanup(){
+            if(done) return; done = true;
+            stream.getTracks().forEach(function(t){ t.stop(); });
+            if(overlay.parentNode) document.body.removeChild(overlay);
+          }
+          snapBtn.addEventListener('click', function(){
+            var vw = video.videoWidth || 900, vh = video.videoHeight || 900, maxDim = 1000;
+            var w = vw, h = vh;
             if(w > maxDim || h > maxDim){
               if(w > h){ h = Math.round(h * maxDim / w); w = maxDim; }
               else { w = Math.round(w * maxDim / h); h = maxDim; }
             }
             var canvas = document.createElement('canvas');
             canvas.width = w; canvas.height = h;
-            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-            finish(function(){ resolve(canvas.toDataURL('image/jpeg', 0.75)); });
-          };
-          img.onerror = function(){ finish(function(){ reject(new Error('فشل تحميل الصورة')); }); };
-          img.src = reader.result;
-        };
-        reader.onerror = function(){ finish(function(){ reject(new Error('فشل قراءة الصورة')); }); };
-        reader.readAsDataURL(f);
+            canvas.getContext('2d').drawImage(video, 0, 0, w, h);
+            var dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+            cleanup();
+            resolve(dataUrl);
+          });
+          cancelBtn.addEventListener('click', function(){
+            cleanup();
+            reject(new Error('اتلغى التصوير'));
+          });
+        });
+      })
+      .catch(function(err){
+        if(err && err.message === 'اتلغى التصوير') throw err;
+        throw new Error('محتاجين إذن الكاميرا عشان تقدر تسجل' + (err && err.message ? (' — ' + err.message) : ''));
       });
-      inp.addEventListener('cancel', function(){
-        finish(function(){ reject(new Error('اتلغت الكاميرا من غير ما تتاخد صورة — جرب تاني')); });
-      });
-      function onFocus(){
-        // رجعنا للصفحة (يعني قفل الكاميرا) بس مفيش ملف اتسجل — غالبًا اتلغت
-        setTimeout(function(){
-          if(!done && (!inp.files || !inp.files.length)){
-            finish(function(){ reject(new Error('اتلغت الكاميرا من غير ما تتاخد صورة — جرب تاني')); });
-          }
-        }, 1200);
-      }
-      window.addEventListener('focus', onFocus);
-      document.body.appendChild(inp);
-      inp.click();
-    });
   }
   function fctStart_(){
     clearMsg();
@@ -3696,11 +3706,10 @@
       '<div style="padding:0 0 20px;">' +
         '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; font-size:20px; font-weight:900; padding:16px;">تاتش الزنوكي</div>' +
         '<div style="background:' + C_GOLD + '; color:#1a1a1a; text-align:center; font-size:16px; font-weight:800; padding:10px;">' + escapeHtml_(opts.title) + '</div>' +
-        '<div style="text-align:center; padding:18px 0 10px;">' +
-          '<div style="display:inline-block; width:280px; height:280px; border-radius:16px; overflow:hidden; border:4px solid ' + C_GOLD + ';">' +
-            '<img src="' + opts.photo + '" style="width:280px; height:280px; object-fit:cover; display:block;">' +
-          '</div>' +
+        '<div style="width:560px; height:420px; overflow:hidden; border-bottom:4px solid ' + C_GOLD + ';">' +
+          '<img src="' + opts.photo + '" style="width:560px; height:420px; object-fit:cover; display:block;">' +
         '</div>' +
+        '<div style="height:14px;"></div>' +
         '<div style="text-align:center; font-size:19px; font-weight:900; color:#1a1a1a; margin-bottom:14px;">' + escapeHtml_(opts.name) + '</div>' +
         '<table style="width:524px; table-layout:fixed; margin:0 18px; border-collapse:collapse; border:2px solid ' + C_BANNER + ';">' + statsHtml + '</table>' +
         '<div style="text-align:center; font-size:11px; color:#9a9a9a; font-style:italic; margin-top:14px;">' + escapeHtml_(opts.stamp) + '</div>' +
@@ -3766,7 +3775,7 @@
       var cline = document.getElementById('attendanceChallengeLine');
       if(!cline) return;
       if(state.attChallengeItem_){
-        cline.textContent = '📦 خد صورتك دلوقتي وانت ماسك: ' + state.attChallengeItem_;
+        cline.textContent = '📦 صوّر نفسك دلوقتي مع: ' + state.attChallengeItem_;
         cline.hidden = false;
       } else {
         cline.hidden = true;
