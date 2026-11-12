@@ -3927,15 +3927,30 @@
       if(swapped) html += ' <span style="color:var(--red); font-weight:800;">(بدل ' + escapeHtml(original) + ' — راجع مبيعاته)</span>';
       return html + '</div>';
     }
+    function photoThumb(photo, label){
+      if(!photo) return '';
+      return '<img src="' + photo + '" alt="' + label + '" title="' + label + '" loading="lazy" onclick="viewAttendancePhoto_(this.src)" ' +
+        'style="width:70px; height:70px; object-fit:cover; border-radius:8px; border:2px solid var(--border); cursor:pointer; margin-left:6px;">';
+    }
     list.innerHTML = rows.map(function(r){
+      var photos = photoThumb(r.checkInPhoto, 'صورة الحضور') + photoThumb(r.checkOutPhoto, 'صورة الانصراف');
       return '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:2px;">' +
         '<div class="name">' + r.day + (r.branch ? (' — ' + escapeHtml(r.branch)) : '') + '</div>' +
         '<div class="meta">دخول: ' + (r.checkIn || '—') + distNote(r.checkInDistance) + ' · خروج: ' + (r.checkOut || '—') + distNote(r.checkOutDistance) +
         (r.durationMin != null ? (' · المدة: ' + Math.floor(r.durationMin / 60) + 'س ' + (r.durationMin % 60) + 'د') : '') + '</div>' +
         itemLine('صنف الحضور', r.checkInItem, r.checkInItemOriginal) +
         itemLine('صنف الانصراف', r.checkOutItem, r.checkOutItemOriginal) +
+        (photos ? ('<div style="margin-top:6px; display:flex;">' + photos + '</div>') : '') +
       '</div>';
     }).join('');
+  }
+  // بيفتح الصورة بحجمها الكامل في طبقة فوق الشاشة كلها لما المشرف يدوس على الصورة المصغّرة
+  function viewAttendancePhoto_(src){
+    var overlay = document.createElement('div');
+    overlay.style.cssText = 'position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:700; display:flex; align-items:center; justify-content:center; padding:20px;';
+    overlay.innerHTML = '<img src="' + src + '" style="max-width:100%; max-height:100%; border-radius:10px;">';
+    overlay.addEventListener('click', function(){ document.body.removeChild(overlay); });
+    document.body.appendChild(overlay);
   }
 
   function loadItemTargets(monthKey){
