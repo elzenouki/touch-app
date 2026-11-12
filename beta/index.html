@@ -1196,7 +1196,8 @@
         <div class="cardTitle" style="margin:0;">⏱️ الحضور والانصراف</div>
         <button type="button" onclick="openScreen('attendance')" style="background:none; border:none; color:var(--navy); font-weight:700; font-size:13px; cursor:pointer; padding:0;">السجل ›</button>
       </div>
-      <div id="attendanceStatusLine" style="font-size:13px; color:var(--muted); margin-bottom:10px;">...</div>
+      <div id="attendanceStatusLine" style="font-size:13px; color:var(--muted); margin-bottom:6px;">...</div>
+      <div id="attendanceChallengeLine" style="font-size:13px; font-weight:800; color:var(--gold-d); margin-bottom:10px;" hidden></div>
       <div style="display:flex; gap:10px;">
         <button type="button" class="primary" id="checkInBtn" onclick="handleCheckIn_()" style="flex:1; margin:0;">✅ تسجيل حضور</button>
         <button type="button" class="whatsapp" id="checkOutBtn" onclick="handleCheckOut_()" style="flex:1; margin:0;" disabled>🚪 تسجيل انصراف</button>
@@ -2022,7 +2023,7 @@
   const SB_READ_ACTIONS_ = {bootstrapHome:1, bootstrapMyStats:1, bootstrapStale:1, listMyInvoices:1, getInvoiceDetails:1, getMyBalances:1,
     bootstrapBalances:1, bootstrapItemSalesReport:1, bootstrapRepEvaluation:1, bootstrapProfile:1, listSuggestions:1, listProductDescriptions:1,
     getStaleReasonsReport:1, bootstrapAdmin:1, listReps:1, listAsnaf:1, bootstrapPrices:1, bootstrapInvoice:1, bootstrapJard:1, bootstrapTawrid:1, getSaleStock:1, serverUsage:1, repsTargets:1,
-    itemBalancesBootstrap:1, itemBalancesReport:1, attendanceReport:1, attendanceToday:1, attendanceBranches:1};
+    itemBalancesBootstrap:1, itemBalancesReport:1, attendanceReport:1, attendanceToday:1, attendanceBranches:1, attendanceChallenge:1};
   // طلبات بتكتب في الشيت: بنطلب من جوجل ينسخ التغيير لـ Supabase فورًا (عشان الشاشات تبان محدثة على طول)
   const SB_WRITE_ACTIONS_ = {addSaleItem:1, updateSaleItem:1, deleteSaleItem:1, savePrices:1,
     saveStaleReason:1, saveMyProfile:1, uploadMyPhoto:1, addRep:1, setRepPin:1, setRepAdmin:1, deleteRep:1, addAsnaf:1, addSuggestion:1,
@@ -3758,9 +3759,22 @@
         line.textContent = 'لسه ما سجلتش حضور النهارده';
       }
     }).catch(function(){});
+    // بنجيب صنف التحقق العشوائي بتاع النهارده (نفسه للحضور والانصراف) ونوريه قبل ما يدوس عشان
+    // يبقى جاهز بيه وهو بيفتح الكاميرا — من غير ما نوقف فتح الكاميرا بأي خطوة إضافية بعد الضغط
+    callApi('attendanceChallenge', [state.auth]).then(function(d){
+      state.attChallengeItem_ = (d && d.item) || '';
+      var cline = document.getElementById('attendanceChallengeLine');
+      if(!cline) return;
+      if(state.attChallengeItem_){
+        cline.textContent = '📦 خد صورتك دلوقتي وانت ماسك: ' + state.attChallengeItem_;
+        cline.hidden = false;
+      } else {
+        cline.hidden = true;
+      }
+    }).catch(function(){ state.attChallengeItem_ = ''; });
   }
   // بيجيب ملخص الشهر الحالي للمندوب نفسه، ويبني صورة المشاركة الكاملة (صورة + كل الأرقام)
-  function buildAndSetAttendanceShare_(title, result, photo){
+  function buildAndSetAttendanceShare_(title, result, photo, challengeItem){
     return callApi('attendanceReport', [state.auth, '', ''])
       .then(function(rep){
         var distanceText = result.distance != null ? (fmt(result.distance) + ' متر من الفرع') : 'الفرع مش محدد الموقع';
@@ -3772,6 +3786,7 @@
           ['الإجازات الأسبوعية', rep.daysOff + ' يوم'],
           ['ساعات العمل المسجلة الشهر ده', fmtHoursMin_(rep.workedMinutes)],
         ];
+        if(challengeItem) stats.splice(1, 0, ['الصنف المطلوب في الصورة', challengeItem]);
         if(result.branch) stats.splice(1, 0, ['الفرع', result.branch]);
         var now = new Date();
         var pad2 = function(n){ return String(n).padStart(2, '0'); };
@@ -3785,14 +3800,14 @@
     clearMsg();
     var btn = document.getElementById('checkInBtn');
     btn.disabled = true; btn.textContent = 'جاري التسجيل...';
-    var coords = null, photo = null;
+    var coords = null, photo = null, challengeItem = state.attChallengeItem_ || '';
     fctCapturePhoto_()
       .then(function(p){ photo = p; return fctGetPosition_(); })
-      .then(function(c){ coords = c; return callApi('checkIn', [state.auth, coords.latitude, coords.longitude, photo]); })
+      .then(function(c){ coords = c; return callApi('checkIn', [state.auth, coords.latitude, coords.longitude, photo, challengeItem]); })
       .then(function(result){
         showMsg('تم تسجيل الحضور الساعة ' + result.time + ' ✔', 'success');
         refreshAttendanceStatus_();
-        buildAndSetAttendanceShare_('✅ تسجيل حضور', result, photo);
+        buildAndSetAttendanceShare_('✅ تسجيل حضور', result, photo, challengeItem);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
@@ -3800,14 +3815,14 @@
     clearMsg();
     var btn = document.getElementById('checkOutBtn');
     btn.disabled = true; btn.textContent = 'جاري التسجيل...';
-    var coords = null, photo = null;
+    var coords = null, photo = null, challengeItem = state.attChallengeItem_ || '';
     fctCapturePhoto_()
       .then(function(p){ photo = p; return fctGetPosition_(); })
-      .then(function(c){ coords = c; return callApi('checkOut', [state.auth, coords.latitude, coords.longitude, photo]); })
+      .then(function(c){ coords = c; return callApi('checkOut', [state.auth, coords.latitude, coords.longitude, photo, challengeItem]); })
       .then(function(result){
         showMsg('تم تسجيل الانصراف الساعة ' + result.time + ' ✔', 'success');
         refreshAttendanceStatus_();
-        buildAndSetAttendanceShare_('🚪 تسجيل انصراف', result, photo);
+        buildAndSetAttendanceShare_('🚪 تسجيل انصراف', result, photo, challengeItem);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
@@ -3867,10 +3882,12 @@
     if(!rows.length){ list.innerHTML = '<div class="empty">مفيش تسجيلات في الشهر ده</div>'; return; }
     function distNote(d){ return d != null ? (' (' + fmt(d) + ' م)') : ''; }
     list.innerHTML = rows.map(function(r){
+      var itemNote = r.checkInItem ? ('<div class="meta">📦 الصنف المطلوب: ' + escapeHtml(r.checkInItem) + '</div>') : '';
       return '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:2px;">' +
         '<div class="name">' + r.day + (r.branch ? (' — ' + escapeHtml(r.branch)) : '') + '</div>' +
         '<div class="meta">دخول: ' + (r.checkIn || '—') + distNote(r.checkInDistance) + ' · خروج: ' + (r.checkOut || '—') + distNote(r.checkOutDistance) +
         (r.durationMin != null ? (' · المدة: ' + Math.floor(r.durationMin / 60) + 'س ' + (r.durationMin % 60) + 'د') : '') + '</div>' +
+        itemNote +
       '</div>';
     }).join('');
   }
