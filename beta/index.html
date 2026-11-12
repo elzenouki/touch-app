@@ -1197,7 +1197,10 @@
         <button type="button" onclick="openScreen('attendance')" style="background:none; border:none; color:var(--navy); font-weight:700; font-size:13px; cursor:pointer; padding:0;">السجل ›</button>
       </div>
       <div id="attendanceStatusLine" style="font-size:13px; color:var(--muted); margin-bottom:6px;">...</div>
-      <div id="attendanceChallengeLine" style="font-size:13px; font-weight:800; color:var(--gold-d); margin-bottom:10px;" hidden></div>
+      <div id="attendanceChallengeWrap" hidden style="margin-bottom:10px;">
+        <div id="attendanceChallengeLine" style="font-size:13px; font-weight:800; color:var(--gold-d);"></div>
+        <button type="button" onclick="swapChallengeItem_()" style="background:none; border:none; color:var(--muted); font-size:12px; font-weight:700; text-decoration:underline; cursor:pointer; padding:4px 0;">🔄 مش موجود عندي الصنف ده، غيّره</button>
+      </div>
       <div style="display:flex; gap:10px;">
         <button type="button" class="primary" id="checkInBtn" onclick="handleCheckIn_()" style="flex:1; margin:0;">✅ تسجيل حضور</button>
         <button type="button" class="whatsapp" id="checkOutBtn" onclick="handleCheckOut_()" style="flex:1; margin:0;" disabled>🚪 تسجيل انصراف</button>
@@ -3772,18 +3775,40 @@
     // يبقى جاهز بيه وهو بيفتح الكاميرا — من غير ما نوقف فتح الكاميرا بأي خطوة إضافية بعد الضغط
     callApi('attendanceChallenge', [state.auth]).then(function(d){
       state.attChallengeItem_ = (d && d.item) || '';
-      var cline = document.getElementById('attendanceChallengeLine');
-      if(!cline) return;
-      if(state.attChallengeItem_){
-        cline.textContent = '📦 صوّر نفسك دلوقتي مع: ' + state.attChallengeItem_;
-        cline.hidden = false;
-      } else {
-        cline.hidden = true;
-      }
-    }).catch(function(){ state.attChallengeItem_ = ''; });
+      state.attChallengeOriginal_ = state.attChallengeItem_; // أول صنف اتعرض — بيتسجل حتى لو استبدله بعدين
+      renderAttendanceChallengeLine_();
+    }).catch(function(){ state.attChallengeItem_ = ''; state.attChallengeOriginal_ = ''; });
+  }
+  function renderAttendanceChallengeLine_(){
+    var wrap = document.getElementById('attendanceChallengeWrap');
+    var cline = document.getElementById('attendanceChallengeLine');
+    if(!wrap || !cline) return;
+    if(state.attChallengeItem_){
+      var swapNote = (state.attChallengeOriginal_ && state.attChallengeOriginal_ !== state.attChallengeItem_)
+        ? ' (بدل ' + state.attChallengeOriginal_ + ')' : '';
+      cline.textContent = '📦 صوّر نفسك دلوقتي مع: ' + state.attChallengeItem_ + swapNote;
+      wrap.hidden = false;
+    } else {
+      wrap.hidden = true;
+    }
+  }
+  // لو المندوب فعلاً باع/مفيش عنده الصنف المطلوب، بيقدر يطلب صنف تاني من مخزونه — بنفتكر الصنف
+  // الأصلي عشان لو حصل استبدال، المشرف يقدر يراجعه ويشوف هل الصنف الأصلي اتباع فعلاً ولا كان اشتباه
+  function swapChallengeItem_(){
+    if(!state.attChallengeItem_) return;
+    callApi('attendanceChallenge', [state.auth, state.attChallengeItem_])
+      .then(function(d){
+        if(d && d.item){
+          state.attChallengeItem_ = d.item;
+          renderAttendanceChallengeLine_();
+        } else {
+          showMsg('مفيش صنف تاني متاح عندك دلوقتي', 'error');
+        }
+      })
+      .catch(onError);
   }
   // بيجيب ملخص الشهر الحالي للمندوب نفسه، ويبني صورة المشاركة الكاملة (صورة + كل الأرقام)
-  function buildAndSetAttendanceShare_(title, result, photo, challengeItem){
+  function buildAndSetAttendanceShare_(title, result, photo, challengeItem, challengeOriginal){
     return callApi('attendanceReport', [state.auth, '', ''])
       .then(function(rep){
         var distanceText = result.distance != null ? (fmt(result.distance) + ' متر من الفرع') : 'الفرع مش محدد الموقع';
@@ -3795,7 +3820,10 @@
           ['الإجازات الأسبوعية', rep.daysOff + ' يوم'],
           ['ساعات العمل المسجلة الشهر ده', fmtHoursMin_(rep.workedMinutes)],
         ];
-        if(challengeItem) stats.splice(1, 0, ['الصنف المطلوب في الصورة', challengeItem]);
+        if(challengeItem){
+          var swapped = challengeOriginal && challengeOriginal !== challengeItem;
+          stats.splice(1, 0, ['الصنف المطلوب في الصورة', challengeItem + (swapped ? ' (بدل ' + challengeOriginal + ')' : '')]);
+        }
         if(result.branch) stats.splice(1, 0, ['الفرع', result.branch]);
         var now = new Date();
         var pad2 = function(n){ return String(n).padStart(2, '0'); };
@@ -3809,14 +3837,14 @@
     clearMsg();
     var btn = document.getElementById('checkInBtn');
     btn.disabled = true; btn.textContent = 'جاري التسجيل...';
-    var coords = null, photo = null, challengeItem = state.attChallengeItem_ || '';
+    var coords = null, photo = null, challengeItem = state.attChallengeItem_ || '', challengeOriginal = state.attChallengeOriginal_ || '';
     fctCapturePhoto_()
       .then(function(p){ photo = p; return fctGetPosition_(); })
-      .then(function(c){ coords = c; return callApi('checkIn', [state.auth, coords.latitude, coords.longitude, photo, challengeItem]); })
+      .then(function(c){ coords = c; return callApi('checkIn', [state.auth, coords.latitude, coords.longitude, photo, challengeItem, challengeOriginal]); })
       .then(function(result){
         showMsg('تم تسجيل الحضور الساعة ' + result.time + ' ✔', 'success');
         refreshAttendanceStatus_();
-        buildAndSetAttendanceShare_('✅ تسجيل حضور', result, photo, challengeItem);
+        buildAndSetAttendanceShare_('✅ تسجيل حضور', result, photo, challengeItem, challengeOriginal);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
@@ -3824,14 +3852,14 @@
     clearMsg();
     var btn = document.getElementById('checkOutBtn');
     btn.disabled = true; btn.textContent = 'جاري التسجيل...';
-    var coords = null, photo = null, challengeItem = state.attChallengeItem_ || '';
+    var coords = null, photo = null, challengeItem = state.attChallengeItem_ || '', challengeOriginal = state.attChallengeOriginal_ || '';
     fctCapturePhoto_()
       .then(function(p){ photo = p; return fctGetPosition_(); })
-      .then(function(c){ coords = c; return callApi('checkOut', [state.auth, coords.latitude, coords.longitude, photo, challengeItem]); })
+      .then(function(c){ coords = c; return callApi('checkOut', [state.auth, coords.latitude, coords.longitude, photo, challengeItem, challengeOriginal]); })
       .then(function(result){
         showMsg('تم تسجيل الانصراف الساعة ' + result.time + ' ✔', 'success');
         refreshAttendanceStatus_();
-        buildAndSetAttendanceShare_('🚪 تسجيل انصراف', result, photo, challengeItem);
+        buildAndSetAttendanceShare_('🚪 تسجيل انصراف', result, photo, challengeItem, challengeOriginal);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
@@ -3890,13 +3918,22 @@
     var list = document.getElementById('attList');
     if(!rows.length){ list.innerHTML = '<div class="empty">مفيش تسجيلات في الشهر ده</div>'; return; }
     function distNote(d){ return d != null ? (' (' + fmt(d) + ' م)') : ''; }
+    // لو المندوب استبدل الصنف (مش عنده الصنف الأصلي)، بنوضح الاتنين — عشان المشرف يقدر يراجع
+    // هل الصنف الأصلي اتباع فعلاً في مبيعاته ولا كان اشتباه
+    function itemLine(label, item, original){
+      if(!item) return '';
+      var swapped = original && original !== item;
+      var html = '<div class="meta">📦 ' + label + ': ' + escapeHtml(item);
+      if(swapped) html += ' <span style="color:var(--red); font-weight:800;">(بدل ' + escapeHtml(original) + ' — راجع مبيعاته)</span>';
+      return html + '</div>';
+    }
     list.innerHTML = rows.map(function(r){
-      var itemNote = r.checkInItem ? ('<div class="meta">📦 الصنف المطلوب: ' + escapeHtml(r.checkInItem) + '</div>') : '';
       return '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:2px;">' +
         '<div class="name">' + r.day + (r.branch ? (' — ' + escapeHtml(r.branch)) : '') + '</div>' +
         '<div class="meta">دخول: ' + (r.checkIn || '—') + distNote(r.checkInDistance) + ' · خروج: ' + (r.checkOut || '—') + distNote(r.checkOutDistance) +
         (r.durationMin != null ? (' · المدة: ' + Math.floor(r.durationMin / 60) + 'س ' + (r.durationMin % 60) + 'د') : '') + '</div>' +
-        itemNote +
+        itemLine('صنف الحضور', r.checkInItem, r.checkInItemOriginal) +
+        itemLine('صنف الانصراف', r.checkOutItem, r.checkOutItemOriginal) +
       '</div>';
     }).join('');
   }
