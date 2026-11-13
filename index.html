@@ -3650,8 +3650,22 @@
       })
       .catch(function(err){
         if(err && err.message === 'اتلغى التصوير') throw err;
-        throw new Error('محتاجين إذن الكاميرا عشان تقدر تسجل' + (err && err.message ? (' — ' + err.message) : ''));
+        throw new Error(fctCameraErrorMessage_(err));
       });
+  }
+  // المتصفح بيرفض الكاميرا بصمت من غير ما يسأل تاني لو المندوب رفض الإذن مرة قبل كده — فبنوضح
+  // بالظبط ازاي يرجع يسمح بيها من إعدادات الموبايل، مش بس نعرض رسالة الخطأ التقنية
+  function fctCameraErrorMessage_(err){
+    var name = err && err.name;
+    if(name === 'NotAllowedError' || name === 'SecurityError' || /denied/i.test(String(err && err.message))){
+      return 'محتاجين إذن الكاميرا عشان تقدر تسجل. يبان إنك رفضته قبل كده، وعشان كده المتصفح مش بيسأل تاني. ارجع افتحها من إعدادات موبايلك: ' +
+        'الإعدادات ← التطبيقات ← المتصفح (Chrome) ← الصلاحيات ← الكاميرا ← اسمح. ' +
+        'أو من جوه المتصفح نفسه: دوس على 🔒 أو ⓘ جنب رابط الموقع فوق ← الصلاحيات (Permissions) ← الكاميرا ← اسمح، وبعدين جرب تاني.';
+    }
+    if(name === 'NotFoundError' || name === 'OverconstrainedError'){
+      return 'مش لاقي كاميرا على الجهاز ده. جرب من موبايل تاني أو تأكد إن الكاميرا شغالة في تطبيقات تانية.';
+    }
+    return 'محتاجين إذن الكاميرا عشان تقدر تسجل' + (err && err.message ? (' — ' + err.message) : '');
   }
   function fctStart_(){
     clearMsg();
