@@ -3721,41 +3721,46 @@
   // الإجازات، ساعات العمل الشهر ده) — بنفس أسلوب صور الفواتير بالظبط (html2canvas) عشان العربي يتكتب صح
   async function buildAttendanceCardImage_(opts){
     await ensureHtml2CanvasLoaded_();
-    var C_BANNER = '#0c1730', C_GOLD = '#d9a21b', C_BG = '#eeece4';
-    // جدول مش flex — html2canvas بيرسم الـflex مع RTL غلط أحيانًا (بيختفي عمود كامل). وكمان لازم
-    // table-layout:fixed + عرض ثابت لكل عمود، وإلا الجدول بيتمدد أكتر من الحاوية ويقطع النص برّه الصورة
-    // بدون تلوين متبدل (zebra) — كل الصفوف بيضا وخط فاصل رفيع بس، شكل أهدى وأفخم
-    var statsHtml = opts.stats.map(function(s, i){
-      var bdr = (i === 0) ? 'border-top:1px solid #ece9df;' : '';
-      return '<tr>' +
-        '<td style="width:300px; padding:14px 2px; font-size:14px; font-weight:700; color:#8a8a8a; text-align:right; background:#fff; border-bottom:1px solid #ece9df; ' + bdr + ' word-break:break-word;">' + escapeHtml_(s[0]) + '</td>' +
-        '<td style="width:224px; padding:14px 2px; font-size:16px; font-weight:900; color:' + C_BANNER + '; text-align:left; background:#fff; border-bottom:1px solid #ece9df; ' + bdr + ' word-break:break-word;">' + escapeHtml_(String(s[1])) + '</td>' +
-      '</tr>';
-    }).join('');
+    var C_BANNER = '#0c1730', C_GOLD = '#d9a21b', C_BG = '#eae7df', C_MUTED = '#a39f91';
+    // نشيل الفرع من القايمة ونستخدمه كعنوان فرعي تحت الاسم بدل ما يبان كصف عادي
+    var rest = opts.stats.slice();
+    var branchIdx = -1;
+    for(var bi = 0; bi < rest.length; bi++){ if(rest[bi][0] === 'branch'){ branchIdx = bi; break; } }
+    var branchLabel = branchIdx >= 0 ? rest.splice(branchIdx, 1)[0][2] : '';
+    // جدول مش flex — html2canvas بيرسم الـflex مع RTL غلط أحيانًا (بيختفي عمود كامل). جدول باتنين
+    // في كل صف عشان نعرض البيانات في شبكة مرتبة بدل قايمة طويلة
+    var cellsHtml = rest.map(function(s){
+      return '<td style="width:50%; padding:17px 16px; border-bottom:1px solid #ededea; border-right:1px solid #ededea; vertical-align:top;">' +
+        '<div style="font-size:13.5px; color:' + C_MUTED + '; font-weight:700;">' + escapeHtml_(s[1]) + '</div>' +
+        '<div style="font-size:18px; font-weight:900; color:' + C_BANNER + '; margin-top:6px; word-break:break-word;">' + escapeHtml_(String(s[2])) + '</div>' +
+      '</td>';
+    });
+    var rowsHtml = '';
+    for(var ri = 0; ri < cellsHtml.length; ri += 2){
+      rowsHtml += '<tr>' + cellsHtml[ri] + (cellsHtml[ri + 1] || '<td style="width:50%; border-bottom:1px solid #ededea;"></td>') + '</tr>';
+    }
     var container = document.createElement('div');
     // position:absolute مش fixed — عشان الكارت طويل غالبًا أطول من ارتفاع الشاشة، وhtml2canvas
     // بيلخبط في رسم عناصر fixed لما بيعمل resize لنافذته الداخلية (بيكرر جزء من المحتوى غلط)
     container.style.cssText = 'position:absolute; top:0; left:-99999px; width:580px; background:' + C_BG + '; direction:rtl; font-family:"Cairo","Tajawal",Arial,sans-serif; padding:10px;';
     container.innerHTML =
-      '<div style="width:560px; background:#fff; border-radius:22px; overflow:hidden; border:1px solid #e2dfd4;">' +
-        '<div style="padding:24px 16px 14px; text-align:center;">' +
-          '<div style="width:40px; height:40px; line-height:40px; margin:0 auto; border-radius:50%; background:' + C_GOLD + '; color:' + C_BANNER + '; font-size:18px; font-weight:900; text-align:center;">ت</div>' +
-          '<div style="font-size:18px; font-weight:900; color:' + C_BANNER + '; margin-top:10px;">تاتش الزنوكي</div>' +
-          '<div style="margin-top:12px;">' +
-            '<span style="display:inline-block; border:1.5px solid ' + C_GOLD + '; color:' + C_BANNER + '; font-size:13px; font-weight:900; padding:7px 20px; border-radius:20px;">' + escapeHtml_(opts.title) + '</span>' +
+      '<div style="width:560px; background:#fff; border-radius:16px; overflow:hidden; border:1px solid #e4e1d7;">' +
+        '<div style="padding:24px 28px 16px; text-align:center;">' +
+          '<span style="font-size:16px; font-weight:800; color:' + C_BANNER + ';">تاتش الزنوكي</span>' +
+          '<span style="font-size:12px; color:' + C_MUTED + '; font-weight:700; margin-right:10px;">— ' + escapeHtml_(opts.title) + '</span>' +
+        '</div>' +
+        '<div style="margin:0 24px; position:relative;">' +
+          '<div style="height:640px; border-radius:18px; overflow:hidden; background:#e4e1d9; border:1px solid #d9d5c9;">' +
+            '<img src="' + opts.photo + '" style="width:100%; height:100%; object-fit:cover; display:block;">' +
           '</div>' +
+          '<div style="position:absolute; bottom:-16px; right:24px; width:42px; height:42px; line-height:38px; text-align:center; border-radius:50%; background:' + C_GOLD + '; border:3px solid #fff; box-shadow:0 4px 10px rgba(0,0,0,0.18); color:' + C_BANNER + '; font-size:20px; font-weight:900;">✓</div>' +
         '</div>' +
-        '<div style="width:560px; height:700px; overflow:hidden;">' +
-          '<img src="' + opts.photo + '" style="width:560px; height:700px; object-fit:cover; display:block;">' +
+        '<div style="text-align:center; margin-top:30px; font-size:21px; font-weight:900; color:#141414; padding:0 20px; word-break:break-word;">' + escapeHtml_(opts.name) + '</div>' +
+        (branchLabel ? ('<div style="text-align:center; margin-top:4px; font-size:12px; color:' + C_MUTED + '; font-weight:700;">' + escapeHtml_(branchLabel) + '</div>') : '') +
+        '<div style="margin:24px 24px 0; border-top:1px solid #ededea; border-right:1px solid #ededea;">' +
+          '<table style="width:100%; table-layout:fixed; border-collapse:collapse;">' + rowsHtml + '</table>' +
         '</div>' +
-        '<div style="padding:22px 18px 4px; text-align:center;">' +
-          '<div style="width:524px; margin:0 auto; white-space:normal; word-break:break-word; line-height:1.35; font-size:21px; font-weight:900; color:#1a1a1a;">' + escapeHtml_(opts.name) + '</div>' +
-          '<div style="width:46px; height:2px; background:' + C_GOLD + '; margin:10px auto 0;"></div>' +
-        '</div>' +
-        '<div style="padding:10px 24px 6px;">' +
-          '<table style="width:100%; table-layout:fixed; border-collapse:collapse;">' + statsHtml + '</table>' +
-        '</div>' +
-        '<div style="text-align:center; font-size:12px; color:#aaa7a0; font-weight:700; padding:12px 0 20px;">' + escapeHtml_(opts.stamp) + '</div>' +
+        '<div style="text-align:center; font-size:12px; color:#aaa7a0; font-weight:700; padding:20px 0 26px;">' + escapeHtml_(opts.stamp) + '</div>' +
       '</div>';
     document.body.appendChild(container);
     var blob;
@@ -3860,18 +3865,18 @@
       .then(function(rep){
         var distanceText = result.distance != null ? (fmt(result.distance) + ' متر من الفرع') : 'الفرع مش محدد الموقع';
         var stats = [
-          ['🕒 الوقت', result.time],
-          ['📏 قرب الموقع من الفرع', distanceText],
-          ['📅 أيام العمل الشهر ده', rep.presentDays + ' من ' + rep.expectedDays],
-          ['❌ الغياب', rep.expectedDays - rep.presentDays > 0 ? (rep.expectedDays - rep.presentDays) + ' يوم' : 'مفيش'],
-          ['🛌 الإجازات الأسبوعية', rep.daysOff + ' يوم'],
-          ['⏱️ ساعات العمل المسجلة الشهر ده', fmtHoursMin_(rep.workedMinutes)],
+          ['time', 'الوقت', result.time],
+          ['distance', 'قرب الموقع من الفرع', distanceText],
+          ['workdays', 'أيام العمل الشهر ده', rep.presentDays + ' من ' + rep.expectedDays],
+          ['absence', 'الغياب', rep.expectedDays - rep.presentDays > 0 ? (rep.expectedDays - rep.presentDays) + ' يوم' : 'مفيش'],
+          ['leave', 'الإجازات الأسبوعية', rep.daysOff + ' يوم'],
+          ['hours', 'ساعات العمل المسجلة الشهر ده', fmtHoursMin_(rep.workedMinutes)],
         ];
         if(challengeItem){
           var swapped = challengeOriginal && challengeOriginal !== challengeItem;
-          stats.splice(1, 0, ['📦 الصنف المطلوب في الصورة', challengeItem + (swapped ? ' (بدل ' + challengeOriginal + ')' : '')]);
+          stats.splice(1, 0, ['item', 'الصنف المطلوب في الصورة', challengeItem + (swapped ? ' (بدل ' + challengeOriginal + ')' : '')]);
         }
-        if(result.branch) stats.splice(1, 0, ['📍 الفرع', result.branch]);
+        if(result.branch) stats.splice(1, 0, ['branch', 'الفرع', result.branch]);
         var now = new Date();
         var pad2 = function(n){ return String(n).padStart(2, '0'); };
         var stamp = pad2(now.getDate()) + '/' + pad2(now.getMonth() + 1) + '/' + now.getFullYear() + ' ' + pad2(now.getHours()) + ':' + pad2(now.getMinutes());
@@ -3891,7 +3896,7 @@
       .then(function(result){
         showMsg('تم تسجيل الحضور الساعة ' + result.time + ' ✔', 'success');
         refreshAttendanceStatus_();
-        buildAndSetAttendanceShare_('✅ تسجيل حضور', result, photo, challengeItem, challengeOriginal);
+        buildAndSetAttendanceShare_('تسجيل حضور', result, photo, challengeItem, challengeOriginal);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
@@ -3906,7 +3911,7 @@
       .then(function(result){
         showMsg('تم تسجيل الانصراف الساعة ' + result.time + ' ✔', 'success');
         refreshAttendanceStatus_();
-        buildAndSetAttendanceShare_('🚪 تسجيل انصراف', result, photo, challengeItem, challengeOriginal);
+        buildAndSetAttendanceShare_('تسجيل انصراف', result, photo, challengeItem, challengeOriginal);
       })
       .catch(function(err){ refreshAttendanceStatus_(); onError(err); });
   }
