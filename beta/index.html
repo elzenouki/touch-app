@@ -1585,6 +1585,14 @@
 
   <!-- ============ شاشة سجل الحضور والانصراف ============ -->
   <div id="viewAttendance" hidden>
+    <div class="card" id="attStartDateCard" hidden>
+      <div class="cardTitle">بداية احتساب الحضور</div>
+      <div style="color:var(--muted); font-size:12px; margin-bottom:8px;">الأيام قبل التاريخ ده مش بتتحسب غياب على حد</div>
+      <div style="display:flex; gap:8px;">
+        <input type="date" id="attStartDateInput" style="margin:0;">
+        <button type="button" class="primary" style="margin:0; white-space:nowrap;" onclick="handleSetAttendanceStartDate_()">حفظ</button>
+      </div>
+    </div>
     <div class="card" id="attRepPickerCard" hidden>
       <div class="cardTitle">اختار المندوب</div>
       <select id="attRepSelect" onchange="loadAttendance_(this.value, document.getElementById('attMonthSelect').value)"></select>
@@ -1596,6 +1604,8 @@
     <div class="card" id="attSummaryCard" hidden>
       <div class="totalBar"><span>أيام الحضور</span><span class="val" id="attPresentDays">0</span></div>
       <div class="totalBar" style="margin-top:6px;"><span>أيام الغياب</span><span class="val" id="attAbsentDays">0</span></div>
+      <div class="totalBar" style="margin-top:6px;"><span>أيام الإجازة</span><span class="val" id="attLeaveDays">0</span></div>
+      <div class="totalBar" style="margin-top:6px;"><span>أيام الراحة الأسبوعية</span><span class="val" id="attOffDays">0</span></div>
       <div style="color:var(--muted); font-size:12px; margin-top:8px;" id="attExpectedNote"></div>
     </div>
     <div class="card" id="attListCard" hidden>
@@ -2037,7 +2047,7 @@
     // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
     listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
     addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1,
-    setBranchLocation:1, checkIn:1, checkOut:1, saveTarget:1};
+    setBranchLocation:1, checkIn:1, checkOut:1, setAttendanceStartDate:1, setRepLeave:1, removeRepLeave:1, saveTarget:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
       method: 'POST',
@@ -2667,6 +2677,8 @@
     document.getElementById('itemBalancesLink').hidden = !(state.isAdmin || state.isOwner);
     document.getElementById('itemTargetsLink').hidden = !(state.isAdmin || state.isOwner);
     document.getElementById('fieldCheckTestLink').hidden = !state.isOwner;
+    // الحضور والانصراف للمناديب بس — المشرفين وصاحب الحساب مش مطلوب منهم يسجلوا حضور لنفسهم
+    document.getElementById('attendanceCard').hidden = state.isAdmin;
     document.querySelector('#myStatsLink .title').textContent = state.isAdmin
       ? 'مبيعات المندوبين'
       : 'مبيعاتي';
@@ -3751,7 +3763,7 @@
     }
   }
   function refreshAttendanceStatus_(){
-    if(!state.auth) return;
+    if(!state.auth || state.isAdmin) return; // المشرفين وصاحب الحساب مالهومش حضور وانصراف
     callApi('attendanceToday', [state.auth]).then(function(d){
       var line = document.getElementById('attendanceStatusLine');
       var inBtn = document.getElementById('checkInBtn'), outBtn = document.getElementById('checkOutBtn');
@@ -3893,31 +3905,50 @@
         document.getElementById('attSummaryCard').hidden = !!data.allMode;
         document.getElementById('attListCard').hidden = !!data.allMode;
 
+        var startCard = document.getElementById('attStartDateCard');
+        startCard.hidden = !state.isOwner;
+        if(state.isOwner) document.getElementById('attStartDateInput').value = data.startDate;
+
         if(data.allMode){
-          renderAttendanceAll_(data.summaryRows);
+          renderAttendanceAll_(data.summaryRows, data.monthKey);
         } else {
           document.getElementById('attPresentDays').textContent = fmt(data.presentDays);
           document.getElementById('attAbsentDays').textContent = fmt(Math.max(data.expectedDays - data.presentDays, 0));
-          document.getElementById('attExpectedNote').textContent = 'مفروض يحضر ' + data.expectedDays + ' يوم الشهر ده (بعد استبعاد الإجازة الأسبوعية)';
+          document.getElementById('attLeaveDays').textContent = fmt(data.daysLeave);
+          document.getElementById('attOffDays').textContent = fmt(data.daysOff);
+          document.getElementById('attExpectedNote').textContent = 'مفروض يحضر ' + data.expectedDays + ' يوم الشهر ده (بعد استبعاد الراحة الأسبوعية والإجازات)';
+          state.attRows_ = data.rows;
           renderAttendanceList_(data.rows);
         }
         setView('viewAttendance');
       })
       .catch(onError);
   }
-  function renderAttendanceAll_(rows){
+  function handleSetAttendanceStartDate_(){
+    clearMsg();
+    var v = document.getElementById('attStartDateInput').value;
+    if(!v){ showMsg('اختار تاريخ', 'error'); return; }
+    showLoading(true);
+    callApi('setAttendanceStartDate', [state.auth, v])
+      .then(function(){ showLoading(false); showMsg('تم الحفظ ✔', 'success'); loadAttendance_(state.attRepName_, state.attMonth_); })
+      .catch(onError);
+  }
+  function renderAttendanceAll_(rows, monthKey){
     var list = document.getElementById('attAllList');
     if(!rows.length){ list.innerHTML = '<div class="empty">مفيش بيانات</div>'; return; }
     list.innerHTML = rows.map(function(r){
-      return '<div class="itemRow"><div><div class="name">' + escapeHtml(r.name) + '</div>' +
+      return '<button type="button" class="itemRow" style="width:100%; text-align:right; border:none; background:var(--card2); cursor:pointer; font-family:inherit;" ' +
+        'onclick="loadAttendance_(\'' + escapeHtml(r.name).replace(/'/g, "\\'") + '\', \'' + monthKey + '\')">' +
+        '<div><div class="name">' + escapeHtml(r.name) + '</div>' +
         '<div class="meta">' + r.presentDays + ' من ' + r.expectedDays + ' يوم متوقع</div></div>' +
         '<div class="total" style="color:' + (r.absentDays > 0 ? 'var(--red)' : 'var(--green)') + '">' +
-        (r.absentDays > 0 ? ('غايب ' + r.absentDays) : 'كامل') + '</div></div>';
+        (r.absentDays > 0 ? ('غايب ' + r.absentDays) : 'كامل') + '</div></button>';
     }).join('');
   }
+  var DAY_TYPE_LABEL_ = { off: '🛌 يوم راحته الأسبوعي', leave: '📅 إجازة' };
   function renderAttendanceList_(rows){
     var list = document.getElementById('attList');
-    if(!rows.length){ list.innerHTML = '<div class="empty">مفيش تسجيلات في الشهر ده</div>'; return; }
+    if(!rows.length){ list.innerHTML = '<div class="empty">مفيش أيام في الفترة دي</div>'; return; }
     function distNote(d){ return d != null ? (' (' + fmt(d) + ' م)') : ''; }
     // لو المندوب استبدل الصنف (مش عنده الصنف الأصلي)، بنوضح الاتنين — عشان المشرف يقدر يراجع
     // هل الصنف الأصلي اتباع فعلاً في مبيعاته ولا كان اشتباه
@@ -3935,15 +3966,48 @@
     }
     list.innerHTML = rows.map(function(r){
       var photos = photoThumb(r.checkInPhoto, 'صورة الحضور') + photoThumb(r.checkOutPhoto, 'صورة الانصراف');
-      return '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:2px;">' +
-        '<div class="name">' + r.day + (r.branch ? (' — ' + escapeHtml(r.branch)) : '') + '</div>' +
+      var isRestDay = r.dayType === 'off' || r.dayType === 'leave';
+      var restBadge = isRestDay
+        ? '<div class="meta" style="font-weight:800;">' + DAY_TYPE_LABEL_[r.dayType] +
+          (r.present ? ' <span style="color:var(--gold-d);">— حضر برضو يوم ده!</span>' : '') + '</div>'
+        : '';
+      var statusBadge = !isRestDay
+        ? ('<span style="font-size:11px; font-weight:800; padding:2px 8px; border-radius:20px; color:#fff; background:' +
+            (r.present ? 'var(--green)' : 'var(--red)') + ';">' + (r.present ? 'حاضر' : 'غايب') + '</span>')
+        : '';
+      var attendanceDetail = (r.checkIn || r.checkOut) ? (
         '<div class="meta">دخول: ' + (r.checkIn || '—') + distNote(r.checkInDistance) + ' · خروج: ' + (r.checkOut || '—') + distNote(r.checkOutDistance) +
         (r.durationMin != null ? (' · المدة: ' + Math.floor(r.durationMin / 60) + 'س ' + (r.durationMin % 60) + 'د') : '') + '</div>' +
         itemLine('صنف الحضور', r.checkInItem, r.checkInItemOriginal) +
         itemLine('صنف الانصراف', r.checkOutItem, r.checkOutItemOriginal) +
-        (photos ? ('<div style="margin-top:6px; display:flex;">' + photos + '</div>') : '') +
+        (photos ? ('<div style="margin-top:6px; display:flex;">' + photos + '</div>') : '')
+      ) : '';
+      var leaveBtn = state.isAdmin && r.dayType === 'workday' && !r.present
+        ? '<button type="button" onclick="handleSetRepLeave_(\'' + r.day + '\')" style="background:none; border:none; color:var(--muted); font-size:12px; text-decoration:underline; cursor:pointer; padding:2px 0;">📅 سجّل إجازة في اليوم ده</button>'
+        : (state.isAdmin && r.dayType === 'leave'
+          ? '<button type="button" onclick="handleRemoveRepLeave_(\'' + r.day + '\')" style="background:none; border:none; color:var(--red); font-size:12px; text-decoration:underline; cursor:pointer; padding:2px 0;">إلغاء الإجازة</button>'
+          : '');
+      return '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:2px;">' +
+        '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+          '<div class="name">' + r.day + (r.branch ? (' — ' + escapeHtml(r.branch)) : '') + '</div>' + statusBadge +
+        '</div>' +
+        restBadge + attendanceDetail + leaveBtn +
       '</div>';
     }).join('');
+  }
+  function handleSetRepLeave_(day){
+    if(!confirm('تسجيل إجازة للمندوب ده يوم ' + day + '؟')) return;
+    showLoading(true);
+    callApi('setRepLeave', [state.auth, state.attRepName_, day, ''])
+      .then(function(){ showLoading(false); showMsg('تم تسجيل الإجازة ✔', 'success'); loadAttendance_(state.attRepName_, state.attMonth_); })
+      .catch(onError);
+  }
+  function handleRemoveRepLeave_(day){
+    if(!confirm('إلغاء إجازة يوم ' + day + '؟')) return;
+    showLoading(true);
+    callApi('removeRepLeave', [state.auth, state.attRepName_, day])
+      .then(function(){ showLoading(false); showMsg('تم الإلغاء ✔', 'success'); loadAttendance_(state.attRepName_, state.attMonth_); })
+      .catch(onError);
   }
   // بيفتح الصورة بحجمها الكامل في طبقة فوق الشاشة كلها لما المشرف يدوس على الصورة المصغّرة
   function viewAttendancePhoto_(src){
