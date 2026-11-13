@@ -3770,14 +3770,15 @@
         outBtn.disabled = true; outBtn.textContent = '🚪 تسجيل انصراف';
         line.textContent = 'لسه ما سجلتش حضور النهارده';
       }
+      // لو حضر بالفعل ولسه ما انصرفش، لازم صنف الانصراف يكون مختلف عن صنف الحضور (مش نفسه) —
+      // بنستبعد صنف الحضور المسجل فعليًا من اختيار صنف الانصراف
+      var excludeForOut = (d.checkIn && !d.checkOut) ? (d.checkInItem || '') : '';
+      callApi('attendanceChallenge', [state.auth, excludeForOut || '']).then(function(c){
+        state.attChallengeItem_ = (c && c.item) || '';
+        state.attChallengeOriginal_ = state.attChallengeItem_; // أول صنف اتعرض — بيتسجل حتى لو استبدله بعدين
+        renderAttendanceChallengeLine_();
+      }).catch(function(){ state.attChallengeItem_ = ''; state.attChallengeOriginal_ = ''; });
     }).catch(function(){});
-    // بنجيب صنف التحقق العشوائي بتاع النهارده (نفسه للحضور والانصراف) ونوريه قبل ما يدوس عشان
-    // يبقى جاهز بيه وهو بيفتح الكاميرا — من غير ما نوقف فتح الكاميرا بأي خطوة إضافية بعد الضغط
-    callApi('attendanceChallenge', [state.auth]).then(function(d){
-      state.attChallengeItem_ = (d && d.item) || '';
-      state.attChallengeOriginal_ = state.attChallengeItem_; // أول صنف اتعرض — بيتسجل حتى لو استبدله بعدين
-      renderAttendanceChallengeLine_();
-    }).catch(function(){ state.attChallengeItem_ = ''; state.attChallengeOriginal_ = ''; });
   }
   function renderAttendanceChallengeLine_(){
     var wrap = document.getElementById('attendanceChallengeWrap');
@@ -3796,7 +3797,7 @@
   // الأصلي عشان لو حصل استبدال، المشرف يقدر يراجعه ويشوف هل الصنف الأصلي اتباع فعلاً ولا كان اشتباه
   function swapChallengeItem_(){
     if(!state.attChallengeItem_) return;
-    callApi('attendanceChallenge', [state.auth, state.attChallengeItem_])
+    callApi('attendanceChallenge', [state.auth, state.attChallengeItem_, true])
       .then(function(d){
         if(d && d.item){
           state.attChallengeItem_ = d.item;
