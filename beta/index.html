@@ -3351,6 +3351,7 @@
           const ret = state_staleBlockReturn_;
           if(ret && ret.screen === 'mystats') loadMyStats(ret.repName);
           else if(ret && ret.screen === 'balances') loadBalances(ret.repName);
+          else if(ret && ret.screen === 'eval') loadEval();
           else openScreen('home');
         }
       })
@@ -4608,6 +4609,7 @@
     callApi('bootstrapRepEvaluation', [state.auth, (EVAL_V2_ ? 'v2:' : '') + (monthKey || '')])
       .then(function(data){
         showLoading(false);
+        if(data.blocked){ renderStaleBlockScreen_(data, 'eval', ''); return; }
         document.getElementById('evalMonthSelect').innerHTML = data.months.map(function(mk){
           const p = mk.split('-');
           return '<option value="' + mk + '"' + (mk === data.monthKey ? ' selected' : '') + '>' + EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0] + '</option>';
