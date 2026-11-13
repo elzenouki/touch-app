@@ -4050,10 +4050,13 @@
     if(!data || !data.rows || !data.rows.length){ showMsg('مفيش بيانات لتصديرها دلوقتي', 'error'); return; }
     showLoading(true);
     var rows = data.rows.map(function(r){
+      var swapIn = r.checkInItemOriginal && r.checkInItemOriginal !== r.checkInItem;
+      var swapOut = r.checkOutItemOriginal && r.checkOutItemOriginal !== r.checkOutItem;
+      var note = (swapIn ? ('⚠️ الأصلي: ' + r.checkInItemOriginal) : '') + (swapOut ? ((swapIn ? ' / ' : '') + '⚠️ الأصلي: ' + r.checkOutItemOriginal) : '');
       return [r.day, attDayStatusLabel_(r), r.branch || '—', r.checkIn || '—', r.checkInDistance != null ? r.checkInDistance : '—',
         r.checkOut || '—', r.checkOutDistance != null ? r.checkOutDistance : '—',
         r.durationMin != null ? (Math.floor(r.durationMin / 60) + 'س ' + (r.durationMin % 60) + 'د') : '—',
-        r.checkInItem || '—', r.checkOutItem || '—'];
+        r.checkInItem || '—', r.checkOutItem || '—', note || '—'];
     });
     var opts = {
       fileName: 'الحضور والانصراف - ' + data.repName + ' - ' + attMonthLabel_(data.monthKey),
@@ -4062,9 +4065,10 @@
         ['المندوب', data.repName],
         ['أيام الحضور', data.presentDays], ['أيام الغياب', Math.max(data.expectedDays - data.presentDays, 0)],
         ['أيام الإجازة', data.daysLeave], ['أيام الراحة الأسبوعية', data.daysOff],
+        ['إجمالي وقت العمل', data.workedMinutes != null ? (Math.floor(data.workedMinutes / 60) + 'س ' + (data.workedMinutes % 60) + 'د') : '—'],
         ['التاريخ', new Date().toLocaleDateString('ar-EG')],
       ],
-      headers: ['اليوم', 'الحالة', 'الفرع', 'دخول', 'قرب الدخول (م)', 'خروج', 'قرب الخروج (م)', 'المدة', 'صنف الحضور', 'صنف الانصراف'],
+      headers: ['اليوم', 'الحالة', 'الفرع', 'دخول', 'قرب الدخول (م)', 'خروج', 'قرب الخروج (م)', 'المدة', 'صنف الحضور', 'صنف الانصراف', 'ملحوظة استبدال'],
       rows: rows,
       totalsLabel: 'أيام الحضور',
       totalsValue: data.presentDays,
@@ -4079,22 +4083,30 @@
     var data = state.attExportData_;
     if(!data || !data.summaryRows || !data.summaryRows.length){ showMsg('مفيش بيانات لتصديرها دلوقتي', 'error'); return; }
     showLoading(true);
-    var rows = data.summaryRows.map(function(r){
-      return [r.name, r.presentDays, r.absentDays, r.expectedDays, r.lastCheckIn || '—'];
-    });
-    var opts = {
-      fileName: 'الحضور والانصراف - كل المناديب - ' + attMonthLabel_(data.monthKey),
-      reportTitle: 'تقرير الحضور والانصراف — كل المناديب — ' + attMonthLabel_(data.monthKey),
-      meta: [['التاريخ', new Date().toLocaleDateString('ar-EG')], ['عدد المناديب', data.summaryRows.length]],
-      headers: ['المندوب', 'أيام الحضور', 'أيام الغياب', 'الأيام المتوقعة', 'آخر حضور'],
-      rows: rows,
-      totalsLabel: 'عدد المناديب',
-      totalsValue: data.summaryRows.length,
-      totalsIsCurrency: false,
-    };
-    buildExcelBlob(opts)
-      .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
-      .catch(onError);
+    // بيانات الملخص الأساسية مفيهاش أيام الإجازة/الراحة/وقت العمل لكل مندوب، فبنجيبها لكل واحد
+    // منهم بطلب تفصيلي قبل التصدير علشان الملف يطلع كامل زي شاشة تفاصيل المندوب لوحده
+    Promise.all(data.summaryRows.map(function(r){
+      return callApi('attendanceReport', [state.auth, r.name, data.monthKey]).catch(function(){ return null; });
+    })).then(function(details){
+      var rows = data.summaryRows.map(function(r, i){
+        var d = details[i];
+        return [r.name, r.presentDays, r.absentDays, r.expectedDays,
+          d ? d.daysLeave : '—', d ? d.daysOff : '—',
+          d && d.workedMinutes != null ? (Math.floor(d.workedMinutes / 60) + 'س ' + (d.workedMinutes % 60) + 'د') : '—',
+          r.lastCheckIn || '—'];
+      });
+      var opts = {
+        fileName: 'الحضور والانصراف - كل المناديب - ' + attMonthLabel_(data.monthKey),
+        reportTitle: 'تقرير الحضور والانصراف — كل المناديب — ' + attMonthLabel_(data.monthKey),
+        meta: [['التاريخ', new Date().toLocaleDateString('ar-EG')], ['عدد المناديب', data.summaryRows.length]],
+        headers: ['المندوب', 'أيام الحضور', 'أيام الغياب', 'الأيام المتوقعة', 'أيام الإجازة', 'أيام الراحة الأسبوعية', 'إجمالي وقت العمل', 'آخر حضور'],
+        rows: rows,
+        totalsLabel: 'عدد المناديب',
+        totalsValue: data.summaryRows.length,
+        totalsIsCurrency: false,
+      };
+      return buildExcelBlob(opts).then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); });
+    }).catch(onError);
   }
 
   function loadItemTargets(monthKey){
