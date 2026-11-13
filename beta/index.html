@@ -1611,10 +1611,12 @@
     <div class="card" id="attListCard" hidden>
       <div class="cardTitle">تفاصيل الأيام</div>
       <div id="attList"></div>
+      <button class="whatsapp" style="margin-top:12px; width:100%;" onclick="exportAttendanceDetailExcel()">📤 تصدير إكسل</button>
     </div>
     <div class="card" id="attAllCard" hidden>
       <div class="cardTitle">كل المناديب</div>
       <div id="attAllList"></div>
+      <button class="whatsapp" style="margin-top:12px; width:100%;" onclick="exportAttendanceAllExcel()">📤 تصدير إكسل</button>
     </div>
   </div>
 
@@ -3898,6 +3900,7 @@
       .then(function(data){
         showLoading(false);
         state.attRepName_ = data.repName; state.attMonth_ = data.monthKey;
+        state.attExportData_ = data;
         var pickerCard = document.getElementById('attRepPickerCard');
         if(data.isAdmin && data.reps && data.reps.length){
           pickerCard.hidden = false;
@@ -4030,6 +4033,68 @@
     overlay.innerHTML = '<img src="' + src + '" style="max-width:100%; max-height:100%; border-radius:10px;">';
     overlay.addEventListener('click', function(){ document.body.removeChild(overlay); });
     document.body.appendChild(overlay);
+  }
+
+  function attMonthLabel_(mk){
+    var p = (mk || '').split('-');
+    return p.length === 2 ? (EVAL_MONTHS_AR_[Number(p[1]) - 1] + ' ' + p[0]) : (mk || '');
+  }
+  function attDayStatusLabel_(r){
+    if(r.dayType === 'leave') return r.present ? 'إجازة — حضر برضو' : 'إجازة';
+    if(r.dayType === 'off') return r.present ? 'راحة أسبوعية — حضر برضو' : 'راحة أسبوعية';
+    return r.present ? 'حاضر' : 'غايب';
+  }
+  function exportAttendanceDetailExcel(){
+    clearMsg();
+    var data = state.attExportData_;
+    if(!data || !data.rows || !data.rows.length){ showMsg('مفيش بيانات لتصديرها دلوقتي', 'error'); return; }
+    showLoading(true);
+    var rows = data.rows.map(function(r){
+      return [r.day, attDayStatusLabel_(r), r.branch || '—', r.checkIn || '—', r.checkInDistance != null ? r.checkInDistance : '—',
+        r.checkOut || '—', r.checkOutDistance != null ? r.checkOutDistance : '—',
+        r.durationMin != null ? (Math.floor(r.durationMin / 60) + 'س ' + (r.durationMin % 60) + 'د') : '—',
+        r.checkInItem || '—', r.checkOutItem || '—'];
+    });
+    var opts = {
+      fileName: 'الحضور والانصراف - ' + data.repName + ' - ' + attMonthLabel_(data.monthKey),
+      reportTitle: 'تقرير الحضور والانصراف — ' + attMonthLabel_(data.monthKey),
+      meta: [
+        ['المندوب', data.repName],
+        ['أيام الحضور', data.presentDays], ['أيام الغياب', Math.max(data.expectedDays - data.presentDays, 0)],
+        ['أيام الإجازة', data.daysLeave], ['أيام الراحة الأسبوعية', data.daysOff],
+        ['التاريخ', new Date().toLocaleDateString('ar-EG')],
+      ],
+      headers: ['اليوم', 'الحالة', 'الفرع', 'دخول', 'قرب الدخول (م)', 'خروج', 'قرب الخروج (م)', 'المدة', 'صنف الحضور', 'صنف الانصراف'],
+      rows: rows,
+      totalsLabel: 'أيام الحضور',
+      totalsValue: data.presentDays,
+      totalsIsCurrency: false,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
+      .catch(onError);
+  }
+  function exportAttendanceAllExcel(){
+    clearMsg();
+    var data = state.attExportData_;
+    if(!data || !data.summaryRows || !data.summaryRows.length){ showMsg('مفيش بيانات لتصديرها دلوقتي', 'error'); return; }
+    showLoading(true);
+    var rows = data.summaryRows.map(function(r){
+      return [r.name, r.presentDays, r.absentDays, r.expectedDays, r.lastCheckIn || '—'];
+    });
+    var opts = {
+      fileName: 'الحضور والانصراف - كل المناديب - ' + attMonthLabel_(data.monthKey),
+      reportTitle: 'تقرير الحضور والانصراف — كل المناديب — ' + attMonthLabel_(data.monthKey),
+      meta: [['التاريخ', new Date().toLocaleDateString('ar-EG')], ['عدد المناديب', data.summaryRows.length]],
+      headers: ['المندوب', 'أيام الحضور', 'أيام الغياب', 'الأيام المتوقعة', 'آخر حضور'],
+      rows: rows,
+      totalsLabel: 'عدد المناديب',
+      totalsValue: data.summaryRows.length,
+      totalsIsCurrency: false,
+    };
+    buildExcelBlob(opts)
+      .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
+      .catch(onError);
   }
 
   function loadItemTargets(monthKey){
