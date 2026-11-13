@@ -1768,7 +1768,7 @@
         <div class="cardTitle">تحديد موقع كل فرع (إحداثيات GPS)</div>
         <div style="color:var(--muted); font-size:12.5px; line-height:1.8; margin-bottom:10px;">
           لازم تحدد موقع الفرع مرة واحدة عشان نقدر نحسب بعد المندوب عنه وقت تسجيل الحضور/الانصراف.
-          تقدر تجيب الإحداثيات من خرائط جوجل: افتح الفرع على الخريطة، اضغط مطوّل على النقطة، وهتظهرلك الأرقام.
+          اكتب الإحداثيات زي كده: 31.179743,29.9695548 — أو افتح الفرع على خرائط جوجل، اضغط "مشاركة" وانسخ اللينك، والصقه هنا زي ما هو.
         </div>
         <div id="branchesList"><div class="empty">جاري التحميل...</div></div>
       </div>
@@ -5044,21 +5044,34 @@
           '<div class="name">' + escapeHtml(b.name) + '</div>' +
           '<span style="font-size:12px; color:' + (hasLoc ? 'var(--green)' : 'var(--red)') + '; font-weight:700;">' + (hasLoc ? '✔️ محدد' : '⚠️ مش محدد') + '</span>' +
         '</div>' +
-        '<div style="display:flex; gap:8px;">' +
-          '<input type="text" inputmode="decimal" dir="ltr" class="ltrNum" placeholder="Latitude" id="brLat' + i + '" value="' + (hasLoc ? b.lat : '') + '" style="margin:0;">' +
-          '<input type="text" inputmode="decimal" dir="ltr" class="ltrNum" placeholder="Longitude" id="brLng' + i + '" value="' + (hasLoc ? b.lng : '') + '" style="margin:0;">' +
-        '</div>' +
+        '<input type="text" dir="ltr" placeholder="31.179743,29.9695548  أو الصق لينك خرائط جوجل" id="brLoc' + i + '" value="' + (hasLoc ? (b.lat + ',' + b.lng) : '') + '" style="margin:0;">' +
         '<button type="button" class="primary" style="margin:0;" onclick="handleSetBranchLocation_(\'' + escapeHtml(b.name).replace(/'/g, "\\'") + '\', ' + i + ')">حفظ موقع الفرع</button>' +
       '</div>';
     }).join('');
   }
+  // بيفهم: "31.17,29.96" مباشرة، أو أي لينك خرائط جوجل طويل فيه الإحداثيات جواه (مش اللينكات
+  // المختصرة زي maps.app.goo.gl — دي مش بتفتح من غير ما تدوس عليها فعليًا في المتصفح)
+  function parseLatLng_(raw){
+    raw = (raw || '').trim();
+    var m = raw.match(/^(-?\d{1,3}(?:\.\d+)?)\s*,\s*(-?\d{1,3}(?:\.\d+)?)$/);
+    if(m) return { lat: m[1], lng: m[2] };
+    m = raw.match(/@(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+    if(m) return { lat: m[1], lng: m[2] };
+    m = raw.match(/!3d(-?\d{1,3}\.\d+)!4d(-?\d{1,3}\.\d+)/);
+    if(m) return { lat: m[1], lng: m[2] };
+    m = raw.match(/[?&]q=(-?\d{1,3}\.\d+),(-?\d{1,3}\.\d+)/);
+    if(m) return { lat: m[1], lng: m[2] };
+    m = raw.match(/(-?\d{1,3}\.\d{3,})\s*,\s*(-?\d{1,3}\.\d{3,})/);
+    if(m) return { lat: m[1], lng: m[2] };
+    return null;
+  }
   function handleSetBranchLocation_(name, i){
     clearMsg();
-    var lat = document.getElementById('brLat' + i).value.trim();
-    var lng = document.getElementById('brLng' + i).value.trim();
-    if(!lat || !lng || isNaN(Number(lat)) || isNaN(Number(lng))){ showMsg('اكتب Latitude و Longitude صحيحين', 'error'); return; }
+    var raw = document.getElementById('brLoc' + i).value;
+    var loc = parseLatLng_(raw);
+    if(!loc){ showMsg('مش قادر أفهم الإحداثيات دي — اكتبها زي 31.179743,29.9695548 أو الصق لينك طويل من خرائط جوجل', 'error'); return; }
     showLoading(true);
-    callApi('setBranchLocation', [state.auth, name, lat, lng])
+    callApi('setBranchLocation', [state.auth, name, loc.lat, loc.lng])
       .then(function(){ showLoading(false); showMsg('تم حفظ موقع الفرع ✔', 'success'); refreshBranchesList_(); })
       .catch(onError);
   }
