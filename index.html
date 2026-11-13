@@ -3724,40 +3724,49 @@
     var C_BANNER = '#0c1730', C_GOLD = '#d9a21b', C_BG = '#eeece4';
     // جدول مش flex — html2canvas بيرسم الـflex مع RTL غلط أحيانًا (بيختفي عمود كامل). وكمان لازم
     // table-layout:fixed + عرض ثابت لكل عمود، وإلا الجدول بيتمدد أكتر من الحاوية ويقطع النص برّه الصورة
+    // بدون تلوين متبدل (zebra) — كل الصفوف بيضا وخط فاصل رفيع بس، شكل أهدى وأفخم
     var statsHtml = opts.stats.map(function(s, i){
-      var bg = (i % 2 === 1) ? '#f7f6f2' : '#ffffff';
+      var bdr = (i === 0) ? 'border-top:1px solid #ece9df;' : '';
       return '<tr>' +
-        '<td style="width:300px; padding:13px 16px; font-size:15px; font-weight:700; color:#6e6e6e; text-align:right; background:' + bg + '; border-bottom:1px solid #ecebe5; word-break:break-word;">' + escapeHtml_(s[0]) + '</td>' +
-        '<td style="width:224px; padding:13px 16px; font-size:17px; font-weight:900; color:' + C_BANNER + '; text-align:left; background:' + bg + '; border-bottom:1px solid #ecebe5; word-break:break-word;">' + escapeHtml_(String(s[1])) + '</td>' +
+        '<td style="width:300px; padding:14px 2px; font-size:14px; font-weight:700; color:#8a8a8a; text-align:right; background:#fff; border-bottom:1px solid #ece9df; ' + bdr + ' word-break:break-word;">' + escapeHtml_(s[0]) + '</td>' +
+        '<td style="width:224px; padding:14px 2px; font-size:16px; font-weight:900; color:' + C_BANNER + '; text-align:left; background:#fff; border-bottom:1px solid #ece9df; ' + bdr + ' word-break:break-word;">' + escapeHtml_(String(s[1])) + '</td>' +
       '</tr>';
     }).join('');
     var container = document.createElement('div');
-    container.style.cssText = 'position:fixed; top:0; left:-99999px; width:580px; background:' + C_BG + '; direction:rtl; font-family:"Cairo","Tajawal",Arial,sans-serif; padding:10px;';
+    // position:absolute مش fixed — عشان الكارت طويل غالبًا أطول من ارتفاع الشاشة، وhtml2canvas
+    // بيلخبط في رسم عناصر fixed لما بيعمل resize لنافذته الداخلية (بيكرر جزء من المحتوى غلط)
+    container.style.cssText = 'position:absolute; top:0; left:-99999px; width:580px; background:' + C_BG + '; direction:rtl; font-family:"Cairo","Tajawal",Arial,sans-serif; padding:10px;';
     container.innerHTML =
-      '<div style="width:560px; background:#fff; border-radius:18px; overflow:hidden; border:1px solid #e2dfd4;">' +
-        '<div style="background:' + C_BANNER + '; color:#fff; text-align:center; padding:18px 16px 14px;">' +
-          '<div style="font-size:21px; font-weight:900;">تاتش الزنوكي</div>' +
-          '<div style="font-size:12px; color:#aab2cc; margin-top:3px; font-weight:700;">نظام إدارة المبيعات</div>' +
-        '</div>' +
-        '<div style="background:' + C_GOLD + '; color:#1a1a1a; text-align:center; font-size:16px; font-weight:900; padding:11px;">' + escapeHtml_(opts.title) + '</div>' +
-        '<div style="width:560px; height:420px; overflow:hidden;">' +
-          '<img src="' + opts.photo + '" style="width:560px; height:420px; object-fit:cover; display:block;">' +
-        '</div>' +
-        '<div style="padding:20px 18px 6px; text-align:center;">' +
-          '<div style="width:524px; margin:0 auto; white-space:normal; word-break:break-word; line-height:1.35; font-size:20px; font-weight:900; color:#1a1a1a;">' + escapeHtml_(opts.name) + '</div>' +
-          '<div style="width:70px; height:3px; background:' + C_GOLD + '; margin:10px auto 0; border-radius:3px;"></div>' +
-        '</div>' +
-        '<div style="padding:16px 18px 20px;">' +
-          '<div style="border:1px solid #e2dfd4; border-radius:12px; overflow:hidden;">' +
-            '<table style="width:100%; table-layout:fixed; border-collapse:collapse;">' + statsHtml + '</table>' +
+      '<div style="width:560px; background:#fff; border-radius:22px; overflow:hidden; border:1px solid #e2dfd4;">' +
+        '<div style="padding:24px 16px 14px; text-align:center;">' +
+          '<div style="width:40px; height:40px; line-height:40px; margin:0 auto; border-radius:50%; background:' + C_GOLD + '; color:' + C_BANNER + '; font-size:18px; font-weight:900; text-align:center;">ت</div>' +
+          '<div style="font-size:18px; font-weight:900; color:' + C_BANNER + '; margin-top:10px;">تاتش الزنوكي</div>' +
+          '<div style="margin-top:12px;">' +
+            '<span style="display:inline-block; border:1.5px solid ' + C_GOLD + '; color:' + C_BANNER + '; font-size:13px; font-weight:900; padding:7px 20px; border-radius:20px;">' + escapeHtml_(opts.title) + '</span>' +
           '</div>' +
         '</div>' +
-        '<div style="background:' + C_BANNER + '; color:#c9b36a; text-align:center; font-size:12px; font-weight:700; padding:10px;">' + escapeHtml_(opts.stamp) + '</div>' +
+        '<div style="width:560px; height:700px; overflow:hidden;">' +
+          '<img src="' + opts.photo + '" style="width:560px; height:700px; object-fit:cover; display:block;">' +
+        '</div>' +
+        '<div style="padding:22px 18px 4px; text-align:center;">' +
+          '<div style="width:524px; margin:0 auto; white-space:normal; word-break:break-word; line-height:1.35; font-size:21px; font-weight:900; color:#1a1a1a;">' + escapeHtml_(opts.name) + '</div>' +
+          '<div style="width:46px; height:2px; background:' + C_GOLD + '; margin:10px auto 0;"></div>' +
+        '</div>' +
+        '<div style="padding:10px 24px 6px;">' +
+          '<table style="width:100%; table-layout:fixed; border-collapse:collapse;">' + statsHtml + '</table>' +
+        '</div>' +
+        '<div style="text-align:center; font-size:12px; color:#aaa7a0; font-weight:700; padding:12px 0 20px;">' + escapeHtml_(opts.stamp) + '</div>' +
       '</div>';
     document.body.appendChild(container);
     var blob;
     try{
-      var canvas = await html2canvas(container, { scale: 2, backgroundColor: C_BG, useCORS: true });
+      // scale:2 بيبوّظ الصورة لما الكارت طويل كده (بالصورة الطولية) — بيكرر رسم جزء من
+      // المحتوى في مكان غلط (باگ معروف في html2canvas مع scale أكبر من 1 والعناصر الطويلة).
+      // scale:1 طلعت نضيفة ومفيش فيها المشكلة دي خالص، فسبناها كده بدل المخاطرة
+      var canvas = await html2canvas(container, {
+        scale: 1, backgroundColor: C_BG, useCORS: true,
+        windowWidth: container.scrollWidth, windowHeight: container.scrollHeight,
+      });
       blob = await new Promise(function(resolve){ canvas.toBlob(resolve, 'image/png'); });
     } finally {
       document.body.removeChild(container);
