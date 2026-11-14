@@ -3895,12 +3895,29 @@
       .then(function(blob){ setPendingAttendanceShare_(blob, title + ' — ' + state.user.name); })
       .catch(function(){}); // لو فشل بناء الصورة، التسجيل نفسه خلاص اتسجل، بس من غير زرار مشاركة
   }
+  // لو شاشة الرئيسية لسه ما جابتش صنف التحدي (طلب اتعمل بس لسه مارجعش، أو فشل بالغلط) وماحصلش
+  // أي عرض للمندوب أصلاً (الخط مخفي)، بنجرب نجيبه تاني دلوقتي قبل ما نسجل — عشان مانفوتش الصنف بالغلط
+  // بسبب تأخير/فشل مؤقت في الشبكة. لو الصنف ده ظاهر بالفعل على الشاشة (حتى لو بعد استبدال)، سيبه زي ما هو.
+  function ensureAttendanceChallengeFresh_(excludeItem){
+    if(state.attChallengeItem_) return Promise.resolve();
+    return callApi('attendanceChallenge', [state.auth, excludeItem || ''])
+      .then(function(c){
+        state.attChallengeItem_ = (c && c.item) || '';
+        state.attChallengeOriginal_ = state.attChallengeItem_;
+        renderAttendanceChallengeLine_();
+      })
+      .catch(function(){});
+  }
   function handleCheckIn_(){
     clearMsg();
     var btn = document.getElementById('checkInBtn');
     btn.disabled = true; btn.textContent = 'جاري التسجيل...';
-    var coords = null, photo = null, challengeItem = state.attChallengeItem_ || '', challengeOriginal = state.attChallengeOriginal_ || '';
-    fctCapturePhoto_()
+    var coords = null, photo = null, challengeItem = '', challengeOriginal = '';
+    ensureAttendanceChallengeFresh_('')
+      .then(function(){
+        challengeItem = state.attChallengeItem_ || ''; challengeOriginal = state.attChallengeOriginal_ || '';
+        return fctCapturePhoto_();
+      })
       .then(function(p){ photo = p; return fctGetPosition_(); })
       .then(function(c){ coords = c; return callApi('checkIn', [state.auth, coords.latitude, coords.longitude, photo, challengeItem, challengeOriginal]); })
       .then(function(result){
@@ -3914,8 +3931,12 @@
     clearMsg();
     var btn = document.getElementById('checkOutBtn');
     btn.disabled = true; btn.textContent = 'جاري التسجيل...';
-    var coords = null, photo = null, challengeItem = state.attChallengeItem_ || '', challengeOriginal = state.attChallengeOriginal_ || '';
-    fctCapturePhoto_()
+    var coords = null, photo = null, challengeItem = '', challengeOriginal = '';
+    ensureAttendanceChallengeFresh_('')
+      .then(function(){
+        challengeItem = state.attChallengeItem_ || ''; challengeOriginal = state.attChallengeOriginal_ || '';
+        return fctCapturePhoto_();
+      })
       .then(function(p){ photo = p; return fctGetPosition_(); })
       .then(function(c){ coords = c; return callApi('checkOut', [state.auth, coords.latitude, coords.longitude, photo, challengeItem, challengeOriginal]); })
       .then(function(result){
