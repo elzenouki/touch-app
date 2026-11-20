@@ -1540,8 +1540,11 @@
       <label style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px;">
         <input type="checkbox" id="balancesHideWinter_" onchange="applyBalancesSeasonFilter_()" style="width:auto;"> ❄️ إخفاء الأصناف الموسمية الشتوية
       </label>
-      <label style="display:flex; align-items:center; gap:8px; font-weight:600;">
+      <label style="display:flex; align-items:center; gap:8px; font-weight:600; margin-bottom:6px;">
         <input type="checkbox" id="balancesHideSummer_" onchange="applyBalancesSeasonFilter_()" style="width:auto;"> ☀️ إخفاء الأصناف الموسمية الصيفية
+      </label>
+      <label style="display:flex; align-items:center; gap:8px; font-weight:600;">
+        <input type="checkbox" id="balancesWholesaleOnly_" onchange="applyBalancesSeasonFilter_()" style="width:auto;"> 📦 جملة ماركت بس (الأصناف اللي بتاخدها فقط)
       </label>
     </div>
     <div class="card">
@@ -2058,7 +2061,7 @@
   const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1,
     // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
     listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
-    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1,
+    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1, setItemWholesale:1,
     setBranchLocation:1, checkIn:1, checkOut:1, setAttendanceStartDate:1, setRepLeave:1, removeRepLeave:1, saveTarget:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
@@ -5021,6 +5024,7 @@
             var saved = JSON.parse(localStorage.getItem('balancesSeasonFilter_') || '{}');
             document.getElementById('balancesHideWinter_').checked = !!saved.hideWinter;
             document.getElementById('balancesHideSummer_').checked = !!saved.hideSummer;
+            document.getElementById('balancesWholesaleOnly_').checked = !!saved.wholesaleOnly;
           }catch(e){}
         }
 
@@ -5059,9 +5063,11 @@
   function renderBalancesList_(){
     var hideWinter = state.isAdmin && document.getElementById('balancesHideWinter_').checked;
     var hideSummer = state.isAdmin && document.getElementById('balancesHideSummer_').checked;
+    var wholesaleOnly = state.isAdmin && document.getElementById('balancesWholesaleOnly_').checked;
     var items = (state.balancesAllItems_ || []).filter(function(it){
       if(hideWinter && it.season === 'شتوي') return false;
       if(hideSummer && it.season === 'صيفي') return false;
+      if(wholesaleOnly && it.wholesale === false) return false;
       return true;
     });
     // بنحتفظ بالبيانات اللي ظاهرة فعلاً عشان زرار "تصدير إكسل" يستخدمها على طول من غير أي طلب جديد للسيرفر
@@ -5095,6 +5101,7 @@
       localStorage.setItem('balancesSeasonFilter_', JSON.stringify({
         hideWinter: document.getElementById('balancesHideWinter_').checked,
         hideSummer: document.getElementById('balancesHideSummer_').checked,
+        wholesaleOnly: document.getElementById('balancesWholesaleOnly_').checked,
       }));
     }catch(e){}
     renderBalancesList_();
@@ -6389,11 +6396,14 @@
             '<div class="name">' + escapeHtml(a.name) + '</div>' +
             '<div class="email">' + escapeHtml(a.code || '—') + '</div>' +
           '</div>' +
-          '<select data-code="' + escapeHtml(a.code || '') + '" onchange="handleSetItemSeason_(this)" style="width:auto; margin:0;">' +
+          '<select data-code="' + escapeHtml(a.code || '') + '" onchange="handleSetItemSeason_(this)" style="width:auto; margin:0 0 8px;">' +
             '<option value=""' + (!a.season ? ' selected' : '') + '>دائم (كل السنة)</option>' +
             '<option value="شتوي"' + (a.season === 'شتوي' ? ' selected' : '') + '>❄️ موسمي شتوي</option>' +
             '<option value="صيفي"' + (a.season === 'صيفي' ? ' selected' : '') + '>☀️ موسمي صيفي</option>' +
           '</select>' +
+          '<label style="display:flex; align-items:center; gap:6px; font-size:13px; font-weight:600;">' +
+            '<input type="checkbox" data-code="' + escapeHtml(a.code || '') + '" onchange="handleSetItemWholesale_(this)"' + (a.wholesale !== false ? ' checked' : '') + ' style="width:auto;"> 📦 بتتاخد في جملة ماركت' +
+          '</label>' +
         '</div>'
       );
     }).join('');
@@ -6412,6 +6422,23 @@
         showMsg('تم حفظ موسم الصنف ✔', 'success');
         const it = (state.asnafAdmin_ || []).find(function(x){ return x.code === code; });
         if(it) it.season = season;
+      })
+      .catch(function(err){ onError(err); refreshAsnafList(); });
+  }
+
+  // بيحفظ علامة "بتتاخد في جملة ماركت" للصنف — بيستخدمها فلتر "أرصدتي" بعدين عشان يورّي
+  // بس الأصناف اللي فروع جملة ماركت بتاخدها (مش بيخفيها زي فلتر الموسم، العكس: بيوريها هي بس)
+  function handleSetItemWholesale_(chk){
+    const code = chk.dataset.code;
+    if(!code){ showMsg('الصنف ده من غير كود، مينفعش يتحدد', 'error'); chk.checked = true; return; }
+    const wholesale = chk.checked;
+    showLoading(true);
+    callApi('setItemWholesale', [state.auth, code, wholesale])
+      .then(function(){
+        showLoading(false);
+        showMsg('تم الحفظ ✔', 'success');
+        const it = (state.asnafAdmin_ || []).find(function(x){ return x.code === code; });
+        if(it) it.wholesale = wholesale;
       })
       .catch(function(err){ onError(err); refreshAsnafList(); });
   }
