@@ -2493,6 +2493,11 @@
     callApi('bootstrapHome', [state.auth])
       .then(function(data){
         if(!data || !data.user) return;
+        if(data.blocked){
+          state.user = data.user; state.isAdmin = !!data.isAdmin;
+          renderStaleBlockScreen_(data, 'adminblock', '');
+          return;
+        }
         applyLoggedInUser(data.user, data.isAdmin, data.targetProgress, data.stats);
         if(state.screen === null) document.getElementById('pageSub').textContent = state.user.name;
       })
@@ -3246,6 +3251,12 @@
     }
     callApi('bootstrapHome', [state.auth])
       .then(function(data){
+        if(data.blocked){
+          state.user = data.user; state.isAdmin = !!data.isAdmin;
+          showLoading(false);
+          renderStaleBlockScreen_(data, 'adminblock', '');
+          return;
+        }
         applyLoggedInUser(data.user, data.isAdmin, data.targetProgress, data.stats);
         if(!cachedHome){
           showLoading(false);
@@ -3324,7 +3335,11 @@
       top.style.cssText = 'display:flex; justify-content:space-between; align-items:center;';
       const nameEl = document.createElement('div');
       nameEl.className = 'name';
-      nameEl.textContent = it.name + ((state.user.branches || []).length > 1 && it.branch ? ' — ' + it.branch : '');
+      // شاشة قفل المشرف (data.isAdminBlock): الأصناف دي ممكن تكون لأكتر من مندوب/فرع مع بعض —
+      // لازم نوضح الفرع والمندوب المسؤول عن كل صنف، مش بس اسم الصنف
+      nameEl.textContent = data.isAdminBlock
+        ? (it.name + (it.branch ? ' — ' + it.branch : '') + (it.holder && it.holder.rep ? ' (' + it.holder.rep + ')' : ''))
+        : (it.name + ((state.user.branches || []).length > 1 && it.branch ? ' — ' + it.branch : ''));
       const daysEl = document.createElement('div');
       daysEl.className = 'total';
       daysEl.style.color = '#c73e3e';
@@ -3364,6 +3379,7 @@
           if(ret && ret.screen === 'mystats') loadMyStats(ret.repName);
           else if(ret && ret.screen === 'balances') loadBalances(ret.repName);
           else if(ret && ret.screen === 'eval') loadEval();
+          else if(ret && ret.screen === 'adminblock') refreshHomeAfterLogin_();
           else openScreen('home');
         }
       })
