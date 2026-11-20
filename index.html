@@ -4094,12 +4094,21 @@
         ? ('<span style="font-size:11px; font-weight:800; padding:2px 8px; border-radius:20px; color:#fff; background:' +
             (r.present ? 'var(--green)' : 'var(--red)') + ';">' + (r.present ? 'حاضر' : 'غايب') + '</span>')
         : '';
+      // أزرار مشاركة الصورة من السجل نفسه (للمندوب بس، مش للمشرف اللي بيراجع غيره) — عشان لو فات
+      // على زرار المشاركة وقت التسجيل الفعلي، يقدر يرجع للسجل في أي وقت ويشاركها من هنا
+      var shareBtns = (!state.isAdmin && (r.checkInPhoto || r.checkOutPhoto)) ? (
+        '<div style="display:flex; gap:8px; margin-top:6px;">' +
+          (r.checkInPhoto ? '<button type="button" onclick="shareAttendanceRecordPhoto_(\'' + r.day + '\', \'in\', this)" style="flex:1; background:none; border:1px solid var(--border); border-radius:8px; color:var(--navy); font-size:12px; font-weight:700; padding:6px; cursor:pointer;">📤 شارك صورة الحضور</button>' : '') +
+          (r.checkOutPhoto ? '<button type="button" onclick="shareAttendanceRecordPhoto_(\'' + r.day + '\', \'out\', this)" style="flex:1; background:none; border:1px solid var(--border); border-radius:8px; color:var(--navy); font-size:12px; font-weight:700; padding:6px; cursor:pointer;">📤 شارك صورة الانصراف</button>' : '') +
+        '</div>'
+      ) : '';
       var attendanceDetail = (r.checkIn || r.checkOut) ? (
         '<div class="meta">دخول: ' + (r.checkIn || '—') + distNote(r.checkInDistance) + ' · خروج: ' + (r.checkOut || '—') + distNote(r.checkOutDistance) +
         (r.durationMin != null ? (' · المدة: ' + Math.floor(r.durationMin / 60) + 'س ' + (r.durationMin % 60) + 'د') : '') + '</div>' +
         itemLine('صنف الحضور', r.checkInItem, r.checkInItemOriginal) +
         itemLine('صنف الانصراف', r.checkOutItem, r.checkOutItemOriginal) +
-        (photos ? ('<div style="margin-top:6px; display:flex;">' + photos + '</div>') : '')
+        (photos ? ('<div style="margin-top:6px; display:flex;">' + photos + '</div>') : '') +
+        shareBtns
       ) : '';
       var leaveBtn = state.isAdmin && r.dayType === 'workday' && !r.present
         ? '<button type="button" onclick="handleSetRepLeave_(\'' + r.day + '\')" style="background:none; border:none; color:var(--muted); font-size:12px; text-decoration:underline; cursor:pointer; padding:2px 0;">📅 سجّل إجازة في اليوم ده</button>'
@@ -4135,6 +4144,67 @@
     overlay.innerHTML = '<img src="' + src + '" style="max-width:100%; max-height:100%; border-radius:10px;">';
     overlay.addEventListener('click', function(){ document.body.removeChild(overlay); });
     document.body.appendChild(overlay);
+  }
+
+  // بيبني نفس كارت المشاركة اللي بيظهر وقت تسجيل الحضور فعليًا، بس من سجل يوم قديم — عشان لو المندوب
+  // فات عليه زرار المشاركة وقتها، يقدر يرجع لسجله في أي وقت ويشاركه. بيستخدم نفس بيانات الشهر
+  // (أيام العمل/الغياب/الإجازات/الساعات) اللي الشاشة محمّلاها بالفعل من غير أي طلب جديد للسيرفر.
+  // المتصفحات (خصوصًا سفاري) بترفض navigator.share() لو ماتعملتش فورًا جوه ضغطة المستخدم —
+  // فمينفعش نبني الصورة (بطيئة شوية) وبعدين نشارك في نفس الضغطة. فبنعمل خطوتين: ضغطة أولى
+  // بتجهّز الصورة وتحفظها، وضغطة تانية (جديدة) بتشارك الصورة الجاهزة فورًا من غير أي تأخير.
+  function shareAttendanceRecordPhoto_(day, which, btn){
+    var cacheKey = day + '_' + which;
+    state.attShareCache_ = state.attShareCache_ || {};
+    var cached = state.attShareCache_[cacheKey];
+    if(cached){
+      var file = new File([cached.blob], 'attendance.png', { type: 'image/png' });
+      if(navigator.share && navigator.canShare && navigator.canShare({ files: [file] })){
+        navigator.share({ files: [file], title: cached.caption, text: cached.caption }).catch(function(){});
+      } else {
+        setPendingAttendanceShare_(cached.blob, cached.caption);
+        showMsg('اتجهزت الصورة — دوس "شارك على واتساب" في شاشة الرئيسية', 'success');
+      }
+      return;
+    }
+    var r = (state.attRows_ || []).find(function(x){ return x.day === day; });
+    if(!r) return;
+    var photo = which === 'in' ? r.checkInPhoto : r.checkOutPhoto;
+    if(!photo) return;
+    var time = which === 'in' ? r.checkIn : r.checkOut;
+    var distance = which === 'in' ? r.checkInDistance : r.checkOutDistance;
+    var item = which === 'in' ? r.checkInItem : r.checkOutItem;
+    var itemOriginal = which === 'in' ? r.checkInItemOriginal : r.checkOutItemOriginal;
+    var title = which === 'in' ? 'تسجيل حضور' : 'تسجيل انصراف';
+    var rep = state.attExportData_ || {};
+    var distanceText = distance != null ? (fmt(distance) + ' متر من الفرع') : 'الفرع مش محدد الموقع';
+    var stats = [
+      ['time', 'الوقت', time || '—'],
+      ['workdays', 'أيام العمل الشهر ده', fmt(rep.presentDays) + ' من ' + fmt(rep.expectedDays)],
+      ['absence', 'الغياب', (rep.expectedDays - rep.presentDays) > 0 ? (rep.expectedDays - rep.presentDays) + ' يوم' : 'مفيش'],
+      ['leave', 'الإجازات الأسبوعية', fmt(rep.daysOff) + ' يوم'],
+      ['hours', 'ساعات العمل المسجلة الشهر ده', fmtHoursMin_(rep.workedMinutes)],
+    ];
+    stats.splice(1, 0, ['distance', 'قرب الموقع من الفرع', distanceText]);
+    if(item){
+      var swapped = itemOriginal && itemOriginal !== item;
+      stats.splice(1, 0, ['item', 'الصنف المطلوب في الصورة', item + (swapped ? ' (بدل ' + itemOriginal + ')' : '')]);
+    }
+    if(r.branch) stats.splice(1, 0, ['branch', 'الفرع', r.branch]);
+    var dp = (day || '').split('-');
+    var dateLabel = dp.length === 3 ? (dp[2] + '/' + dp[1] + '/' + dp[0]) : day;
+    var repName = dispRepName_(state.attRepName_) || state.user.name;
+    var origLabel = btn ? btn.textContent : '';
+    if(btn){ btn.disabled = true; btn.textContent = 'جاري التجهيز...'; }
+    buildAttendanceCardImage_({ title: title, name: repName, photo: photo, stats: stats, stamp: dateLabel + ' ' + (time || '') })
+      .then(function(blob){
+        state.attShareCache_[cacheKey] = { blob: blob, caption: title + ' — ' + repName };
+        if(btn){ btn.disabled = false; btn.textContent = origLabel; }
+        showMsg('اتجهزت الصورة ✔ — دوس تاني على نفس الزرار عشان تشاركها', 'success');
+      })
+      .catch(function(){
+        if(btn){ btn.disabled = false; btn.textContent = origLabel; }
+        showMsg('حصل خطأ في تجهيز الصورة، حاول تاني', 'error');
+      });
   }
 
   function attMonthLabel_(mk){
