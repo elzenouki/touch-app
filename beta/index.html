@@ -1635,8 +1635,8 @@
   <!-- ============ شاشة بلوك الأصناف الراكدة (لازم سبب قبل ما تفتح مبيعاتي/أرصدتي) ============ -->
   <div id="viewStaleBlock" hidden>
     <div class="card">
-      <div class="cardTitle">في أصناف راكدة محتاجة سبب الأول</div>
-      <div style="color:var(--muted); font-size:13px; margin-bottom:14px; line-height:1.7;">
+      <div class="cardTitle" id="staleBlockCardTitle">في أصناف راكدة محتاجة سبب الأول</div>
+      <div style="color:var(--muted); font-size:13px; margin-bottom:14px; line-height:1.7;" id="staleBlockIntro">
         الشاشة اللي كنت هتفتحها اتقفلت مؤقتًا لحد ما تكتب سبب ركود كل صنف من الأصناف اللي فاتت عليها
         <b id="staleBlockWindowLabel">30</b> يوم من غير بيع في فرعك. اكتب السبب مرة واحدة بس لكل صنف
         وهيترفع القفل عنه على طول.
@@ -3321,7 +3321,19 @@
     state_staleBlockReturn_ = { screen: returnScreen, repName: returnRepName };
     document.getElementById('pageTitle').textContent = 'أصناف راكدة محتاجة سبب';
     document.getElementById('pageSub').textContent = state.user.name;
-    document.getElementById('staleBlockWindowLabel').textContent = data.blockWindowDays || 30;
+
+    // إيقاف يدوي من الإدارة (مش مرتبط برواكد) — مفيش حاجة تتكتب، القفل مش بيترفع لوحده
+    if(data.manualHold){
+      document.getElementById('staleBlockCardTitle').textContent = 'الشاشة دي متوقفة مؤقتًا';
+      document.getElementById('staleBlockIntro').textContent = data.holdReason || 'الشاشة دي متوقفة مؤقتًا من الإدارة.';
+      document.getElementById('staleBlockList').innerHTML = '';
+      setView('viewStaleBlock');
+      return;
+    }
+    document.getElementById('staleBlockCardTitle').textContent = 'في أصناف راكدة محتاجة سبب الأول';
+    document.getElementById('staleBlockIntro').innerHTML =
+      'الشاشة اللي كنت هتفتحها اتقفلت مؤقتًا لحد ما تكتب سبب ركود كل صنف من الأصناف اللي فاتت عليها ' +
+      '<b id="staleBlockWindowLabel">' + (data.blockWindowDays || 30) + '</b> يوم من غير بيع في فرعك. اكتب السبب مرة واحدة بس لكل صنف وهيترفع القفل عنه على طول.';
 
     const list = document.getElementById('staleBlockList');
     list.innerHTML = '';
