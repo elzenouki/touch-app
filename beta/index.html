@@ -1532,6 +1532,7 @@
     </div>
     <div class="card" id="balancesRepPickerCard" hidden>
       <div class="cardTitle">اختار المندوب</div>
+      <input type="text" id="balancesRepFilter_" placeholder="فلتر بالفرع أو الاسم (مثلاً: جملة ماركت)" oninput="renderBalancesRepOptions_()" style="margin-bottom:8px;">
       <select id="balancesRepSelect" onchange="loadBalances(this.value)"></select>
     </div>
     <div class="card" id="balancesSeasonFilterCard" hidden>
@@ -4998,11 +4999,11 @@
         var pickerCard = document.getElementById('balancesRepPickerCard');
         if (data.reps && data.reps.length){
           pickerCard.hidden = false;
-          var sel = document.getElementById('balancesRepSelect');
-          sel.innerHTML = data.reps.map(function(r){
-            var sel2 = (r === data.repName) ? ' selected' : '';
-            return '<option value="' + escapeHtml(r) + '"' + sel2 + '>' + escapeHtml(r) + '</option>';
-          }).join('');
+          state.balancesReps_ = data.reps;
+          state.balancesRepBranchMap_ = data.repBranchMap || {};
+          state.balancesRepSelectedName_ = data.repName;
+          document.getElementById('balancesRepFilter_').value = '';
+          renderBalancesRepOptions_();
         } else {
           pickerCard.hidden = true;
         }
@@ -5027,6 +5028,30 @@
         setView('viewBalances');
       })
       .catch(onError);
+  }
+
+  // بيرندر قايمة "اختار المندوب" في شاشة الأرصدة بعد تطبيق فلتر البحث (بالاسم أو اسم الفرع) —
+  // الفلتر محلي بالكامل (من غير طلب جديد للسيرفر)، وبيحافظ على المندوب المختار لو لسه ظاهر بعد الفلترة
+  function renderBalancesRepOptions_(){
+    var sel = document.getElementById('balancesRepSelect');
+    var q = (document.getElementById('balancesRepFilter_').value || '').trim().toLowerCase();
+    var map = state.balancesRepBranchMap_ || {};
+    var reps = (state.balancesReps_ || []).filter(function(r){
+      if(!q) return true;
+      var branch = (map[r] || '').toLowerCase();
+      return r.toLowerCase().indexOf(q) !== -1 || branch.indexOf(q) !== -1;
+    });
+    var keepName = (sel.value && reps.indexOf(sel.value) !== -1) ? sel.value
+      : (reps.indexOf(state.balancesRepSelectedName_) !== -1 ? state.balancesRepSelectedName_ : (reps[0] || ''));
+    if(!reps.length){
+      sel.innerHTML = '<option value="">مفيش مندوب مطابق للفلتر</option>';
+      return;
+    }
+    sel.innerHTML = reps.map(function(r){
+      var branch = map[r] ? ' — ' + map[r] : '';
+      var sel2 = (r === keepName) ? ' selected' : '';
+      return '<option value="' + escapeHtml(r) + '"' + sel2 + '>' + escapeHtml(r + branch) + '</option>';
+    }).join('');
   }
 
   // بيرندر قايمة الأرصدة من state.balancesAllItems_ بعد تطبيق فلتر الأصناف الموسمية (لو مفعّل) —
