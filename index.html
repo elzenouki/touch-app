@@ -1728,6 +1728,7 @@
   <div id="viewStaleReasons" hidden>
     <div class="card">
       <div class="cardTitle">الأسباب اللي اتكتبت لحد دلوقتي</div>
+      <input type="text" id="staleReasonsRepFilter_" placeholder="فلتر باسم المندوب" oninput="renderStaleReasonsList_()" style="margin-bottom:10px;">
       <div id="staleReasonsList"></div>
       <div style="color:var(--muted); font-size:13px; text-align:center; padding:6px 4px;" id="staleReasonsEmptyMsg" hidden>
         لسه محدش كتب أي سبب ركود
@@ -4567,30 +4568,42 @@
     callApi('getStaleReasonsReport', [state.auth])
       .then(function(data){
         showLoading(false);
-        const items = data.reasons || [];
-        const list = document.getElementById('staleReasonsList');
-        const emptyMsg = document.getElementById('staleReasonsEmptyMsg');
-        if(!items.length){
-          list.innerHTML = '';
-          emptyMsg.hidden = false;
-        } else {
-          emptyMsg.hidden = true;
-          list.innerHTML = items.map(function(it){
-            return (
-              '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:4px;">' +
-                '<div style="display:flex; justify-content:space-between; align-items:center;">' +
-                  '<div class="name">' + escapeHtml(it.name) + '</div>' +
-                  '<div class="meta">' + escapeHtml(it.date) + '</div>' +
-                '</div>' +
-                '<div class="meta">' + escapeHtml(it.branch) + ' • ' + escapeHtml(it.rep) + '</div>' +
-                '<div style="font-size:14px; color:var(--text); margin-top:4px;">' + escapeHtml(it.reason) + '</div>' +
-              '</div>'
-            );
-          }).join('');
-        }
+        state.staleReasonsAll_ = data.reasons || [];
+        document.getElementById('staleReasonsRepFilter_').value = '';
+        renderStaleReasonsList_();
         setView('viewStaleReasons');
       })
       .catch(onError);
+  }
+
+  // بيرندر تقرير أسباب الركود بعد تطبيق فلتر اسم المندوب (لو مكتوب) — فلتر محلي بالكامل
+  // من غير أي طلب جديد للسيرفر
+  function renderStaleReasonsList_(){
+    var q = (document.getElementById('staleReasonsRepFilter_').value || '').trim().toLowerCase();
+    var items = (state.staleReasonsAll_ || []).filter(function(it){
+      return !q || String(it.rep || '').toLowerCase().indexOf(q) !== -1;
+    });
+    var list = document.getElementById('staleReasonsList');
+    var emptyMsg = document.getElementById('staleReasonsEmptyMsg');
+    if(!items.length){
+      list.innerHTML = '';
+      emptyMsg.hidden = false;
+      emptyMsg.textContent = q ? 'مفيش أسباب لمندوب بالاسم ده' : 'لسه محدش كتب أي سبب ركود';
+    } else {
+      emptyMsg.hidden = true;
+      list.innerHTML = items.map(function(it){
+        return (
+          '<div class="itemRow" style="flex-direction:column; align-items:stretch; gap:4px;">' +
+            '<div style="display:flex; justify-content:space-between; align-items:center;">' +
+              '<div class="name">' + escapeHtml(it.name) + '</div>' +
+              '<div class="meta">' + escapeHtml(it.date) + '</div>' +
+            '</div>' +
+            '<div class="meta">' + escapeHtml(it.branch) + ' • ' + escapeHtml(it.rep) + '</div>' +
+            '<div style="font-size:14px; color:var(--text); margin-top:4px;">' + escapeHtml(it.reason) + '</div>' +
+          '</div>'
+        );
+      }).join('');
+    }
   }
 
   // ============ صفحة مبيعاتي (مشاهدة فقط) ============
