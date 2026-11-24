@@ -4269,34 +4269,87 @@
       .then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); })
       .catch(onError);
   }
+  // كل مندوب بيطلع في شيت لوحده جوه نفس الملف — فيه تاريخ الشهر كامل (كل الأيام، مش بس اللي حضر
+  // فيها) ووقت الحضور والانصراف لكل يوم — بالإضافة لشيت "الملخص" العام فوق كل ده
   function exportAttendanceAllExcel(){
     clearMsg();
     var data = state.attExportData_;
     if(!data || !data.summaryRows || !data.summaryRows.length){ showMsg('مفيش بيانات لتصديرها دلوقتي', 'error'); return; }
     showLoading(true);
-    // بيانات الملخص الأساسية مفيهاش أيام الإجازة/الراحة/وقت العمل لكل مندوب، فبنجيبها لكل واحد
-    // منهم بطلب تفصيلي قبل التصدير علشان الملف يطلع كامل زي شاشة تفاصيل المندوب لوحده
+    // بيانات الملخص الأساسية مفيهاش أيام الإجازة/الراحة/وقت العمل ولا السجل اليومي لكل مندوب،
+    // فبنجيبها لكل واحد منهم بطلب تفصيلي قبل التصدير
     Promise.all(data.summaryRows.map(function(r){
       return callApi('attendanceReport', [state.auth, r.name, data.monthKey]).catch(function(){ return null; });
     })).then(function(details){
-      var rows = data.summaryRows.map(function(r, i){
-        var d = details[i];
-        return [dispRepName_(r.name), r.presentDays, r.absentDays, r.expectedDays,
-          d ? d.daysLeave : '—', d ? d.daysOff : '—',
-          d && d.workedMinutes != null ? (Math.floor(d.workedMinutes / 60) + 'س ' + (d.workedMinutes % 60) + 'د') : '—',
-          r.lastCheckIn || '—'];
+      return ensureExcelJsLoaded_().then(function(){
+        var wb = new ExcelJS.Workbook();
+        wb.creator = 'الزنوكي لصناعة الأجهزة الكهربائية';
+        wb.created = new Date();
+
+        var sumHeaders = ['المندوب', 'أيام الحضور', 'أيام الغياب', 'الأيام المتوقعة', 'أيام الإجازة', 'أيام الراحة الأسبوعية', 'إجمالي وقت العمل', 'آخر حضور'];
+        var sum = wb.addWorksheet('الملخص', { views: [{ rightToLeft: true, showGridLines: false }] });
+        sum.addRow(sumHeaders);
+        sum.getRow(1).eachCell(function(c){
+          c.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+          c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0C1730' } };
+          c.alignment = { horizontal: 'center', vertical: 'middle' };
+        });
+        data.summaryRows.forEach(function(r, i){
+          var d = details[i];
+          sum.addRow([dispRepName_(r.name), r.presentDays, r.absentDays, r.expectedDays,
+            d ? d.daysLeave : '—', d ? d.daysOff : '—',
+            d && d.workedMinutes != null ? (Math.floor(d.workedMinutes / 60) + 'س ' + (d.workedMinutes % 60) + 'د') : '—',
+            r.lastCheckIn || '—']);
+        });
+        sumHeaders.forEach(function(h, idx){
+          sum.getColumn(idx + 1).width = autoColWidth_(h, data.summaryRows.map(function(r, i){
+            return sum.getRow(i + 2).getCell(idx + 1).value;
+          }));
+        });
+
+        var usedNames = {};
+        data.summaryRows.forEach(function(r, i){
+          var d = details[i];
+          if(!d || !d.rows) return;
+          var safe = (dispRepName_(r.name) || ('مندوب' + (i + 1))).replace(/[:\\\/?*\[\]]/g, '').trim().slice(0, 31) || ('مندوب' + (i + 1));
+          var name = safe, k = 1;
+          while(usedNames[name]){ k++; name = safe.slice(0, 28) + '_' + k; }
+          usedNames[name] = true;
+
+          var headers = ['التاريخ', 'الحالة', 'الفرع', 'وقت الحضور', 'وقت الانصراف', 'المدة'];
+          var ws = wb.addWorksheet(name, { views: [{ rightToLeft: true, showGridLines: false }] });
+          ws.mergeCells(1, 1, 1, headers.length);
+          var title = ws.getCell(1, 1);
+          title.value = dispRepName_(r.name) + ' — ' + attMonthLabel_(data.monthKey);
+          title.font = { bold: true, size: 14, color: { argb: 'FFFFFFFF' } };
+          title.alignment = { horizontal: 'center', vertical: 'middle' };
+          ws.getRow(1).height = 26;
+          for(var c = 1; c <= headers.length; c++) ws.getCell(1, c).fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0C1730' } };
+          ws.addRow(headers);
+          ws.getRow(2).eachCell(function(c){
+            c.font = { bold: true };
+            c.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9A21B' } };
+            c.alignment = { horizontal: 'center', vertical: 'middle' };
+          });
+          var dayRows = (d.rows || []).slice().reverse(); // السيرفر بيرجعها الأحدث الأول — بنقلبها عشان تطلع 1 لـ 30
+          dayRows.forEach(function(row){
+            ws.addRow([row.day, attDayStatusLabel_(row), row.branch || '—', row.checkIn || '—', row.checkOut || '—',
+              row.durationMin != null ? (Math.floor(row.durationMin / 60) + 'س ' + (row.durationMin % 60) + 'د') : '—']);
+          });
+          headers.forEach(function(h, idx){
+            ws.getColumn(idx + 1).width = autoColWidth_(h, dayRows.map(function(row){
+              return idx === 0 ? row.day : idx === 1 ? attDayStatusLabel_(row) : idx === 2 ? (row.branch || '—')
+                : idx === 3 ? (row.checkIn || '—') : idx === 4 ? (row.checkOut || '—') : '';
+            }));
+          });
+        });
+
+        return wb.xlsx.writeBuffer().then(function(buf){
+          var blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+          showLoading(false);
+          triggerBlobDownload(blob, 'الحضور والانصراف - كل المناديب - ' + attMonthLabel_(data.monthKey));
+        });
       });
-      var opts = {
-        fileName: 'الحضور والانصراف - كل المناديب - ' + attMonthLabel_(data.monthKey),
-        reportTitle: 'تقرير الحضور والانصراف — كل المناديب — ' + attMonthLabel_(data.monthKey),
-        meta: [['التاريخ', new Date().toLocaleDateString('ar-EG')], ['عدد المناديب', data.summaryRows.length]],
-        headers: ['المندوب', 'أيام الحضور', 'أيام الغياب', 'الأيام المتوقعة', 'أيام الإجازة', 'أيام الراحة الأسبوعية', 'إجمالي وقت العمل', 'آخر حضور'],
-        rows: rows,
-        totalsLabel: 'عدد المناديب',
-        totalsValue: data.summaryRows.length,
-        totalsIsCurrency: false,
-      };
-      return buildExcelBlob(opts).then(function(r){ showLoading(false); triggerBlobDownload(r.blob, r.fileName); });
     }).catch(onError);
   }
 
