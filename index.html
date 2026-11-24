@@ -1718,6 +1718,15 @@
       <div class="cardTitle">أكتر الطلبات تقلًا على السيرفر</div>
       <div id="useActions"></div>
     </div>
+    <div class="card">
+      <div class="cardTitle">ترحيل صور الحضور القديمة لمخزن الصور</div>
+      <div style="color:var(--muted); font-size:13px; margin-bottom:10px; line-height:1.7;">
+        صور الحضور القديمة متسجلة كنص كامل جوه قاعدة البيانات، وده بياكل مساحة كبيرة. الزرار ده بينقلها
+        لمخزن الصور (أخف بكتير) من غير ما يأثر على أي صورة أو سجل — ممكن يفضل شغال لمدة لو السجلات كتير.
+      </div>
+      <button type="button" class="whatsapp" style="width:100%;" onclick="migrateOldAttendancePhotos_()" id="migratePhotosBtn">🗜️ ابدأ الترحيل</button>
+      <div style="font-size:13px; font-weight:700; margin-top:8px; text-align:center;" id="migratePhotosStatus"></div>
+    </div>
     <div style="color:var(--muted); font-size:12.5px; text-align:center; padding:4px 8px; line-height:1.8;">
       بيتحسب كل طلب بيعدّي على السيرفر (Supabase) — الدخول وحفظ الإعدادات اللي على جوجل مش محسوبين هنا.<br>
       "وقت السيرفر" = مجموع الوقت اللي السيرفر قعده يشتغل للمستخدم ده. الصفحة دي بتبان ليك إنت بس.
@@ -2063,7 +2072,8 @@
     // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
     listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
     addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepHR:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1, setItemWholesale:1,
-    setBranchLocation:1, checkIn:1, checkOut:1, setAttendanceStartDate:1, setRepLeave:1, removeRepLeave:1, saveTarget:1};
+    setBranchLocation:1, checkIn:1, checkOut:1, setAttendanceStartDate:1, setRepLeave:1, removeRepLeave:1, saveTarget:1,
+    listUnmigratedAttendancePhotos:1, migrateAttendancePhotoUrls:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
       method: 'POST',
@@ -3958,6 +3968,27 @@
       })
       .catch(function(){});
   }
+  // بيرفع صورة الحضور/الانصراف لمخزن الصور (Storage) بدل ما تتسجل كنص base64 كامل جوه جدول
+  // الحضور نفسه — ده كان بياكل مساحة قاعدة البيانات بسرعة كبيرة (كل صورة ~80-150 كيلوبايت كنص).
+  // بعد الرفع بنستخدم اللينك القصير بدل الصورة نفسها في كل حاجة تانية (التسجيل + كارت المشاركة).
+  function uploadAttendancePhoto_(dataUrl, which){
+    try{
+      var parts = dataUrl.split(',');
+      var mime = (parts[0].match(/:(.*?);/) || [])[1] || 'image/jpeg';
+      var bin = atob(parts[1]);
+      var arr = new Uint8Array(bin.length);
+      for(var i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+      var path = 'attendance/' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '-' + which + '.jpg';
+      return fetch('https://llbvttieimysqxyrdwph.supabase.co/storage/v1/object/touch-photos/' + path, {
+        method: 'POST',
+        headers: { apikey: SB_PUBLIC_KEY_, 'Content-Type': mime },
+        body: new Blob([arr], { type: mime }),
+      }).then(function(res){
+        if(!res.ok) throw new Error('upload failed');
+        return 'https://llbvttieimysqxyrdwph.supabase.co/storage/v1/object/public/touch-photos/' + path;
+      });
+    }catch(e){ return Promise.reject(e); }
+  }
   function handleCheckIn_(){
     clearMsg();
     var btn = document.getElementById('checkInBtn');
@@ -3968,6 +3999,8 @@
         challengeItem = state.attChallengeItem_ || ''; challengeOriginal = state.attChallengeOriginal_ || '';
         return fctCapturePhoto_();
       })
+      // لو الرفع فشل (مشكلة شبكة مثلاً)، نسيب الصورة الأصلية تتسجل زي الأول بدل ما التسجيل كله يفشل
+      .then(function(p){ return uploadAttendancePhoto_(p, 'in').catch(function(){ return p; }); })
       .then(function(p){ photo = p; return fctGetPosition_(); })
       .then(function(c){ coords = c; return callApi('checkIn', [state.auth, coords.latitude, coords.longitude, photo, challengeItem, challengeOriginal]); })
       .then(function(result){
@@ -3987,6 +4020,7 @@
         challengeItem = state.attChallengeItem_ || ''; challengeOriginal = state.attChallengeOriginal_ || '';
         return fctCapturePhoto_();
       })
+      .then(function(p){ return uploadAttendancePhoto_(p, 'out').catch(function(){ return p; }); })
       .then(function(p){ photo = p; return fctGetPosition_(); })
       .then(function(c){ coords = c; return callApi('checkOut', [state.auth, coords.latitude, coords.longitude, photo, challengeItem, challengeOriginal]); })
       .then(function(result){
@@ -4578,6 +4612,44 @@
   function useActName_(a){
     const n = SPEED_NAMES_[a];
     return n || a;
+  }
+  // بيرحّل صور الحضور القديمة (اللي لسه متسجلة كـ base64 كامل جوه الجدول) لمخزن الصور —
+  // بيشتغل دفعة دفعة (5 سجلات كل مرة) وبيكمل لوحده لحد ما يخلص كل حاجة، من غير ما يحتاج ضغطة تانية
+  function migrateOldAttendancePhotos_(){
+    clearMsg();
+    var btn = document.getElementById('migratePhotosBtn');
+    var status = document.getElementById('migratePhotosStatus');
+    btn.disabled = true;
+    var migrated = 0;
+    function step(){
+      return callApi('listUnmigratedAttendancePhotos', [state.auth]).then(function(rows){
+        if(!rows || !rows.length){
+          btn.disabled = false;
+          status.textContent = migrated ? ('✔ خلصنا! اترحّل ' + migrated + ' سجل') : 'كل السجلات مترحّلة بالفعل ✔';
+          return;
+        }
+        var chain = Promise.resolve();
+        rows.forEach(function(row){
+          chain = chain.then(function(){
+            var jobs = [];
+            if(row.checkInPhoto) jobs.push(uploadAttendancePhoto_(row.checkInPhoto, 'in').then(function(url){ return { field: 'in', url: url }; }));
+            if(row.checkOutPhoto) jobs.push(uploadAttendancePhoto_(row.checkOutPhoto, 'out').then(function(url){ return { field: 'out', url: url }; }));
+            return Promise.all(jobs).then(function(results){
+              var inUrl = '', outUrl = '';
+              results.forEach(function(r){ if(r.field === 'in') inUrl = r.url; else outUrl = r.url; });
+              return callApi('migrateAttendancePhotoUrls', [state.auth, row.id, inUrl, outUrl]);
+            });
+          });
+        });
+        return chain.then(function(){
+          migrated += rows.length;
+          status.textContent = 'جاري الترحيل... (' + migrated + ' لحد دلوقتي)';
+          return step();
+        });
+      });
+    }
+    status.textContent = 'جاري الترحيل...';
+    step().catch(function(err){ btn.disabled = false; onError(err); });
   }
   function loadUsage(days){
     state.usageDays_ = days;
