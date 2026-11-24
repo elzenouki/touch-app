@@ -1120,6 +1120,7 @@
     <span class="hadithRef" id="hadithRef"></span>
   </div>
   <button class="backBtn" id="backBtn" hidden onclick="goHome()">⟵ الرئيسية</button>
+  <button class="backBtn" id="hrLogoutBtn" hidden onclick="handleLogout()">🚪 تسجيل خروج</button>
 </div>
 
 <div class="wrap">
@@ -2231,7 +2232,11 @@
     ['viewLogin','viewOtp','viewHome','viewInvoice','viewJard','viewTawrid','viewAdmin','viewPrices','viewMyStats','viewStale','viewBalances','viewStaleBlock','viewStaleReasons','viewInvoiceHistory','viewItemSales','viewEval','viewProfile','viewSuggestion','viewProducts','viewUsage','viewRepsTargets','viewItemTargets','viewItemBalances','viewFieldCheckTest','viewAttendance'].forEach(id=>{
       document.getElementById(id).hidden = (id !== name);
     });
-    document.getElementById('backBtn').hidden = (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
+    // حساب الموارد البشرية مفيش عنده "رئيسية" يرجعلها، فالزرار ده مالوش معنى بالنسبالهم —
+    // بنخفيه ونوري بدل منه زرار تسجيل خروج ثابت، لأنهم مش بيعدّوا على شاشة الرئيسية أصلاً فيها زرار الخروج
+    const isHrOnly = state.isHR && !state.isAdmin;
+    document.getElementById('backBtn').hidden = isHrOnly || (name === 'viewHome' || name === 'viewLogin' || name === 'viewOtp');
+    document.getElementById('hrLogoutBtn').hidden = !isHrOnly;
     document.body.classList.toggle('c2home', name === 'viewHome');
     document.body.classList.toggle('c2dark', name === 'viewInvoice');
     const navMap = { viewHome: 'home', viewInvoiceHistory: 'history', viewMyStats: 'mystats', viewEval: 'eval' };
