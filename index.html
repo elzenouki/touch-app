@@ -1850,6 +1850,7 @@
           <button type="button" id="rsAdminBtn" onclick="rsToggleAdmin_()"></button>
           <button type="button" onclick="rsSetPin_()">🔑 كود الدخول</button>
         </div>
+        <div class="rsRow" style="margin-bottom:8px;"><button type="button" id="rsHRBtn" onclick="rsToggleHR_()"></button></div>
         <div class="rsRow" style="margin-bottom:8px;"><button type="button" onclick="rsSetBranch_()">📍 الفرع</button></div>
         <div class="rsRow" style="margin-bottom:8px;">
           <button type="button" onclick="rsSetFullName_()">📝 الاسم الكامل</button>
@@ -2061,7 +2062,7 @@
   const SB_WRITE_ONLY_ = {finalizeInvoice:1, saveJard:1, saveTawrid:1,
     // الإعدادات بقت على Supabase بس (مفيش جوجل شيت خالص) — جوجل فاضل للدخول بالإيميل ورفع الصور بس
     listRepNames:1, savePrices:1, saveStaleReason:1, saveMyProfile:1, addSuggestion:1, deleteProductDescription:1, setAdProduct:1, clearAd:1,
-    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1, setItemWholesale:1,
+    addRep:1, setRepPin:1, setRepBranch:1, setRepFullName:1, setRepJobCode:1, setRepAdmin:1, setRepHR:1, setRepSupervisors:1, deleteRep:1, addAsnaf:1, setItemSeason:1, setItemWholesale:1,
     setBranchLocation:1, checkIn:1, checkOut:1, setAttendanceStartDate:1, setRepLeave:1, removeRepLeave:1, saveTarget:1};
   function callSbWrite_(action, args, attempt){
     return fetch(SB_RPC_URL_, {
@@ -2499,6 +2500,7 @@
           renderStaleBlockScreen_(data, 'adminblock', '');
           return;
         }
+        if(data.user.isHR && !data.isAdmin){ enterHRMode_(data.user); return; }
         applyLoggedInUser(data.user, data.isAdmin, data.targetProgress, data.stats);
         if(state.screen === null) document.getElementById('pageSub').textContent = state.user.name;
       })
@@ -2506,6 +2508,9 @@
   }
 
   function goHome(){
+    // حساب الموارد البشرية (isHR): مفيش "رئيسية" بالنسبالهم — أي رجوع بيرجعهم لشاشة
+    // الحضور والانصراف نفسها، النطاق الوحيد المتاح للحساب ده
+    if(state.isHR && !state.isAdmin){ loadAttendance_('__ALL__', ''); return; }
     clearMsg();
     state.screen = null;
     document.getElementById('pageTitle').textContent = 'تاتش الزنوكي';
@@ -2667,10 +2672,19 @@
   // (لازم تتطابق مع PROTECTED_OWNER_EMAIL_ في Code.gs بالظبط)
   const OWNER_EMAIL_ = 'm.s.e.m.eyg@gmail.com';
 
+  // حساب "الموارد البشرية" (isHR، مش مشرف): مفيش رئيسية ولا أي شاشة تانية عنده —
+  // بيدخل على طول على الحضور والانصراف لكل المناديب، وده السقف بتاعه
+  function enterHRMode_(user){
+    state.user = user; state.isAdmin = false; state.isHR = true; state.isOwner = false;
+    document.getElementById('pageSub').textContent = 'الموارد البشرية';
+    loadAttendance_('__ALL__', '');
+  }
+
   function applyLoggedInUser(user, isAdmin, targetProgress, homeStats){
     state.homeStats_ = homeStats || state.homeStats_ || null;
     state.user = user;
     state.isAdmin = !!isAdmin;
+    state.isHR = !!(user && user.isHR);
     state.targetProgress_ = targetProgress || null;
     state.isOwner = !!(user && String(user.email || '').trim().toLowerCase() === OWNER_EMAIL_);
     document.getElementById('homeUserName').textContent = user.name;
@@ -3258,6 +3272,7 @@
           renderStaleBlockScreen_(data, 'adminblock', '');
           return;
         }
+        if(data.user.isHR && !data.isAdmin){ showLoading(false); enterHRMode_(data.user); return; }
         applyLoggedInUser(data.user, data.isAdmin, data.targetProgress, data.stats);
         if(!cachedHome){
           showLoading(false);
@@ -3290,6 +3305,9 @@
 
   // ============ توزيع الشاشات ============
   function openScreen(name){
+    // حساب الموارد البشرية مقصور على شاشة الحضور والانصراف بس — أي محاولة فتح شاشة تانية
+    // (حتى لو من رابط قديم محفوظ) بترجعه لنفس الشاشة
+    if(state.isHR && !state.isAdmin && name !== 'attendance'){ loadAttendance_('__ALL__', ''); return; }
     clearMsg();
     state.screen = name;
     if(name === 'jard'){ loadJard(); return; }
@@ -4002,9 +4020,9 @@
         showLoading(false);
         state.attRepName_ = data.repName; state.attMonth_ = data.monthKey;
         state.attExportData_ = data;
-        (data.isAdmin ? ensureRepFullNameMap_() : Promise.resolve()).then(function(){
+        ((data.isAdmin || data.isHR) ? ensureRepFullNameMap_() : Promise.resolve()).then(function(){
         var pickerCard = document.getElementById('attRepPickerCard');
-        if(data.isAdmin && data.reps && data.reps.length){
+        if((data.isAdmin || data.isHR) && data.reps && data.reps.length){
           pickerCard.hidden = false;
           var sel = document.getElementById('attRepSelect');
           var allOpt = '<option value="__ALL__"' + (data.repName === '__ALL__' ? ' selected' : '') + '>📊 كل المناديب</option>';
@@ -5475,7 +5493,7 @@
       return '<button type="button" class="repCard" onclick="openRepSheet_(' + i + ')">' +
         '<span class="av' + (r.isAdmin ? ' adm' : '') + '">' + escapeHtml(String(r.name || '?').trim().charAt(0)) + '</span>' +
         '<span class="info">' +
-          '<span class="nm">' + escapeHtml(r.name) + (r.isProtected ? '<span class="tag own">صاحب الحساب</span>' : (r.isAdmin ? '<span class="tag adm">مشرف</span>' : '')) + '</span>' +
+          '<span class="nm">' + escapeHtml(r.name) + (r.isProtected ? '<span class="tag own">صاحب الحساب</span>' : (r.isAdmin ? '<span class="tag adm">مشرف</span>' : (r.isHR ? '<span class="tag adm">موارد بشرية</span>' : ''))) + '</span>' +
           '<span class="sub">' + escapeHtml(r.branch || 'من غير فرع') + '</span>' +
           (supHtml ? '<span class="sups">' + supHtml + '</span>' : '') +
         '</span><span class="chev"></span></button>';
@@ -5497,6 +5515,10 @@
     adminBtn.textContent = r.isAdmin ? 'إلغاء الإشراف' : 'خليه مشرف';
     adminBtn.className = r.isAdmin ? 'danger' : '';
     adminBtn.disabled = !!r.isProtected;
+    const hrBtn = document.getElementById('rsHRBtn');
+    hrBtn.textContent = r.isHR ? '✖ إلغاء حساب الموارد البشرية' : '🕒 خليه حساب موارد بشرية (حضور وانصراف بس)';
+    hrBtn.className = r.isHR ? 'danger' : '';
+    hrBtn.disabled = !!r.isProtected || !!r.isAdmin;
     document.getElementById('rsDelBtn').disabled = !!r.isProtected;
     document.getElementById('repSheetOv').hidden = false;
   }
@@ -5534,6 +5556,7 @@
       .catch(onError);
   }
   function rsToggleAdmin_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleToggleAdmin(r.email, !r.isAdmin); }
+  function rsToggleHR_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleToggleHR_(r.email, !r.isHR); }
   function rsSetPin_(){ const r = state.adminReps_[rsIdx_]; closeRepSheet_(); handleSetRepPin(r.email, r.name); }
   // الفرع (أو أكتر من فرع مفصولين بفاصلة) — كان بيتكتب في الشيت، دلوقتي من هنا
   function rsSetBranch_(){
@@ -5600,6 +5623,17 @@
       .then(function(){
         showLoading(false);
         showMsg(makeAdmin ? 'تم تفعيل الإشراف ✔' : 'تم إلغاء الإشراف ✔', 'success');
+        refreshRepsList();
+      })
+      .catch(onError);
+  }
+  function handleToggleHR_(email, makeHR){
+    clearMsg();
+    showLoading(true);
+    callApi('setRepHR', [state.auth, email, makeHR])
+      .then(function(){
+        showLoading(false);
+        showMsg(makeHR ? 'تم تفعيل حساب الموارد البشرية ✔' : 'تم إلغاء حساب الموارد البشرية ✔', 'success');
         refreshRepsList();
       })
       .catch(onError);
